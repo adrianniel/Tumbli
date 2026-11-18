@@ -3,6 +3,19 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { getAutostart, setAutostart as applyAutostart, type AutostartState } from "../lib/autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
+import { Chips, HourRange, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
+import {
+  IconBottle,
+  IconBulb,
+  IconDrop,
+  IconFlame,
+  IconGlass,
+  IconPlus,
+  IconQuestion,
+  IconRefill,
+  IconTrophy,
+  IconUndo,
+} from "../components/Icons";
 import { Welcome } from "./Welcome";
 import { factOfTheDay, greeting } from "../lib/facts";
 import { sipFor } from "../lib/schedule";
@@ -34,11 +47,15 @@ import {
   type Settings as SettingsT,
 } from "../lib/store";
 
-function hourLabel(h: number) {
-  const d = new Date();
-  d.setHours(h, 0, 0, 0);
-  return d.toLocaleTimeString(undefined, { hour: "numeric" });
-}
+const TUMBLER_HINTS: Record<number, string> = {
+  350: "Mini",
+  500: "Small bottle",
+  650: "Classic",
+  750: "Sport bottle",
+  1000: "Big bottle",
+  1200: "40 oz tumbler",
+};
+const GLASS_HINTS: Record<number, string> = { 150: "Small cup", 250: "A glass", 350: "Mug", 500: "Big glass" };
 
 export function Settings() {
   const [s, setS] = useState<SettingsT>(loadSettings);
@@ -149,7 +166,7 @@ export function Settings() {
           />
         </div>
         <div className="hero-main">
-          <div className="hello">{greeting(s.name)} 👋</div>
+          <div className="hello">{greeting(s.name)}</div>
           <div className="big">
             {tumblerMode ? (
               <>
@@ -174,22 +191,22 @@ export function Settings() {
             {tumblerMode ? (
               <>
                 <button className="pill primary" onClick={() => act(() => drink(sip, s))} disabled={level <= 0}>
-                  + {sip} ml
+                  <IconPlus size={15} strokeWidth={2.6} /> {sip} ml
                 </button>
                 <button className="pill" onClick={() => act(() => finishTumbler(s))} disabled={level <= 0}>
                   Finished it
                 </button>
                 <button className="pill" onClick={() => act(() => refill(s))}>
-                  🔄 Refilled
+                  <IconRefill size={15} /> Refilled
                 </button>
               </>
             ) : (
               <button className="pill primary" onClick={() => act(() => drink(s.glassMl, s))}>
-                + Log a glass
+                <IconPlus size={15} strokeWidth={2.6} /> Log a glass
               </button>
             )}
-            <button className="pill" onClick={() => act(undoLast)} disabled={!canUndo()}>
-              Undo
+            <button className="pill" onClick={() => act(undoLast)} disabled={!canUndo()} aria-label="Undo">
+              <IconUndo size={15} />
             </button>
           </div>
         </div>
@@ -197,22 +214,22 @@ export function Settings() {
 
       <div className="stats">
         <div className="stat">
-          <span className="stat-icon" aria-hidden>
-            🔥
+          <span className="stat-icon flame" aria-hidden>
+            <IconFlame size={18} />
           </span>
           <b>{days}</b>
           <span>day streak</span>
         </div>
         <div className="stat">
-          <span className="stat-icon" aria-hidden>
-            🏆
+          <span className="stat-icon trophy" aria-hidden>
+            <IconTrophy size={18} />
           </span>
           <b>{metThisWeek}/7</b>
           <span>goals this week</span>
         </div>
         <div className="stat">
           <span className="stat-icon" aria-hidden>
-            {tumblerMode ? "🧴" : "💧"}
+            {tumblerMode ? <IconBottle size={18} /> : <IconDrop size={18} />}
           </span>
           <b>
             {tumblerMode
@@ -243,7 +260,10 @@ export function Settings() {
       </section>
 
       <section className="card fact-card">
-        <div className="fact-kicker">{fact.kind === "trivia" ? "🤔 Trivia of the day" : "💡 Fact of the day"}</div>
+        <span className="fact-icon" aria-hidden>
+          {fact.kind === "trivia" ? <IconQuestion size={20} /> : <IconBulb size={20} />}
+        </span>
+        <div className="fact-kicker">{fact.kind === "trivia" ? "Trivia of the day" : "Fact of the day"}</div>
         <div className="fact-body">{fact.kind === "trivia" ? fact.q : fact.text}</div>
         {fact.kind === "trivia" && <div className="muted small">Answer: {fact.a}</div>}
         <div className="muted small">Tip: click Tumbli on your desktop for more.</div>
@@ -282,41 +302,33 @@ export function Settings() {
           </span>
           <span className="seg" role="radiogroup" aria-label="Track by">
             <button role="radio" aria-checked={!tumblerMode} className={!tumblerMode ? "on" : ""} onClick={() => update({ mode: "glass" })}>
-              🥛 Glass
+              <IconGlass size={16} /> Glass
             </button>
             <button role="radio" aria-checked={tumblerMode} className={tumblerMode ? "on" : ""} onClick={() => update({ mode: "tumbler" })}>
-              🧴 Tumbler
+              <IconBottle size={16} /> Tumbler
             </button>
           </span>
         </div>
 
-        <label className="row">
-          <span>{tumblerMode ? "Tumbler size" : "Glass size"}</span>
+        <div className="row stack">
+          <span className="row-label">{tumblerMode ? "Tumbler size" : "Glass size"}</span>
           {tumblerMode ? (
-            <select value={s.tumblerMl} onChange={(e) => update({ tumblerMl: Number(e.target.value) })}>
-              {TUMBLER_SIZES.map((ml) => (
-                <option key={ml} value={ml}>
-                  {fmtMl(ml)}
-                </option>
-              ))}
-            </select>
+            <SizePicker
+              kind="tumbler"
+              sizes={TUMBLER_SIZES.map((ml) => ({ ml, hint: TUMBLER_HINTS[ml] ?? "" }))}
+              value={s.tumblerMl}
+              onChange={(ml) => update({ tumblerMl: ml })}
+            />
           ) : (
-            <select
+            <SizePicker
+              kind="glass"
+              sizes={GLASS_SIZES.filter((ml) => ml !== 200 && ml !== 300).map((ml) => ({ ml, hint: GLASS_HINTS[ml] ?? "" }))}
               value={s.glassMl}
-              onChange={(e) => {
-                const glassMl = Number(e.target.value);
-                // keep the same number of glasses when the glass size changes
-                update({ glassMl, goalMl: goalG * glassMl });
-              }}
-            >
-              {GLASS_SIZES.map((ml) => (
-                <option key={ml} value={ml}>
-                  {ml} ml
-                </option>
-              ))}
-            </select>
+              // keep the same number of glasses when the glass size changes
+              onChange={(glassMl) => update({ glassMl, goalMl: goalG * glassMl })}
+            />
           )}
-        </label>
+        </div>
 
         <div className="row">
           <span>Daily goal</span>
@@ -341,37 +353,20 @@ export function Settings() {
           </span>
         </div>
 
-        <label className="row">
-          <span>Remind me every</span>
-          <select value={s.intervalMin} onChange={(e) => update({ intervalMin: Number(e.target.value) })}>
-            {[15, 20, 30, 45, 60, 90, 120].map((m) => (
-              <option key={m} value={m}>
-                {m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? "s" : ""}`}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="row stack">
+          <span className="row-label">Remind me every</span>
+          <Chips
+            label="Remind me every"
+            options={INTERVAL_CHIPS}
+            value={s.intervalMin}
+            onChange={(v) => update({ intervalMin: v })}
+          />
+        </div>
 
-        <label className="row">
-          <span>Active hours</span>
-          <span className="hours">
-            <select value={s.startHour} onChange={(e) => update({ startHour: Number(e.target.value) })}>
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
-            to
-            <select value={s.endHour} onChange={(e) => update({ endHour: Number(e.target.value) })}>
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
-          </span>
-        </label>
+        <div className="row stack">
+          <span className="row-label">Active hours</span>
+          <HourRange start={s.startHour} end={s.endHour} onChange={(a, b) => update({ startHour: a, endHour: b })} />
+        </div>
       </section>
 
       <section className="card">

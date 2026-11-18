@@ -1,10 +1,26 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Tumbler } from "../components/Tumbler";
+import { Chips, HourRange, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
+import {
+  IconBell,
+  IconBottle,
+  IconChair,
+  IconCheck,
+  IconChevronLeft,
+  IconCloudSun,
+  IconDumbbell,
+  IconGlass,
+  IconLock,
+  IconRun,
+  IconSnow,
+  IconSun,
+  IconTarget,
+  IconWalk,
+} from "../components/Icons";
 import { setAutostart as applyAutostart } from "../lib/autostart";
 import {
   canBePregnant,
   defaultProfile,
-  INTERVALS,
   planFor,
   type Activity,
   type AgeGroup,
@@ -17,7 +33,7 @@ import { loadProfile, markOnboarded, saveProfile, saveSettings, type Settings } 
 
 type Props = { initial: Settings; onDone: (s: Settings) => void };
 
-type Option<T> = { value: T; label: string; hint?: string; icon?: string };
+type Option<T> = { value: T; label: string; hint?: string; icon?: ReactNode };
 
 const AGES: Option<AgeGroup>[] = [
   { value: "9-13", label: "9–13" },
@@ -28,9 +44,9 @@ const AGES: Option<AgeGroup>[] = [
   { value: "71+", label: "71+" },
 ];
 const SEXES: Option<Sex>[] = [
-  { value: "female", label: "Female", icon: "♀" },
-  { value: "male", label: "Male", icon: "♂" },
-  { value: "unspecified", label: "Prefer not to say", icon: "•" },
+  { value: "female", label: "Female" },
+  { value: "male", label: "Male" },
+  { value: "unspecified", label: "Prefer not to say" },
 ];
 const PREGNANCY: Option<Pregnancy>[] = [
   { value: "none", label: "Neither" },
@@ -38,37 +54,37 @@ const PREGNANCY: Option<Pregnancy>[] = [
   { value: "breastfeeding", label: "Breastfeeding" },
 ];
 const ACTIVITY: Option<Activity>[] = [
-  { value: "sedentary", label: "Mostly sitting", hint: "Desk, classes, gaming", icon: "🪑" },
-  { value: "light", label: "Lightly active", hint: "Walks, light chores", icon: "🚶" },
-  { value: "active", label: "Active", hint: "Exercise 3–5 days a week", icon: "🏃" },
-  { value: "very", label: "Very active", hint: "Hard training or physical work", icon: "🏋️" },
+  { value: "sedentary", label: "Mostly sitting", hint: "Desk, classes, gaming", icon: <IconChair /> },
+  { value: "light", label: "Lightly active", hint: "Walks, light chores", icon: <IconWalk /> },
+  { value: "active", label: "Active", hint: "Exercise 3–5 days a week", icon: <IconRun /> },
+  { value: "very", label: "Very active", hint: "Hard training or physical work", icon: <IconDumbbell /> },
 ];
 const CLIMATE: Option<Climate>[] = [
-  { value: "cool", label: "Cool or air-conditioned", hint: "I rarely sweat", icon: "❄️" },
-  { value: "warm", label: "Warm", hint: "Sometimes sweaty", icon: "⛅" },
-  { value: "hot", label: "Hot and humid", hint: "I sweat most days", icon: "☀️" },
+  { value: "cool", label: "Cool or air-conditioned", hint: "I rarely sweat", icon: <IconSnow /> },
+  { value: "warm", label: "Warm", hint: "Sometimes sweaty", icon: <IconCloudSun /> },
+  { value: "hot", label: "Hot and humid", hint: "I sweat most days", icon: <IconSun /> },
 ];
 const MODES: Option<"glass" | "tumbler">[] = [
-  { value: "glass", label: "By the glass", hint: "I fill a glass or cup each time", icon: "🥛" },
-  { value: "tumbler", label: "From my tumbler", hint: "I keep a bottle or tumbler on my desk", icon: "🧴" },
+  { value: "glass", label: "By the glass", hint: "I fill a glass or cup each time", icon: <IconGlass /> },
+  { value: "tumbler", label: "From my tumbler", hint: "I keep a bottle or tumbler on my desk", icon: <IconBottle /> },
 ];
-const GLASSES: Option<number>[] = [
-  { value: 150, label: "150 ml", hint: "Small cup", icon: "🍵" },
-  { value: 250, label: "250 ml", hint: "A glass", icon: "🥛" },
-  { value: 350, label: "350 ml", hint: "Mug", icon: "☕" },
-  { value: 500, label: "500 ml", hint: "Big glass", icon: "🍺" },
+const GLASSES = [
+  { ml: 150, hint: "Small cup" },
+  { ml: 250, hint: "A glass" },
+  { ml: 350, hint: "Mug" },
+  { ml: 500, hint: "Big glass" },
 ];
-const TUMBLERS: Option<number>[] = [
-  { value: 500, label: "500 ml", hint: "Small bottle", icon: "🧴" },
-  { value: 650, label: "650 ml", hint: "Classic bottle", icon: "🧴" },
-  { value: 750, label: "750 ml", hint: "Sport bottle", icon: "🥤" },
-  { value: 1000, label: "1 L", hint: "Big bottle", icon: "🫗" },
-  { value: 1200, label: "1.2 L", hint: "40 oz tumbler", icon: "🥤" },
-  { value: 350, label: "350 ml", hint: "Mini tumbler", icon: "🥤" },
+const TUMBLERS = [
+  { ml: 350, hint: "Mini" },
+  { ml: 500, hint: "Small bottle" },
+  { ml: 650, hint: "Classic" },
+  { ml: 750, hint: "Sport bottle" },
+  { ml: 1000, hint: "Big bottle" },
+  { ml: 1200, hint: "40 oz tumbler" },
 ];
 const HEALTH: Option<string>[] = [
-  { value: "no", label: "No", icon: "👍" },
-  { value: "yes", label: "Yes", icon: "🩺" },
+  { value: "no", label: "No" },
+  { value: "yes", label: "Yes" },
 ];
 
 const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "mode", "size", "health", "result"] as const;
@@ -113,7 +129,7 @@ function Choices<T extends string | number>({
               {o.hint && <span className="choice-hint">{o.hint}</span>}
             </span>
             <span className="choice-check" aria-hidden>
-              ✓
+              <IconCheck size={13} strokeWidth={3} />
             </span>
           </button>
         );
@@ -124,7 +140,12 @@ function Choices<T extends string | number>({
 
 /** First run (and "retake"): a short hydration check that sets up Tumbli for this person. */
 export function Welcome({ initial, onDone }: Props) {
-  const [step, setStep] = useState(0);
+  // dev preview: settings.html?fresh&step=hours jumps straight to a step
+  const [step, setStep] = useState(() => {
+    if (!import.meta.env.DEV) return 0;
+    const want = new URLSearchParams(location.search).get("step");
+    return Math.max(0, STEPS.indexOf(want as StepName));
+  });
   const [p, setP] = useState<Profile>(() =>
     loadProfile({ ...defaultProfile, startHour: initial.startHour, endHour: initial.endHour }),
   );
@@ -209,7 +230,7 @@ export function Welcome({ initial, onDone }: Props) {
     mode: "How do you usually drink?",
     size: tumblerMode ? "Show me your tumbler!" : "What do you drink from?",
     health: "Last one, I promise!",
-    result: "Here's your plan! 🎉",
+    result: "Here's your plan!",
   };
 
   const question = (title: string, sub: string | null, body: ReactNode) => (
@@ -230,25 +251,34 @@ export function Welcome({ initial, onDone }: Props) {
             <Tumbler fill={0.45} size={150} arms />
           </div>
         </div>
-        <h1 className="intro-title">Hi, I'm Tumbli!</h1>
-        <p className="intro-sub">Your little water buddy for long days at the computer.</p>
+        <div className="intro-kicker">Meet Tumbli</div>
+        <h1 className="intro-title">Hi! I'm a tumbler, just like yours.</h1>
+        <p className="intro-sub">
+          I'll sit on your screen while you work, fill up as you drink, and give you a nudge when it's time for water.
+        </p>
         <ul className="features">
           <li>
-            <span aria-hidden>🎯</span>
+            <span aria-hidden>
+              <IconTarget />
+            </span>
             <div>
               <b>A goal that fits you</b>
               <small>Based on your age, activity and weather</small>
             </div>
           </li>
           <li>
-            <span aria-hidden>💧</span>
+            <span aria-hidden>
+              <IconBell />
+            </span>
             <div>
               <b>Gentle reminders</b>
               <small>I float on your screen and hop when it's time</small>
             </div>
           </li>
           <li>
-            <span aria-hidden>🔒</span>
+            <span aria-hidden>
+              <IconLock />
+            </span>
             <div>
               <b>Private by default</b>
               <small>No account, no ads. Everything stays on this PC</small>
@@ -397,31 +427,10 @@ export function Welcome({ initial, onDone }: Props) {
       content = question(
         "When are you usually at your computer?",
         null,
-        <div className="hours-pick">
-          <label>
-            <span>From</span>
-            <select value={p.startHour} onChange={(e) => set({ startHour: Number(e.target.value) })}>
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <span className="hours-arrow" aria-hidden>
-            →
-          </span>
-          <label>
-            <span>To</span>
-            <select value={p.endHour} onChange={(e) => set({ endHour: Number(e.target.value) })}>
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>,
+        <>
+          <HourRange start={p.startHour} end={p.endHour} onChange={(a, b) => set({ startHour: a, endHour: b })} />
+          <p className="fine hr-hint">Drag the dots to set your hours</p>
+        </>,
       );
       break;
     case "mode":
@@ -435,18 +444,13 @@ export function Welcome({ initial, onDone }: Props) {
       content = tumblerMode
         ? question(
             "How big is your tumbler?",
-            "I'll be your tumbler on screen: I empty as you drink and you refill me.",
-            <Choices
-              layout="grid"
-              options={TUMBLERS}
-              value={p.tumblerMl}
-              onPick={(v) => pickAndGo({ tumblerMl: v })}
-            />,
+            "I'll be your tumbler on screen: I empty as you drink, and you refill me.",
+            <SizePicker kind="tumbler" sizes={TUMBLERS} value={p.tumblerMl} onChange={(v) => pickAndGo({ tumblerMl: v })} />,
           )
         : question(
             "How big is your glass?",
             null,
-            <Choices layout="grid2" options={GLASSES} value={p.glassMl} onPick={(v) => pickAndGo({ glassMl: v })} />,
+            <SizePicker kind="glass" sizes={GLASSES} value={p.glassMl} onChange={(v) => pickAndGo({ glassMl: v })} />,
           );
       break;
     case "health":
@@ -520,19 +524,15 @@ export function Welcome({ initial, onDone }: Props) {
                 </button>
               </span>
             </div>
-            <label className="row">
-              <span>Remind me every</span>
-              <select
+            <div className="row stack">
+              <span className="row-label">Remind me every</span>
+              <Chips
+                label="Remind me every"
+                options={INTERVAL_CHIPS}
                 value={intervalMin}
-                onChange={(e) => setTweak({ ...tweak, intervalMin: Number(e.target.value) })}
-              >
-                {INTERVALS.map((m) => (
-                  <option key={m} value={m}>
-                    {m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? "s" : ""}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={(v) => setTweak({ ...tweak, intervalMin: v })}
+              />
+            </div>
             <div className="row">
               <span>Active hours</span>
               <b>
@@ -562,7 +562,7 @@ export function Welcome({ initial, onDone }: Props) {
     <main className="onb">
       <header className="onb-top">
         <button className="icon-btn" onClick={back} aria-label="Back">
-          ‹
+          <IconChevronLeft size={20} />
         </button>
         <div className="onb-progress" aria-label={`Step ${step} of ${total}`}>
           <div style={{ width: `${(step / total) * 100}%` }} />
@@ -588,7 +588,7 @@ export function Welcome({ initial, onDone }: Props) {
       <footer className="onb-nav">
         {last ? (
           <button className="primary-btn" onClick={() => void finish()} disabled={busy}>
-            Start drinking 💧
+            Start drinking
           </button>
         ) : needsNext ? (
           <button className="primary-btn" onClick={next}>

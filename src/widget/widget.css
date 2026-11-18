@@ -1092,3 +1092,110 @@ body,
 .count {
   white-space: nowrap;
 }
+
+/* ---------- Tumbli look: same fonts and colors as the settings window ---------- */
+
+:root {
+  --card: rgba(255, 255, 255, 0.97);
+  --ink: #0e2f4a;
+  --muted: #5d7488;
+  --accent: #1e8fe1;
+  --primary: #0e2f4a;
+  --on-primary: #ffffff;
+  --btn: rgba(30, 143, 225, 0.12);
+  --border: rgba(14, 47, 74, 0.1);
+  --coral: #ff7466;
+  font-family: "Nunito Variable", "Segoe UI", sans-serif;
+  font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card: rgba(17, 36, 55, 0.97);
+    --ink: #e7f2fb;
+    --muted: #8ea7bd;
+    --accent: #3aa3f0;
+    --primary: #7fc6f7;
+    --on-primary: #08233a;
+    --btn: rgba(58, 163, 240, 0.16);
+    --border: rgba(255, 255, 255, 0.09);
+  }
+}
+
+.bubble-card {
+  border-radius: 20px 20px 20px 20px;
+  box-shadow: 0 12px 30px -12px rgba(8, 30, 50, 0.45);
+}
+.bubble-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--coral);
+}
+.nudge-title,
+.tour-title,
+.fact-text {
+  font-family: "Fredoka Variable", "Segoe UI", sans-serif;
+  font-weight: 600;
+}
+.nudge-title {
+  font-size: 16px;
+}
+.fact-text {
+  font-weight: 500;
+  font-size: 14.5px;
+}
+.nudge-sub,
+.tour-body {
+  font-weight: 600;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+.btn.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.tour-foot .btn.primary,
+.fact .btn.primary {
+  background: var(--primary);
+}
+.key {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.mini {
+  display: grid;
+  place-items: center;
+}
+.mini.plus {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.refill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--coral);
+  font-family: "Nunito Variable", "Segoe UI", sans-serif;
+  font-weight: 800;
+}
+.count {
+  font-family: "Fredoka Variable", "Segoe UI", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  background: #0e2f4a;
+}
+.cheer {
+  font-family: "Fredoka Variable", "Segoe UI", sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+}

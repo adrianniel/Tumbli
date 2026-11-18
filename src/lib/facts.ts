@@ -62,8 +62,8 @@ export function greeting(name: string | undefined, d = new Date()) {
 export function nudgeMessage(name: string | undefined, rand = Math.random) {
   const n = (name ?? "").trim();
   const lines = n
-    ? [`${n}, time to sip! 💧`, `Water break, ${n}!`, `Hey ${n}, let's drink some water`, `Sip, sip, hooray, ${n}! 🥤`]
-    : ["Tumbli says: sip time! 💧", "Water break!", "Hydrate, then dominate 💪", "Sip, sip, hooray! 🥤"];
+    ? [`${n}, time to sip!`, `Water break, ${n}!`, `Hey ${n}, let's drink some water`, `Sip, sip, hooray, ${n}!`]
+    : ["Tumbli says: sip time!", "Water break!", "Hydrate, then dominate", "Sip, sip, hooray!"];
   return lines[Math.floor(rand() * lines.length)];
 }
 
@@ -84,18 +84,18 @@ export type CheerInput = {
 export function cheerFor({ before, after, goalMl, name, empty = false }: CheerInput, rand = Math.random) {
   const n = (name ?? "").trim();
   const left = goalMl - after;
-  if (before < goalMl && after >= goalMl) return n ? `Goal reached, ${n}! 🏆` : "Goal reached! 🏆";
-  if (before >= goalMl) return "Extra credit! 🌟";
-  if (empty) return "Empty! Time for a refill 🔄";
-  if (before === 0) return "First sips of the day! ☀️";
-  if (before < goalMl / 2 && after >= goalMl / 2) return "Halfway there! 🎉";
-  if (left <= 500) return `Almost there! ${fmt(left)} to go 💪`;
+  if (before < goalMl && after >= goalMl) return n ? `Goal reached, ${n}!` : "Goal reached!";
+  if (before >= goalMl) return "Extra credit!";
+  if (empty) return "Empty! Time for a refill";
+  if (before === 0) return "First sips of the day!";
+  if (before < goalMl / 2 && after >= goalMl / 2) return "Halfway there!";
+  if (left <= 500) return `Almost there! ${fmt(left)} to go`;
   const lines = [
-    "Nice sip! 💧",
-    "Your brain says thanks! 🧠",
-    "Keep it flowing! 🌊",
-    "Hydration hero! 🦸",
-    n ? `Great job, ${n}! ✨` : "Great job! ✨",
+    "Nice sip!",
+    "Your brain says thanks!",
+    "Keep it flowing!",
+    "Hydration hero!",
+    n ? `Great job, ${n}!` : "Great job!",
     `${fmt(left)} to go!`,
   ];
   return lines[Math.floor(rand() * lines.length)];

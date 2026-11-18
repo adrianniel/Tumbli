@@ -7,15 +7,20 @@ const Key = ({ children }: { children: ReactNode }) => <span className="key">{ch
 
 export const TOUR: TourStep[] = [
   {
-    title: "👋 This is me!",
-    body: <>I'll float right here while you work and remind you to drink. I'll stay out of your way.</>,
+    title: "Hi, I'm Tumbli!",
+    body: (
+      <>
+        I'm a tumbler, just like the one on your desk. I'll float right here while you work, and I fill up
+        as you drink.
+      </>
+    ),
   },
   {
     title: "Drank some water?",
     body: (
       <>
         Hover over me and press <Key>+</Key> after a drink. Using a tumbler? <Key>✓</Key> means you finished it and{" "}
-        <Key>🔄</Key> means you refilled it.
+        <Key>↻</Key> means you refilled it.
       </>
     ),
     demo: "log",

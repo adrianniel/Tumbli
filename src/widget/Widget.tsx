@@ -9,10 +9,11 @@ import {
 
 } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
+import { IconBell, IconBulb, IconCheck, IconClose, IconGear, IconPlus, IconQuestion, IconRefill } from "../components/Icons";
 import { TOUR } from "./tour";
 import { bloop } from "../lib/sound";
 import { shouldNudge, sipFor } from "../lib/schedule";
-import { cheerFor, nudgeMessage, randomFact, type Fact } from "../lib/facts";
+import { cheerFor, FACTS, nudgeMessage, randomFact, type Fact } from "../lib/facts";
 import { anchorOf, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 import {
   drink as logDrink,
@@ -315,6 +316,21 @@ export function Widget() {
 
   useEffect(() => () => window.clearTimeout(factTimer.current), []);
 
+  // dev preview in a browser: widget.html?demo&nudge | &fact | &tour=0
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const q = new URLSearchParams(location.search);
+    if (q.has("nudge")) {
+      setMessage(nudgeMessage(loadSettings().name));
+      setNudging(true);
+    }
+    if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
+    if (q.has("tour")) {
+      touring.current = true;
+      setTour(Number(q.get("tour")) || 0);
+    }
+  }, []);
+
   // ---------- actions ----------
 
   const cheerUp = (text: string) => {
@@ -348,7 +364,7 @@ export function Widget() {
   /** a glass (glass mode) or a few sips (tumbler mode) */
   const drink = () => {
     if (tumblerMode && loadLevel(settings) <= 0) {
-      cheerUp("I'm empty! Refill me first 🔄");
+      cheerUp("I'm empty! Refill me first");
       return;
     }
     const before = todayMl();
@@ -365,7 +381,7 @@ export function Widget() {
     refill(settings);
     setLevel(settings.tumblerMl);
     setBoing((n) => n + 1);
-    cheerUp("All full! 💧");
+    cheerUp("All full! Let's go");
   };
 
   const snooze = () => {
@@ -456,7 +472,9 @@ export function Widget() {
     >
       {nudging && (
         <div className="bubble-card" role="dialog" aria-label="Water reminder">
-          <div className="bubble-kicker">💧 Reminder</div>
+          <div className="bubble-kicker">
+            <IconBell size={13} strokeWidth={2.4} /> Water break
+          </div>
           <div className="nudge-title">{message}</div>
           <div className="nudge-sub">
             {tumblerMode ? (
@@ -472,12 +490,12 @@ export function Widget() {
                 {glasses} of {goalG} glasses today
               </>
             )}
-            {days > 0 && <> · 🔥 {days}</>}
+            {days > 1 && <> · {days}-day streak</>}
           </div>
           <div className="nudge-actions">
             {empty ? (
               <button className="btn primary" onClick={doRefill}>
-                Refilled 🔄
+                <IconRefill size={14} /> Refilled
               </button>
             ) : (
               <button className="btn primary" onClick={drink}>
@@ -488,7 +506,7 @@ export function Widget() {
               {SNOOZE_MIN} min
             </button>
             <button className="btn ghost" onClick={skip} title="Skip this reminder" aria-label="Skip">
-              ✕
+              <IconClose size={15} />
             </button>
           </div>
         </div>
@@ -513,7 +531,7 @@ export function Widget() {
               ))}
             </div>
             <button className="btn primary" onClick={nextTour}>
-              {tour === TOUR.length - 1 ? "Got it! 💧" : "Next"}
+              {tour === TOUR.length - 1 ? "Got it!" : "Next"}
             </button>
           </div>
         </div>
@@ -522,9 +540,19 @@ export function Widget() {
       {tour === null && !nudging && fact && (
         <div className="bubble-card fact" role="dialog" aria-label={fact.kind === "trivia" ? "Trivia" : "Fun fact"}>
           <div className="bubble-head">
-            <div className="bubble-kicker">{fact.kind === "trivia" ? "🤔 Trivia time" : "💡 Did you know?"}</div>
+            <div className="bubble-kicker">
+              {fact.kind === "trivia" ? (
+                <>
+                  <IconQuestion size={13} strokeWidth={2.4} /> Trivia time
+                </>
+              ) : (
+                <>
+                  <IconBulb size={13} strokeWidth={2.4} /> Did you know?
+                </>
+              )}
+            </div>
             <button className="close" onClick={closeFact} aria-label="Close">
-              ✕
+              <IconClose size={14} />
             </button>
           </div>
           {fact.kind === "fact" ? (
@@ -624,7 +652,7 @@ export function Widget() {
 
       {empty && !talking && (
         <button className="refill-chip" onClick={doRefill} title="I refilled my tumbler">
-          🔄 Refill
+          <IconRefill size={12} strokeWidth={2.6} /> Refill
         </button>
       )}
 
@@ -636,20 +664,20 @@ export function Widget() {
             title={tumblerMode ? `I drank ~${sipMl} ml` : "I drank a glass"}
             aria-label={tumblerMode ? "I drank some" : "I drank a glass"}
           >
-            +
+            <IconPlus size={14} strokeWidth={3} />
           </button>
           {tumblerMode && (
             <>
               <button className="mini" onClick={finishIt} title="I finished my tumbler" aria-label="Finished my tumbler">
-                ✓
+                <IconCheck size={13} strokeWidth={2.8} />
               </button>
               <button className="mini" onClick={doRefill} title="I refilled my tumbler" aria-label="Refilled my tumbler">
-                🔄
+                <IconRefill size={13} strokeWidth={2.4} />
               </button>
             </>
           )}
           <button className="mini" onClick={openSettings} title="Settings" aria-label="Settings">
-            ⚙
+            <IconGear size={14} strokeWidth={2.2} />
           </button>
         </div>
       )}
