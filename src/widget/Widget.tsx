@@ -48,6 +48,7 @@ import type { WindowMode } from "./windowing";
 const CHEER_MS = 2800;
 const FACT_MS = 12_000; // a fact bubble closes by itself after this, unless hovered
 const HOVER_GRACE_MS = 350; // keep the buttons a moment after the mouse leaves
+const PIN_HOVER = import.meta.env.DEV && new URLSearchParams(location.search).has("hover");
 
 export function Widget() {
   // ---------- data ----------
@@ -357,6 +358,7 @@ export function Widget() {
       }}
       onMouseLeave={() => {
         hovering.current = false;
+        if (PIN_HOVER) return; // dev preview (?hover): keep the buttons for screenshots
         // a short grace period so moving onto the buttons doesn't flicker
         window.clearTimeout(hoverTimer.current);
         hoverTimer.current = window.setTimeout(() => setHover(false), HOVER_GRACE_MS);

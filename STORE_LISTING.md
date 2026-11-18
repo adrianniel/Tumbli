@@ -49,15 +49,17 @@ water reminder, hydration, drink water, water tracker, health, break reminder, d
 
 ## Screenshots
 
-Upload in this order from `store-assets/screenshots/` (1920×1080 PNG):
+Upload in this order from `store-assets/screenshots/` (3840×2160 PNG):
 
-1. `1-meet-tumbli.png`: the intro, Tumbli as a tumbler just like yours
-2. `2-reminder.png`: a reminder on the desktop
+1. `1-meet-tumbli.png`: Tumbli docked on the desktop, with its quick actions
+2. `2-reminder.png`: a reminder next to a work calendar
 3. `3-your-plan.png`: the personal plan from the hydration check
 4. `4-progress.png`: the dashboard with the week chart
-5. `5-outfits.png`: outfits earned through achievements
+5. `5-outfits.png`: an achievement unlocking an outfit, and all the outfits
+6. `6-dark-mode.png`: dark mode with the weekly recap
 
-They're rendered from the real app UI: run `npm run dev`, then `npm run screenshots`.
+Each one shows the real app UI on a Windows-style desktop (taskbar, tray icon, other
+windows). To regenerate: run `npm run dev`, then `npm run screenshots`.
 
 ## Store logos
 
