@@ -209,7 +209,7 @@ body,
 
 /* ---------- reminder: hop, wave and a speech bubble ---------- */
 
-.expanded .hop {
+.nudging .hop {
   animation: hop 0.9s ease 0.15s 3;
 }
 @keyframes hop {
@@ -225,7 +225,7 @@ body,
     transform: translateY(-4px);
   }
 }
-.expanded .tumbler .arm-r {
+.nudging .tumbler .arm-r {
   animation: wave-hi 0.45s ease-in-out infinite alternate;
 }
 @keyframes wave-hi {
@@ -239,9 +239,9 @@ body,
 
 .bubble-card {
   position: relative;
-  margin-bottom: 40px;
-  padding: 10px 12px;
-  width: 236px;
+  margin-bottom: 44px;
+  padding: 11px 13px 12px;
+  width: 250px;
   box-sizing: border-box;
   background: var(--card);
   border: 1px solid var(--border);
@@ -464,5 +464,119 @@ body,
   to {
     transform: translate(8px, -8px);
     opacity: 0;
+  }
+}
+
+/* ---------- bubble polish ---------- */
+
+.bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bubble-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+.close {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.close:hover {
+  background: var(--btn);
+}
+.fact-text {
+  font-size: 13.5px;
+  line-height: 1.4;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.fact-answer {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: -3px 0 9px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: var(--btn);
+  animation: pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.fact .btn.primary {
+  flex: 1;
+}
+
+/* ---------- click: Tumbli jumps and spins ---------- */
+
+.buddy {
+  cursor: pointer;
+}
+.boing-0 {
+  animation: boing-a 0.8s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.boing-1 {
+  animation: boing-b 0.8s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+@keyframes boing-a {
+  0% {
+    transform: translateY(0) rotate(0) scale(1, 1);
+  }
+  15% {
+    transform: translateY(2px) scale(1.12, 0.86);
+  }
+  45% {
+    transform: translateY(-20px) rotate(-200deg) scale(0.95, 1.05);
+  }
+  75% {
+    transform: translateY(-6px) rotate(-360deg);
+  }
+  88% {
+    transform: translateY(1px) rotate(-360deg) scale(1.08, 0.92);
+  }
+  100% {
+    transform: translateY(0) rotate(-360deg) scale(1, 1);
+  }
+}
+@keyframes boing-b {
+  0% {
+    transform: translateY(0) rotate(0) scale(1, 1);
+  }
+  15% {
+    transform: translateY(2px) scale(1.12, 0.86);
+  }
+  45% {
+    transform: translateY(-20px) rotate(200deg) scale(0.95, 1.05);
+  }
+  75% {
+    transform: translateY(-6px) rotate(360deg);
+  }
+  88% {
+    transform: translateY(1px) rotate(360deg) scale(1.08, 0.92);
+  }
+  100% {
+    transform: translateY(0) rotate(360deg) scale(1, 1);
+  }
+}
+.boing {
+  transform-origin: 50% 60%;
+}
+
+/* talking (fact): a little arm gesture */
+.expanded:not(.nudging) .tumbler .arm-r {
+  animation: chat 0.9s ease-in-out infinite alternate;
+}
+@keyframes chat {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(14deg);
   }
 }

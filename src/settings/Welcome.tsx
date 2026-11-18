@@ -55,7 +55,7 @@ const SERVINGS: Option<number>[] = [
   { value: 500, label: "500 ml", hint: "Small bottle" },
 ];
 
-const STEPS = ["intro", "age", "sex", "weight", "activity", "climate", "hours", "serving", "health", "result"] as const;
+const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "serving", "health", "result"] as const;
 
 function hourLabel(h: number) {
   const d = new Date();
@@ -106,6 +106,7 @@ export function Welcome({ initial, onDone }: Props) {
     loadProfile({ ...defaultProfile, startHour: initial.startHour, endHour: initial.endHour }),
   );
   const [weightOn, setWeightOn] = useState(p.weightKg !== null);
+  const [name, setName] = useState(initial.name ?? "");
   const [autostart, setAutostart] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -119,7 +120,7 @@ export function Welcome({ initial, onDone }: Props) {
     setP((cur) => ({ ...cur, ...patch }));
     setTweak({});
   };
-  const name = STEPS[step];
+  const stepName = STEPS[step];
   const next = () => setStep((s) => Math.min(STEPS.length - 1, s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
 
@@ -128,6 +129,7 @@ export function Welcome({ initial, onDone }: Props) {
     saveProfile(p);
     const s: Settings = {
       ...initial,
+      name: name.trim().slice(0, 30),
       goal,
       glassMl: plan.servingMl,
       intervalMin,
@@ -156,7 +158,7 @@ export function Welcome({ initial, onDone }: Props) {
   );
 
   let content: ReactNode;
-  switch (name) {
+  switch (stepName) {
     case "intro":
       content = (
         <>
@@ -167,6 +169,25 @@ export function Welcome({ initial, onDone }: Props) {
           </p>
           <p className="muted small">Takes about 30 seconds. Your answers stay on this PC.</p>
         </>
+      );
+      break;
+    case "name":
+      content = question(
+        "What should I call you?",
+        "I'll use it when I say hi. You can leave it empty.",
+        <input
+          className="name-input"
+          type="text"
+          autoFocus
+          maxLength={30}
+          placeholder="Your name"
+          aria-label="Your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") next();
+          }}
+        />,
       );
       break;
     case "age":
@@ -295,7 +316,7 @@ export function Welcome({ initial, onDone }: Props) {
     case "result":
       content = (
         <>
-          <h1>Your plan</h1>
+          <h1>{name.trim() ? `${name.trim()}'s plan` : "Your plan"}</h1>
           {plan.restricted ? (
             <p className="warn">Please follow your doctor's daily limit. Set the number of servings below to match it.</p>
           ) : (
@@ -359,7 +380,12 @@ export function Welcome({ initial, onDone }: Props) {
             </div>
             <label className="row">
               <span>Start with Windows</span>
-              <input type="checkbox" checked={autostart} onChange={(e) => setAutostart(e.target.checked)} />
+              <input
+                className="switch"
+                type="checkbox"
+                checked={autostart}
+                onChange={(e) => setAutostart(e.target.checked)}
+              />
             </label>
           </section>
           <p className="muted small">
@@ -370,7 +396,7 @@ export function Welcome({ initial, onDone }: Props) {
       break;
   }
 
-  const last = name === "result";
+  const last = stepName === "result";
   return (
     <main className="welcome">
       <div className="welcome-buddy">
@@ -383,7 +409,7 @@ export function Welcome({ initial, onDone }: Props) {
           ))}
         </div>
       )}
-      <div className="step" key={name}>
+      <div className="step" key={stepName}>
         {content}
       </div>
       <div className="nav">
@@ -398,7 +424,7 @@ export function Welcome({ initial, onDone }: Props) {
           </button>
         ) : (
           <button className="primary-btn" onClick={next}>
-            {step === 0 ? "Start" : "Next"}
+            {step === 0 ? "Start" : name === "" && STEPS[step] === "name" ? "Skip" : "Next"}
           </button>
         )}
       </div>

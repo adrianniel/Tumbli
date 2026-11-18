@@ -1,25 +1,31 @@
 :root {
-  --bg: #f3f8fc;
+  --bg: #eef5fb;
   --card: #ffffff;
-  --ink: #0f3557;
+  --ink: #0f2a44;
   --muted: #5b7690;
-  --accent: #1a8fe3;
-  --accent-soft: rgba(26, 143, 227, 0.12);
-  --met: #19b37a;
-  --border: rgba(15, 53, 87, 0.1);
-  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --accent: #2e8be6;
+  --accent-strong: #1f72c4;
+  --accent-soft: #e3f0fc;
+  --navy: #0e3f6e;
+  --met: #18a874;
+  --border: rgba(15, 53, 87, 0.09);
+  --shadow: 0 1px 2px rgba(15, 42, 68, 0.06), 0 4px 14px rgba(15, 42, 68, 0.05);
+  --hero: #dcecfb;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
   color: var(--ink);
   background: var(--bg);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111821;
-    --card: #1a2430;
+    --bg: #0e151d;
+    --card: #17212c;
     --ink: #e6f2ff;
     --muted: #93abc1;
-    --accent-soft: rgba(95, 211, 255, 0.14);
-    --border: rgba(255, 255, 255, 0.08);
+    --accent-soft: rgba(95, 180, 255, 0.14);
+    --border: rgba(255, 255, 255, 0.07);
+    --shadow: none;
+    --hero: #15293d;
   }
 }
 
@@ -27,79 +33,177 @@ body {
   margin: 0;
   background: var(--bg);
 }
+button {
+  font: inherit;
+}
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 12.5px;
+}
+.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ================= dashboard ================= */
 
 .settings {
-  padding: 18px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .hero {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+  padding: 18px 18px 18px 12px;
+  border-radius: 20px;
+  background: var(--hero);
 }
-.hero h1 {
-  margin: 0;
-  font-size: 13px;
+.hero-buddy {
+  flex: none;
+  animation: float 3.2s ease-in-out infinite;
+}
+@keyframes float {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.hero-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hello {
   font-weight: 600;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  color: var(--accent-strong);
+}
+@media (prefers-color-scheme: dark) {
+  .hello {
+    color: #7fc4ff;
+  }
 }
 .big {
-  font-size: 30px;
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 34px;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1;
 }
 .big span {
   font-size: 15px;
   font-weight: 500;
   color: var(--muted);
 }
-.muted {
-  color: var(--muted);
-  font-size: 12.5px;
+.progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(46, 139, 230, 0.18);
+  overflow: hidden;
 }
-.today-actions {
-  margin-left: auto;
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hero-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  margin-top: 4px;
 }
-.today-actions button {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+.pill {
   border: none;
-  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  background: var(--card);
   color: var(--ink);
-  font-size: 18px;
   cursor: pointer;
+  box-shadow: var(--shadow);
 }
-.today-actions button:first-child {
+.pill.primary {
   background: var(--accent);
   color: #fff;
 }
-.today-actions button:disabled {
-  opacity: 0.4;
+.pill:hover {
+  filter: brightness(1.06);
+}
+.pill:disabled {
+  opacity: 0.45;
   cursor: default;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.stat-icon {
+  font-size: 16px;
+}
+.stat b {
+  font-size: 18px;
+}
+.stat span:last-child {
+  font-size: 11.5px;
+  color: var(--muted);
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
 }
 .card h2 {
   margin: 0 0 8px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--muted);
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-head .link {
+  font-size: 12.5px;
 }
 
 .row {
@@ -107,10 +211,13 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 0;
+  min-height: 40px;
+  padding: 6px 0;
   border-top: 1px solid var(--border);
 }
-.card h2 + .row {
+.card h2 + .row,
+.card-head + .row,
+.card .row:first-child {
   border-top: none;
 }
 .row small {
@@ -118,22 +225,26 @@ body {
   color: var(--muted);
   font-size: 11.5px;
 }
-.row input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-}
 
-select {
+select,
+.text-input {
   font: inherit;
   color: var(--ink);
   background: var(--accent-soft);
-  border: none;
-  border-radius: 8px;
-  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 6px 9px;
 }
 select option {
   background: var(--card);
+}
+.text-input {
+  width: 150px;
+  text-align: right;
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 .hours {
   display: flex;
@@ -148,9 +259,9 @@ select option {
   gap: 8px;
 }
 .stepper button {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
   border: none;
   background: var(--accent-soft);
   color: var(--ink);
@@ -160,9 +271,45 @@ select option {
 .stepper b {
   min-width: 78px;
   text-align: center;
-  font-weight: 600;
 }
 
+/* toggle switch */
+.switch {
+  appearance: none;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(120, 140, 160, 0.35);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex: none;
+  margin: 0;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+.switch:checked {
+  background: var(--accent);
+}
+.switch:checked::after {
+  transform: translateX(16px);
+}
+.switch:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* week chart */
 .bars {
   display: flex;
   gap: 8px;
@@ -177,7 +324,7 @@ select option {
 .bar-track {
   position: relative;
   width: 100%;
-  height: 80px;
+  height: 86px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -185,10 +332,12 @@ select option {
 .bar {
   width: 70%;
   max-width: 26px;
-  border-radius: 6px 6px 2px 2px;
-  background: var(--accent);
-  min-height: 2px;
+  border-radius: 8px 8px 4px 4px;
+  background: rgba(46, 139, 230, 0.35);
   transition: height 0.4s;
+}
+.bar.today {
+  background: var(--accent);
 }
 .bar.met {
   background: var(--met);
@@ -197,17 +346,33 @@ select option {
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px dashed var(--muted);
-  opacity: 0.5;
+  border-top: 1.5px dashed var(--muted);
+  opacity: 0.35;
 }
 .bar-num {
   font-size: 12px;
-  font-weight: 600;
-  margin-top: 4px;
+  font-weight: 700;
+  margin-top: 5px;
 }
 .bar-label {
   font-size: 11px;
   color: var(--muted);
+}
+
+.fact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fact-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.fact-body {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 footer {
@@ -215,20 +380,15 @@ footer {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-.link {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font: inherit;
-  cursor: pointer;
-  padding: 0;
-  white-space: nowrap;
+  padding: 2px 4px 8px;
 }
 
-/* ---------- first-run welcome ---------- */
+/* ================= hydration check ================= */
+
 .welcome {
-  padding: 28px 22px 22px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24px 22px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -237,34 +397,17 @@ footer {
 }
 .welcome h1 {
   margin: 0;
-  font-size: 26px;
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 24px;
   font-weight: 700;
 }
-.welcome > .muted {
-  max-width: 320px;
-  font-size: 14px;
-  margin: 0;
-}
-.welcome .card {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: left;
-}
-.welcome .small {
-  font-size: 12.5px;
-}
 .welcome-buddy {
-  animation: welcome-bob 3s ease-in-out infinite;
+  animation: float 3s ease-in-out infinite;
 }
 .welcome-buddy .arm-r {
   transform-box: fill-box;
   transform-origin: 0% 100%;
   animation: welcome-wave 0.5s ease-in-out infinite alternate;
-}
-@keyframes welcome-bob {
-  50% {
-    transform: translateY(-6px);
-  }
 }
 @keyframes welcome-wave {
   from {
@@ -273,33 +416,6 @@ footer {
   to {
     transform: rotate(20deg);
   }
-}
-.primary-btn {
-  width: 100%;
-  border: none;
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--accent);
-  color: #fff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.primary-btn:hover {
-  filter: brightness(1.08);
-}
-.primary-btn:disabled {
-  opacity: 0.6;
-}
-.welcome .card .row:first-child {
-  border-top: none;
-}
-
-/* ---------- hydration check steps ---------- */
-.welcome {
-  min-height: 100vh;
-  box-sizing: border-box;
 }
 .dots {
   display: flex;
@@ -310,6 +426,7 @@ footer {
   height: 8px;
   border-radius: 50%;
   background: var(--accent-soft);
+  transition: background 0.3s, width 0.3s;
 }
 .dot.on {
   background: var(--accent);
@@ -328,10 +445,6 @@ footer {
     transform: translateX(14px);
   }
 }
-.step h1 {
-  font-size: 22px;
-  margin: 0;
-}
 .step > .muted {
   margin: 0;
   max-width: 340px;
@@ -344,6 +457,24 @@ footer {
 .sub-q {
   margin: 16px 0 8px;
   font-size: 13.5px;
+}
+.name-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+}
+.name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(46, 139, 230, 0.2);
 }
 .choices {
   display: grid;
@@ -365,10 +496,14 @@ footer {
   border: 1.5px solid var(--border);
   background: var(--card);
   color: var(--ink);
-  font: inherit;
   cursor: pointer;
   text-align: center;
   width: 100%;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.choice:active {
+  transform: scale(0.98);
 }
 .cards .choice {
   justify-content: flex-start;
@@ -380,7 +515,8 @@ footer {
 }
 .choice.on {
   border-color: var(--accent);
-  background: var(--accent-soft);
+  background: rgba(46, 139, 230, 0.16);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .choice-icon {
   font-size: 22px;
@@ -428,7 +564,8 @@ footer {
   gap: 8px;
 }
 .plan-total b {
-  font-size: 40px;
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 42px;
   color: var(--accent);
 }
 .reasons {
@@ -444,6 +581,13 @@ footer {
   padding: 3px 4px;
   color: var(--muted);
 }
+.reasons .reasons-total {
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+  padding-top: 5px;
+  color: var(--ink);
+  font-weight: 600;
+}
 .warn {
   margin: 0;
   padding: 10px 12px;
@@ -456,47 +600,36 @@ footer {
   box-sizing: border-box;
   text-align: left;
 }
-.step .card .row:first-child {
-  border-top: none;
-}
 .nav {
   display: flex;
   gap: 8px;
   width: 100%;
   margin-top: auto;
 }
-.nav .primary-btn {
+.primary-btn {
   flex: 1;
-}
-.secondary-btn {
   border: none;
-  border-radius: 12px;
-  padding: 12px 18px;
-  background: var(--accent-soft);
-  color: var(--ink);
-  font: inherit;
+  border-radius: 14px;
+  padding: 13px;
+  background: var(--accent);
+  color: #fff;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
-.plan-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.primary-btn:hover {
+  background: var(--accent-strong);
 }
-.choice.on {
-  border-color: var(--accent);
-  background: rgba(46, 139, 230, 0.22);
-  box-shadow: inset 0 0 0 1px var(--accent);
+.primary-btn:disabled {
+  opacity: 0.6;
 }
-.welcome button:focus:not(:focus-visible) {
-  outline: none;
-}
-.reasons .reasons-total {
-  border-top: 1px solid var(--border);
-  margin-top: 2px;
-  padding-top: 5px;
+.secondary-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 13px 18px;
+  background: var(--accent-soft);
   color: var(--ink);
+  font-size: 15px;
   font-weight: 600;
+  cursor: pointer;
 }

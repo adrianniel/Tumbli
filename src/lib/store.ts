@@ -8,6 +8,8 @@ export type Settings = {
   glassMl: number;
   sound: boolean;
   hideOnFullscreen: boolean;
+  /** what Tumbli calls the user; empty if they skipped it */
+  name: string;
 };
 
 /** date (YYYY-MM-DD) -> glasses drunk that day */
@@ -27,6 +29,7 @@ export const defaultSettings: Settings = {
   glassMl: 250,
   sound: true,
   hideOnFullscreen: true,
+  name: "",
 };
 
 export function dayKey(d = new Date()): string {

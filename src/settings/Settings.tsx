@@ -4,6 +4,7 @@ import { getAutostart, setAutostart as applyAutostart, type AutostartState } fro
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
 import { Welcome } from "./Welcome";
+import { factOfTheDay, greeting } from "../lib/facts";
 import {
   addGlasses,
   CHANGED_EVENT,
@@ -87,40 +88,75 @@ export function Settings() {
   const week = lastDays(history, 7);
   const days = streak(history, s.goal);
   const maxBar = Math.max(s.goal, ...week.map((d) => d.count));
+  const metThisWeek = week.filter((d) => d.count >= s.goal).length;
+  const left = Math.max(0, s.goal - today);
+  const pct = Math.min(100, Math.round((today / s.goal) * 100));
+  const liters = (ml: number) => (ml / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const fact = factOfTheDay();
 
   return (
     <main className="settings">
       <header className="hero">
-        <Tumbler fill={today / s.goal} size={88} happy={today >= s.goal} />
-        <div>
-          <h1>Tumbli</h1>
+        <div className="hero-buddy">
+          <Tumbler fill={today / s.goal} size={104} happy={today >= s.goal} arms />
+        </div>
+        <div className="hero-main">
+          <div className="hello">{greeting(s.name)} 👋</div>
           <div className="big">
-            {today} <span>/ {s.goal} glasses</span>
+            {today}
+            <span> of {s.goal} glasses</span>
+          </div>
+          <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <div className="progress-fill" style={{ width: `${pct}%` }} />
           </div>
           <div className="muted">
-            {(today * s.glassMl).toLocaleString()} ml today
-            {days > 0 && <> · 🔥 {days}-day streak</>}
+            {liters(today * s.glassMl)} L of {liters(s.goal * s.glassMl)} L
+            {left > 0 ? ` · ${left} to go` : " · goal reached! 🎉"}
           </div>
-        </div>
-        <div className="today-actions">
-          <button onClick={() => addGlasses(1)} title="Add a glass">
-            +
-          </button>
-          <button onClick={() => addGlasses(-1)} title="Remove a glass" disabled={today === 0}>
-            −
-          </button>
+          <div className="hero-actions">
+            <button className="pill primary" onClick={() => addGlasses(1)}>
+              + Log a glass
+            </button>
+            <button className="pill" onClick={() => addGlasses(-1)} disabled={today === 0}>
+              Undo
+            </button>
+          </div>
         </div>
       </header>
 
+      <div className="stats">
+        <div className="stat">
+          <span className="stat-icon" aria-hidden>
+            🔥
+          </span>
+          <b>{days}</b>
+          <span>day streak</span>
+        </div>
+        <div className="stat">
+          <span className="stat-icon" aria-hidden>
+            🏆
+          </span>
+          <b>{metThisWeek}/7</b>
+          <span>goals this week</span>
+        </div>
+        <div className="stat">
+          <span className="stat-icon" aria-hidden>
+            💧
+          </span>
+          <b>{liters(s.goal * s.glassMl)} L</b>
+          <span>daily plan</span>
+        </div>
+      </div>
+
       <section className="card">
-        <h2>Last 7 days</h2>
+        <h2>This week</h2>
         <div className="bars">
-          {week.map((d) => (
+          {week.map((d, i) => (
             <div className="bar-col" key={d.key}>
               <div className="bar-track">
                 <div
-                  className={`bar ${d.count >= s.goal ? "met" : ""}`}
-                  style={{ height: `${(d.count / maxBar) * 100}%` }}
+                  className={`bar ${d.count >= s.goal ? "met" : ""} ${i === week.length - 1 ? "today" : ""}`}
+                  style={{ height: `${Math.max(3, (d.count / maxBar) * 100)}%` }}
                 />
                 <div className="goal-line" style={{ bottom: `${(s.goal / maxBar) * 100}%` }} />
               </div>
@@ -131,34 +167,49 @@ export function Settings() {
         </div>
       </section>
 
-      <section className="card plan-card">
-        <div>
-          <h2>Your hydration plan</h2>
-          <div>
-            {((s.goal * s.glassMl) / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} L a day ·{" "}
-            {s.goal} × {s.glassMl} ml
-          </div>
-        </div>
-        <button
-          className="link"
-          onClick={() => {
-            resetOnboarding();
-            setOnboarded(false);
-          }}
-        >
-          Retake check
-        </button>
+      <section className="card fact-card">
+        <div className="fact-kicker">{fact.kind === "trivia" ? "🤔 Trivia of the day" : "💡 Fact of the day"}</div>
+        <div className="fact-body">{fact.kind === "trivia" ? fact.q : fact.text}</div>
+        {fact.kind === "trivia" && <div className="muted small">Answer: {fact.a}</div>}
+        <div className="muted small">Tip: click Tumbli on your desktop for more.</div>
       </section>
 
       <section className="card">
-        <h2>Reminders</h2>
+        <div className="card-head">
+          <h2>Your plan</h2>
+          <button
+            className="link"
+            onClick={() => {
+              resetOnboarding();
+              setOnboarded(false);
+            }}
+          >
+            Retake hydration check
+          </button>
+        </div>
+
+        <label className="row">
+          <span>Your name</span>
+          <input
+            className="text-input"
+            type="text"
+            maxLength={30}
+            placeholder="Add your name"
+            value={s.name}
+            onChange={(e) => update({ name: e.target.value })}
+          />
+        </label>
 
         <label className="row">
           <span>Daily goal</span>
           <span className="stepper">
-            <button onClick={() => update({ goal: Math.max(1, s.goal - 1) })}>−</button>
+            <button onClick={() => update({ goal: Math.max(1, s.goal - 1) })} aria-label="Fewer glasses">
+              −
+            </button>
             <b>{s.goal} glasses</b>
-            <button onClick={() => update({ goal: Math.min(20, s.goal + 1) })}>+</button>
+            <button onClick={() => update({ goal: Math.min(20, s.goal + 1) })} aria-label="More glasses">
+              +
+            </button>
           </span>
         </label>
 
@@ -175,10 +226,7 @@ export function Settings() {
 
         <label className="row">
           <span>Remind me every</span>
-          <select
-            value={s.intervalMin}
-            onChange={(e) => update({ intervalMin: Number(e.target.value) })}
-          >
+          <select value={s.intervalMin} onChange={(e) => update({ intervalMin: Number(e.target.value) })}>
             {[15, 20, 30, 45, 60, 90, 120].map((m) => (
               <option key={m} value={m}>
                 {m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? "s" : ""}`}
@@ -213,7 +261,12 @@ export function Settings() {
         <h2>Behavior</h2>
         <label className="row">
           <span>Play a sound</span>
-          <input type="checkbox" checked={s.sound} onChange={(e) => update({ sound: e.target.checked })} />
+          <input
+            className="switch"
+            type="checkbox"
+            checked={s.sound}
+            onChange={(e) => update({ sound: e.target.checked })}
+          />
         </label>
         <label className="row">
           <span>
@@ -221,6 +274,7 @@ export function Settings() {
             <small>Games, videos and presentations</small>
           </span>
           <input
+            className="switch"
             type="checkbox"
             checked={s.hideOnFullscreen}
             onChange={(e) => update({ hideOnFullscreen: e.target.checked })}
@@ -232,6 +286,7 @@ export function Settings() {
             {autostart?.blockedByUser && <small>Turned off in Windows Settings › Apps › Startup</small>}
           </span>
           <input
+            className="switch"
             type="checkbox"
             disabled={autostart === null || autostart.blockedByUser}
             checked={!!autostart?.enabled}
@@ -249,7 +304,7 @@ export function Settings() {
         >
           Reset today
         </button>
-        <span className="muted">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
+        <span className="muted small">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
       </footer>
     </main>
   );
