@@ -30,7 +30,7 @@ export function setupBrowserMocks(label: string) {
         case "plugin:window|scale_factor":
           return 1;
         case "plugin:window|outer_position":
-          return { x: 1000, y: 500 };
+          return { x: new URLSearchParams(location.search).has("left") ? 40 : 1000, y: 500 };
         case "plugin:window|outer_size":
           return { width: 100, height: 140 };
         case "plugin:window|available_monitors":
@@ -52,6 +52,7 @@ export function setupBrowserMocks(label: string) {
 
   const q = new URLSearchParams(location.search);
   if (q.has("fresh")) localStorage.clear();
+  if (q.has("left")) localStorage.setItem("tumbli.widget.anchor.v3", JSON.stringify({ side: "left", x: 0, bottom: 1000 }));
   if (q.has("fresh") && q.has("tumbler")) localStorage.setItem("tumbli.profile", JSON.stringify({ mode: "tumbler" }));
   if (q.has("demo")) {
     const mode = q.has("tumbler") ? "tumbler" : "glass";

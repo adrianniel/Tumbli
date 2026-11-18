@@ -37,7 +37,8 @@ import {
   type Settings,
 } from "../lib/store";
 
-const COMPACT = { w: 100, h: 140 };
+const COMPACT = { w: 76, h: 140 }; // just Tumbli, hugging the screen edge
+const HOVER = { w: 112, h: 140 }; // room for the quick buttons, opened on hover
 const EXPANDED = { w: 350, h: 240 };
 const CHEERING = { w: 300, h: 170 }; // room for the floating cheer text
 const CHEER_MS = 2800;
@@ -47,7 +48,7 @@ const TICK_MS = 5000;
 const FACT_MS = 12_000; // a fact bubble closes by itself after this, unless hovered
 const DRAG_PX = 4; // a press that moves less than this is a click
 const POS_KEY = "tumbli.widget.anchor.v3"; // docked side + edge + bottom, physical px
-const EDGE_MARGIN = 12; // logical px between the window and the screen edge (Tumbli has its own padding too)
+const EDGE_MARGIN = 2; // logical px between the window and the screen edge: Tumbli sits right at the side
 
 type SystemStatus = { idle_secs: number; busy: boolean };
 
@@ -155,6 +156,8 @@ export function Widget() {
   const lastDay = useRef(new Date().toDateString());
   const factTimer = useRef<number | undefined>(undefined);
   const hovering = useRef(false);
+  const [hover, setHover] = useState(false);
+  const hoverTimer = useRef<number | undefined>(undefined);
 
   const refresh = useCallback(() => {
     const s = loadSettings();
@@ -232,10 +235,10 @@ export function Widget() {
 
   // expand / collapse the window for the speech bubble or the cheer text
   const talking = nudging || fact !== null || tour !== null;
-  const mode = talking ? "talk" : cheer ? "cheer" : "idle";
+  const mode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
   useEffect(() => {
     if (!placed) return;
-    const target = mode === "talk" ? EXPANDED : mode === "cheer" ? CHEERING : COMPACT;
+    const target = mode === "talk" ? EXPANDED : mode === "cheer" ? CHEERING : mode === "hover" ? HOVER : COMPACT;
     void resizeAnchored(target.w, target.h, side);
   }, [mode, placed, side]);
 
@@ -326,6 +329,7 @@ export function Widget() {
       setNudging(true);
     }
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
+    if (q.has("hover")) setHover(true);
     if (q.has("tour")) {
       touring.current = true;
       setTour(Number(q.get("tour")) || 0);
@@ -462,14 +466,24 @@ export function Widget() {
         nudging ? "nudging" : "",
         tour !== null ? `touring tour-${TOUR[tour].demo ?? "none"}` : "",
         cheer && !talking ? "cheering" : "",
+        mode === "hover" ? "hovering" : "",
         gulping ? "gulping" : "",
         celebrate ? "celebrate" : "",
         sleeping ? "sleeping" : "",
         done ? "done" : "",
         empty ? "empty" : "",
       ].join(" ")}
-      onMouseEnter={() => (hovering.current = true)}
-      onMouseLeave={() => (hovering.current = false)}
+      onMouseEnter={() => {
+        hovering.current = true;
+        window.clearTimeout(hoverTimer.current);
+        setHover(true);
+      }}
+      onMouseLeave={() => {
+        hovering.current = false;
+        // a short grace period so moving onto the buttons doesn't flicker
+        window.clearTimeout(hoverTimer.current);
+        hoverTimer.current = window.setTimeout(() => setHover(false), 350);
+      }}
     >
       {nudging && (
         <div className="bubble-card" role="dialog" aria-label="Water reminder">
@@ -657,7 +671,7 @@ export function Widget() {
         </button>
       )}
 
-      {!talking && (
+      {mode === "hover" && (
         <div className="hover-actions">
           <button
             className="mini plus"
