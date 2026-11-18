@@ -56,10 +56,10 @@ Upload in this order from `store-assets/screenshots/` (3840×2160 PNG):
 3. `3-your-plan.png`: the personal plan from the hydration check
 4. `4-progress.png`: the dashboard with the week chart
 5. `5-outfits.png`: an achievement unlocking an outfit, and all the outfits
-6. `6-dark-mode.png`: dark mode with the weekly recap
+6. `6-light-mode.png`: light mode with the weekly recap
 
 Each one shows the real app UI on a Windows-style desktop (taskbar, tray icon, other
-windows). To regenerate: run `npm run dev`, then `npm run screenshots`.
+windows). Shots 1–5 are in dark mode, like most people will see Tumbli; shot 6 shows light mode. To regenerate: run `npm run dev`, then `npm run screenshots`.
 
 ## Store logos
 

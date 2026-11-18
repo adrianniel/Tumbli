@@ -292,12 +292,8 @@ export function Widget() {
     if (q.has("hover")) setHover(true);
     if (q.has("rating")) setAskRating(true);
     if (q.has("award")) setAward(ACHIEVEMENTS[Number(q.get("award")) || 3]);
-    if (q.has("recap")) {
-      // preview with this week's numbers standing in for last week's
-      const next = new Date();
-      next.setDate(next.getDate() + 7);
-      setRecap(recapFor(loadHistory(), loadSettings().goalMl, next));
-    }
+    // last week's real numbers, the same ones the dashboard shows
+    if (q.has("recap")) setRecap(recapFor(loadHistory(), loadSettings().goalMl));
     if (q.has("tour")) {
       touring.current = true;
       setTour(Number(q.get("tour")) || 0);

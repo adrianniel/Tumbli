@@ -132,7 +132,13 @@ const calendarBody = (dark) => {
           (d, i) => `<div class="cal-col ${i === 3 ? "today" : ""}"><div class="cal-day">${d}</div>
             ${ev
               .filter((e) => e[0] === i)
-              .map(([, top, len, bg, fg, t]) => `<div class="cal-ev" style="top:${30 + top * 44}px;height:${len * 44 - 4}px;background:${bg};color:${fg};border-color:${fg}">${t}</div>`)
+              .map(([, top, len, bg, fg, t]) => {
+                // dark theme: a deep tint of the event color with light text
+                const back = dark ? `color-mix(in srgb, ${fg} 34%, #1F242B)` : bg;
+                const text = dark ? `color-mix(in srgb, ${fg} 30%, #FFFFFF)` : fg;
+                const line = dark ? `color-mix(in srgb, ${fg} 60%, #FFFFFF)` : fg;
+                return `<div class="cal-ev" style="top:${30 + top * 44}px;height:${len * 44 - 4}px;background:${back};color:${text};border-color:${line}">${t}</div>`;
+              })
               .join("")}</div>`,
         )
         .join("")}
@@ -310,6 +316,8 @@ h1{font:600 74px/1.04 "Fredoka Variable";margin:0 0 24px;letter-spacing:-1.2px}
   background:repeating-linear-gradient(to bottom,transparent 0 29px,rgba(14,47,74,.07) 29px 30px,transparent 30px 73px,rgba(14,47,74,.07) 73px 74px)}
 .cal.dark .cal-col{border-color:rgba(255,255,255,.07)}
 .cal-col.today .cal-day{color:#0067C0;font-weight:700}
+.cal.dark .cal-col.today .cal-day{color:#4CC2FF}
+.cal.dark .cal-col{background:repeating-linear-gradient(to bottom,transparent 0 29px,rgba(255,255,255,.06) 29px 30px,transparent 30px 73px,rgba(255,255,255,.06) 73px 74px)}
 .cal-day{height:30px;line-height:30px;text-align:center;font-size:12px}
 .cal-ev{position:absolute;left:4px;right:4px;border-radius:5px;border-left:3px solid;padding:3px 6px;font-size:11px;font-weight:600;overflow:hidden}
 /* callouts */
@@ -323,6 +331,7 @@ h1{font:600 74px/1.04 "Fredoka Variable";margin:0 0 24px;letter-spacing:-1.2px}
   box-shadow:0 10px 24px -14px rgba(10,30,50,.35)}
 .outfit iframe{border:0;width:76px;height:140px;transform:scale(.78);transform-origin:50% 0;margin-bottom:-31px;background:transparent}
 .outfit span{font:600 16px "Fredoka Variable"}
+.dark .outfit{background:rgba(255,255,255,.06);box-shadow:0 0 0 1px rgba(255,255,255,.08)}
 `;
 
 // ------------------------------------------------------------------- the scenes
@@ -343,9 +352,10 @@ const scenes = {
     title: "A water buddy for your desktop",
     sub: "Tumbli floats at the edge of your screen and fills up as you drink. One click logs a glass.",
     bullets: ["Always on top, never in the way", "Docks to any edge of the screen", "Free: no account, no ads"],
+    dark: true,
     scale: 1.6,
     desktop: ({ deskW, deskH }) =>
-      win({ x: 24, y: 26, w: 470, h: 330, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(false) }) +
+      win({ x: 24, y: 26, w: 470, h: 330, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(true), dark: true }) +
       widget("demo&tumbler&hover", { ...sizes.hover, deskW, deskH, bottom: 70 }),
     callouts: [
       { x: 1360, y: 728, text: "Hover for quick actions" },
@@ -357,9 +367,10 @@ const scenes = {
     title: "Time for a sip? Tumbli will tell you",
     sub: "A friendly nudge at just the right time. Log a drink, snooze or skip in one click.",
     bullets: ["Only during your active hours", "Quiet while you're away from the PC", "Hides during games, videos and slides"],
+    dark: true,
     scale: 1.6,
     desktop: ({ deskW, deskH }) =>
-      win({ x: 20, y: 20, w: 560, h: 380, title: "Calendar", icon: smallTile("#E5534B"), body: calendarBody(false) }) +
+      win({ x: 20, y: 20, w: 560, h: 380, title: "Calendar", icon: smallTile("#E5534B"), body: calendarBody(true), dark: true }) +
       widget("demo&tumbler&nudge", { ...sizes.talk, deskW, deskH, bottom: 40 }),
   },
   "3-your-plan": {
@@ -367,10 +378,11 @@ const scenes = {
     title: "A daily goal that fits your body",
     sub: "A 30-second check-in looks at your age, weight, activity and weather.",
     bullets: ["Track by the glass or by your own tumbler", "Reminders spread over your day", "Change it anytime"],
+    dark: true,
     scale: 1.12,
     desktop: ({ deskW, deskH }) =>
-      win({ x: 24, y: 40, w: 640, h: 440, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(false), dim: true }) +
-      settingsWindow("fresh&tumbler&step=result", { x: 330, y: deskH - TASKBAR_H - 752 - 14 }) +
+      win({ x: 24, y: 40, w: 640, h: 440, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(true), dark: true, dim: true }) +
+      settingsWindow("fresh&tumbler&step=result", { x: 330, y: deskH - TASKBAR_H - 752 - 14, dark: true }) +
       widget("demo&tumbler", { ...sizes.idle, deskW, deskH, bottom: 60 }),
   },
   "4-progress": {
@@ -378,10 +390,11 @@ const scenes = {
     title: "Watch your streak grow",
     sub: "See today at a glance and your whole week in one chart.",
     bullets: ["Daily streaks and goals", "A 7-day history chart", "A recap every Monday"],
+    dark: true,
     scale: 1.12,
     desktop: ({ deskW, deskH }) =>
-      win({ x: 24, y: 60, w: 640, h: 420, title: "Calendar", icon: smallTile("#E5534B"), body: calendarBody(false), dim: true }) +
-      settingsWindow("demo&tumbler", { x: 330, y: deskH - TASKBAR_H - 752 - 14 }) +
+      win({ x: 24, y: 60, w: 640, h: 420, title: "Calendar", icon: smallTile("#E5534B"), body: calendarBody(true), dark: true, dim: true }) +
+      settingsWindow("demo&tumbler", { x: 330, y: deskH - TASKBAR_H - 752 - 14, dark: true }) +
       widget("demo&tumbler", { ...sizes.idle, deskW, deskH, bottom: 60 }),
   },
   "5-outfits": {
@@ -391,21 +404,21 @@ const scenes = {
     extra: `<div class="outfits">${OUTFITS.map(
       ([o, name]) => `<div class="outfit"><iframe src="${WIDGET}/widget.html?demo&outfit=${o}"></iframe><span>${name}</span></div>`,
     ).join("")}</div>`,
+    dark: true,
     scale: 1.6,
     desktop: ({ deskW, deskH }) =>
-      win({ x: 20, y: 20, w: 520, h: 360, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(false) }) +
+      win({ x: 20, y: 20, w: 520, h: 360, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(true), dark: true }) +
       widget("demo&tumbler&award=3", { ...sizes.talk, deskW, deskH, bottom: 40 }),
   },
-  "6-dark-mode": {
+  "6-light-mode": {
     kicker: "Light or dark",
     title: "Easy on the eyes, day and night",
-    sub: "Tumbli follows your Windows theme. On Mondays it shows how last week went.",
+    sub: "Tumbli follows your Windows theme. Here it is in light mode, with the Monday recap.",
     bullets: ["Matches light and dark mode", "Weekly recap", "Pause from the tray icon anytime"],
-    dark: true,
     scale: 1.12,
     desktop: ({ deskW, deskH }) =>
-      win({ x: 24, y: 40, w: 600, h: 420, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(true), dark: true, dim: true }) +
-      settingsWindow("demo&tumbler", { x: 150, y: deskH - TASKBAR_H - 752 - 14, dark: true }) +
+      win({ x: 24, y: 40, w: 600, h: 420, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(false), dim: true }) +
+      settingsWindow("demo&tumbler", { x: 150, y: deskH - TASKBAR_H - 752 - 14 }) +
       widget("demo&tumbler&recap", { ...sizes.talk, deskW, deskH, bottom: 50 }),
   },
 };
@@ -425,7 +438,7 @@ for (const [name, scene] of Object.entries(scenes)) {
     "--hide-scrollbars",
     `--blink-settings=preferredColorScheme=${scene.dark ? 0 : 1}`,
     "--force-device-scale-factor=2",
-    "--virtual-time-budget=4500",
+    "--virtual-time-budget=7000",
     `--window-size=${W},${H}`,
     `--screenshot=${out}`,
     `${DEV}/store-assets/screenshots/src/${name}.html`,

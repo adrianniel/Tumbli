@@ -65,10 +65,9 @@ export function setupBrowserMocks(label: string) {
       "tumbli.settings",
       JSON.stringify({ mode, goalMl: 2000, glassMl: 250, tumblerMl: 750, intervalMin: 60, startHour: 8, endHour: 20, name: "Ana" }),
     );
-    localStorage.setItem(
-      "tumbli.historyMl",
-      JSON.stringify({ [day(0)]: 1250, [day(1)]: 2000, [day(2)]: 2250, [day(3)]: 1500, [day(4)]: 2000, [day(5)]: 750 }),
-    );
+    // three weeks of history, so the week chart, "last week" and the recap all have data
+    const ml = [1250, 2000, 2250, 1500, 2000, 750, 2000, 1750, 2250, 2000, 1500, 2000, 2250, 1500, 1750, 2000, 1250, 1750, 2000, 1500];
+    localStorage.setItem("tumbli.historyMl", JSON.stringify(Object.fromEntries(ml.map((v, n) => [day(n), v]))));
     localStorage.setItem("tumbli.level", q.has("empty") ? "0" : "300");
     localStorage.setItem("tumbli.onboarded", "1");
     // a few unlocked outfits for the wardrobe preview
