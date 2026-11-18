@@ -17,6 +17,7 @@ import {
   IconUndo,
 } from "../components/Icons";
 import { Welcome } from "./Welcome";
+import { Feedback } from "./Feedback";
 import { factOfTheDay, greeting } from "../lib/facts";
 import { sipFor } from "../lib/schedule";
 import {
@@ -62,6 +63,9 @@ export function Settings() {
   const [history, setHistory] = useState<History>(loadHistory);
   const [autostart, setAutostart] = useState<AutostartState | null>(null);
   const [onboarded, setOnboarded] = useState(isOnboarded);
+  const [view, setView] = useState<"dashboard" | "feedback">(() =>
+    import.meta.env.DEV && new URLSearchParams(location.search).has("feedback") ? "feedback" : "dashboard",
+  );
   // re-render after actions that only touch the tumbler level
   const [, bump] = useState(0);
 
@@ -91,6 +95,7 @@ export function Settings() {
 
   useEffect(() => {
     const un = listen(CHANGED_EVENT, refresh);
+    const fb = listen("tumbli:feedback", () => setView("feedback"));
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
     getAutostart()
@@ -98,6 +103,7 @@ export function Settings() {
       .catch(() => setAutostart({ enabled: false, blockedByUser: false }));
     return () => {
       void un.then((f) => f());
+      void fb.then((f) => f());
       window.removeEventListener("focus", onFocus);
     };
   }, [refresh]);
@@ -135,6 +141,8 @@ export function Settings() {
       />
     );
   }
+
+  if (view === "feedback") return <Feedback settings={s} onBack={() => setView("dashboard")} />;
 
   const tumblerMode = s.mode === "tumbler";
   const doneMl = lastDays(history, 1)[0].ml;
@@ -418,6 +426,9 @@ export function Settings() {
         </button>
         <button className="link" onClick={() => void startTour()}>
           Take the quick tour
+        </button>
+        <button className="link" onClick={() => setView("feedback")}>
+          Send feedback
         </button>
         <span className="muted small">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
       </footer>

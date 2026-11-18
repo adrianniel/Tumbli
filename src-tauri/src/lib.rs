@@ -219,6 +219,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_settings(app);
         }))
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
@@ -233,6 +234,7 @@ pub fn run() {
             let pause_day_i =
                 MenuItem::with_id(app, "pause_day", "Pause until tomorrow", true, None::<&str>)?;
             let resume_i = MenuItem::with_id(app, "resume", "Resume reminders", true, None::<&str>)?;
+            let feedback_i = MenuItem::with_id(app, "feedback", "Send feedback…", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit Tumbli", true, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
             let sep2 = PredefinedMenuItem::separator(app)?;
@@ -246,6 +248,7 @@ pub fn run() {
                     &pause_day_i,
                     &resume_i,
                     &sep2,
+                    &feedback_i,
                     &quit_i,
                 ],
             )?;
@@ -269,6 +272,10 @@ pub fn run() {
                     }
                     "resume" => {
                         let _ = app.emit("tumbli:pause", "resume");
+                    }
+                    "feedback" => {
+                        show_settings(app);
+                        let _ = app.emit("tumbli:feedback", ());
                     }
                     "quit" => app.exit(0),
                     _ => {}
