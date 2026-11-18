@@ -6,12 +6,13 @@ import {
   getCurrentWindow,
   LogicalSize,
   PhysicalPosition,
-  primaryMonitor,
+
 } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
 import { bloop } from "../lib/sound";
 import { shouldNudge } from "../lib/schedule";
 import { cheerFor, nudgeMessage, randomFact, type Fact } from "../lib/facts";
+import { anchorOf, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 import {
   addGlasses,
   CHANGED_EVENT,
@@ -34,66 +35,88 @@ const IDLE_SECS = 5 * 60; // user counts as "away" after 5 min without input
 const TICK_MS = 5000;
 const FACT_MS = 12_000; // a fact bubble closes by itself after this, unless hovered
 const DRAG_PX = 4; // a press that moves less than this is a click
-const POS_KEY = "tumbli.widget.anchor.v2"; // bottom-right corner, physical px
+const POS_KEY = "tumbli.widget.anchor.v3"; // docked side + edge + bottom, physical px
+const EDGE_MARGIN = 12; // logical px between the window and the screen edge (Tumbli has its own padding too)
 
 type SystemStatus = { idle_secs: number; busy: boolean };
 
 const win = getCurrentWindow();
 
-/** Resize while keeping the bottom-right corner where it is. */
-async function resizeAnchored(w: number, h: number) {
-  const sf = await win.scaleFactor();
+let anchor: Anchor | null = null;
+
+const workAreas = async () =>
+  (await availableMonitors()).map((m) => ({
+    x: m.workArea.position.x,
+    y: m.workArea.position.y,
+    w: m.workArea.size.width,
+    h: m.workArea.size.height,
+  }));
+
+async function windowRect() {
   const pos = await win.outerPosition();
   const size = await win.outerSize();
-  const right = pos.x + size.width;
-  const bottom = pos.y + size.height;
-  await win.setSize(new LogicalSize(w, h));
-  await win.setPosition(new PhysicalPosition(right - Math.round(w * sf), bottom - Math.round(h * sf)));
+  return { x: pos.x, y: pos.y, w: size.width, h: size.height };
 }
 
-async function placeInitially(reset = false) {
+/** Resize while keeping the docked edge and the bottom where they are. */
+async function resizeAnchored(w: number, h: number) {
+  const sf = await win.scaleFactor();
+  const pw = Math.round(w * sf);
+  const ph = Math.round(h * sf);
+  const a = anchor ?? anchorOf(await windowRect(), "right");
+  const at = placeAt(a, pw, ph);
+  await win.setSize(new LogicalSize(w, h));
+  await win.setPosition(new PhysicalPosition(at.x, at.y));
+}
+
+/** Slide to the nearest side edge after a drag, with a little gap. Returns the side. */
+async function snapAfterDrag(): Promise<Side> {
+  const sf = await win.scaleFactor();
+  const from = await windowRect();
+  const to = snapToEdge(from, await workAreas(), Math.round(EDGE_MARGIN * sf));
+  const steps = 9;
+  for (let i = 1; i <= steps; i++) {
+    const t = 1 - Math.pow(1 - i / steps, 3); // ease-out
+    await win.setPosition(
+      new PhysicalPosition(Math.round(from.x + (to.x - from.x) * t), Math.round(from.y + (to.y - from.y) * t)),
+    );
+    await new Promise((r) => setTimeout(r, 16));
+  }
+  anchor = anchorOf(to, to.side);
+  localStorage.setItem(POS_KEY, JSON.stringify(anchor));
+  return to.side;
+}
+
+async function placeInitially(reset = false): Promise<Side> {
   const sf = await win.scaleFactor();
   const w = Math.round(COMPACT.w * sf);
   const h = Math.round(COMPACT.h * sf);
   await win.setSize(new LogicalSize(COMPACT.w, COMPACT.h));
 
-  let anchor: { x: number; y: number } | null = null;
+  let saved: Anchor | null = null;
   if (!reset) {
     try {
-      anchor = JSON.parse(localStorage.getItem(POS_KEY) ?? "null");
+      saved = JSON.parse(localStorage.getItem(POS_KEY) ?? "null");
     } catch {
-      anchor = null;
-    }
-    // ignore a saved spot that is no longer on any monitor
-    if (anchor) {
-      const a = anchor;
-      const monitors = await availableMonitors();
-      const onScreen = monitors.some((m) => {
-        const wa = m.workArea;
-        return (
-          a.x - w >= wa.position.x - 8 &&
-          a.y - h >= wa.position.y - 8 &&
-          a.x <= wa.position.x + wa.size.width + 8 &&
-          a.y <= wa.position.y + wa.size.height + 8
-        );
-      });
-      if (!onScreen) anchor = null;
+      saved = null;
     }
   }
-  if (!anchor) {
-    const m = await primaryMonitor();
-    if (m) {
-      const margin = Math.round(24 * m.scaleFactor);
-      anchor = {
-        x: m.workArea.position.x + m.workArea.size.width - margin,
-        y: m.workArea.position.y + m.workArea.size.height - margin,
-      };
-    } else {
-      anchor = { x: 1200, y: 700 };
-    }
-  }
-  await win.setPosition(new PhysicalPosition(anchor.x - w, anchor.y - h));
+  const areas = await workAreas();
+  const start = saved
+    ? { ...placeAt(saved, w, h), w, h }
+    : (() => {
+        const a = areas[0] ?? { x: 0, y: 0, w: 1280, h: 720 };
+        return { x: a.x + a.w - w, y: a.y + a.h - h, w, h };
+      })();
+  // snapping also pulls back a spot that is no longer on any monitor
+  const to = areas.length
+    ? snapToEdge(start, areas, Math.round(EDGE_MARGIN * sf))
+    : { ...start, side: "right" as Side };
+  anchor = anchorOf(to, to.side);
+  await win.setPosition(new PhysicalPosition(to.x, to.y));
+  return to.side;
 }
+
 
 export function Widget() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
@@ -108,6 +131,7 @@ export function Widget() {
   const [revealed, setRevealed] = useState(false);
   const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
   const [nowTick, setNowTick] = useState(() => Date.now());
+  const [side, setSide] = useState<Side>("right");
 
   // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
   const nextAt = useRef(Date.now() + (import.meta.env.DEV ? 15_000 : loadSettings().intervalMin * 60_000));
@@ -127,25 +151,29 @@ export function Widget() {
   const [placed, setPlaced] = useState(false);
   useEffect(() => {
     (async () => {
-      await placeInitially();
+      setSide(await placeInitially());
       await win.show();
       setPlaced(true);
     })();
   }, []);
 
-  // remember where the user dragged the widget (bottom-right anchor)
+  // after a drag, dock to the nearest side edge and remember it
   const userDragging = useRef(false);
   useEffect(() => {
     let t: number | undefined;
     const un = win.onMoved(() => {
       if (!userDragging.current) return; // ignore our own setPosition calls
       window.clearTimeout(t);
-      t = window.setTimeout(async () => {
+      // snap only once the button is released, even if the user pauses mid-drag
+      t = window.setTimeout(async function settle() {
+        const held = await invoke<boolean>("primary_button_down").catch(() => false);
+        if (held) {
+          t = window.setTimeout(settle, 120);
+          return;
+        }
         userDragging.current = false;
-        const pos = await win.outerPosition();
-        const size = await win.outerSize();
-        localStorage.setItem(POS_KEY, JSON.stringify({ x: pos.x + size.width, y: pos.y + size.height }));
-      }, 400);
+        setSide(await snapAfterDrag());
+      }, 150);
     });
     return () => {
       void un.then((f) => f());
@@ -166,7 +194,7 @@ export function Widget() {
       localStorage.removeItem(POS_KEY);
       setNudging(false);
       setFact(null);
-      await placeInitially(true);
+      setSide(await placeInitially(true));
       await win.show();
     });
     return () => {
@@ -334,6 +362,7 @@ export function Widget() {
     <div
       className={[
         "widget",
+        side === "left" ? "side-left" : "side-right",
         talking ? "expanded" : "compact",
         nudging ? "nudging" : "",
         cheer && !talking ? "cheering" : "",

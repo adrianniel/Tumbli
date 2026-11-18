@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Tumbler } from "../components/Tumbler";
 import { setAutostart as applyAutostart } from "../lib/autostart";
 import {
@@ -28,9 +28,9 @@ const AGES: Option<AgeGroup>[] = [
   { value: "71+", label: "71+" },
 ];
 const SEXES: Option<Sex>[] = [
-  { value: "female", label: "Female" },
-  { value: "male", label: "Male" },
-  { value: "unspecified", label: "Prefer not to say" },
+  { value: "female", label: "Female", icon: "♀" },
+  { value: "male", label: "Male", icon: "♂" },
+  { value: "unspecified", label: "Prefer not to say", icon: "•" },
 ];
 const PREGNANCY: Option<Pregnancy>[] = [
   { value: "none", label: "Neither" },
@@ -49,13 +49,18 @@ const CLIMATE: Option<Climate>[] = [
   { value: "hot", label: "Hot and humid", hint: "I sweat most days", icon: "☀️" },
 ];
 const SERVINGS: Option<number>[] = [
-  { value: 150, label: "150 ml", hint: "Small cup" },
-  { value: 250, label: "250 ml", hint: "A glass" },
-  { value: 350, label: "350 ml", hint: "Mug or can" },
-  { value: 500, label: "500 ml", hint: "Small bottle" },
+  { value: 150, label: "150 ml", hint: "Small cup", icon: "🍵" },
+  { value: 250, label: "250 ml", hint: "A glass", icon: "🥛" },
+  { value: 350, label: "350 ml", hint: "Mug or can", icon: "☕" },
+  { value: 500, label: "500 ml", hint: "Small bottle", icon: "🧴" },
+];
+const HEALTH: Option<string>[] = [
+  { value: "no", label: "No", icon: "👍" },
+  { value: "yes", label: "Yes", icon: "🩺" },
 ];
 
 const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "serving", "health", "result"] as const;
+type StepName = (typeof STEPS)[number];
 
 function hourLabel(h: number) {
   const d = new Date();
@@ -67,34 +72,40 @@ function Choices<T extends string | number>({
   options,
   value,
   onPick,
-  cards = false,
+  layout = "grid",
 }: {
   options: Option<T>[];
   value: T;
   onPick: (v: T) => void;
-  cards?: boolean;
+  layout?: "grid" | "grid2" | "list" | "tiles";
 }) {
   return (
-    <div className={cards ? "choices cards" : "choices"} role="radiogroup">
-      {options.map((o) => (
-        <button
-          key={String(o.value)}
-          role="radio"
-          aria-checked={o.value === value}
-          className={o.value === value ? "choice on" : "choice"}
-          onClick={() => onPick(o.value)}
-        >
-          {o.icon && (
-            <span className="choice-icon" aria-hidden>
-              {o.icon}
+    <div className={`choices ${layout}`} role="radiogroup">
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={String(o.value)}
+            role="radio"
+            aria-checked={on}
+            className={on ? "choice on" : "choice"}
+            onClick={() => onPick(o.value)}
+          >
+            {o.icon && (
+              <span className="choice-icon" aria-hidden>
+                {o.icon}
+              </span>
+            )}
+            <span className="choice-text">
+              <span className="choice-label">{o.label}</span>
+              {o.hint && <span className="choice-hint">{o.hint}</span>}
             </span>
-          )}
-          <span className="choice-text">
-            <span className="choice-label">{o.label}</span>
-            {o.hint && <span className="choice-hint">{o.hint}</span>}
-          </span>
-        </button>
-      ))}
+            <span className="choice-check" aria-hidden>
+              ✓
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -109,6 +120,7 @@ export function Welcome({ initial, onDone }: Props) {
   const [name, setName] = useState(initial.name ?? "");
   const [autostart, setAutostart] = useState(true);
   const [busy, setBusy] = useState(false);
+  const advanceTimer = useRef<number | undefined>(undefined);
 
   const plan = useMemo(() => planFor(p), [p]);
   // the result screen can fine-tune what the check suggested
@@ -116,20 +128,35 @@ export function Welcome({ initial, onDone }: Props) {
   const goal = tweak.goal ?? plan.goal;
   const intervalMin = tweak.intervalMin ?? plan.intervalMin;
 
+  const stepName: StepName = STEPS[step];
+  const total = STEPS.length - 1; // the intro doesn't count
+  const first = name.trim();
+
   const set = (patch: Partial<Profile>) => {
     setP((cur) => ({ ...cur, ...patch }));
     setTweak({});
   };
-  const stepName = STEPS[step];
-  const next = () => setStep((s) => Math.min(STEPS.length - 1, s + 1));
-  const back = () => setStep((s) => Math.max(0, s - 1));
+  const next = () => {
+    window.clearTimeout(advanceTimer.current);
+    setStep((s) => Math.min(STEPS.length - 1, s + 1));
+  };
+  const back = () => {
+    window.clearTimeout(advanceTimer.current);
+    setStep((s) => Math.max(0, s - 1));
+  };
+  /** pick an answer and move on after a short beat, so the choice can be seen */
+  const pickAndGo = (patch: Partial<Profile>) => {
+    set(patch);
+    window.clearTimeout(advanceTimer.current);
+    advanceTimer.current = window.setTimeout(next, 320);
+  };
 
   const finish = async () => {
     setBusy(true);
     saveProfile(p);
     const s: Settings = {
       ...initial,
-      name: name.trim().slice(0, 30),
+      name: first.slice(0, 30),
       goal,
       glassMl: plan.servingMl,
       intervalMin,
@@ -149,28 +176,77 @@ export function Welcome({ initial, onDone }: Props) {
     onDone(s);
   };
 
+  // what Tumbli says above each question
+  const SAYS: Record<StepName, string> = {
+    intro: "",
+    name: "First things first…",
+    age: first ? `Nice to meet you, ${first}!` : "Nice to meet you!",
+    sex: "This helps me get the amount right.",
+    weight: "No pressure, you can skip this one.",
+    activity: "Moving around makes you thirstier.",
+    climate: "Heat makes you sweat out water.",
+    hours: "I'll stay quiet outside these hours.",
+    serving: "What's on your desk right now?",
+    health: "Last one, I promise!",
+    result: "Here's your plan! 🎉",
+  };
+
   const question = (title: string, sub: string | null, body: ReactNode) => (
     <>
       <h1>{title}</h1>
-      {sub && <p className="muted">{sub}</p>}
+      {sub && <p className="sub">{sub}</p>}
       <div className="step-body">{body}</div>
     </>
   );
 
+  // ---------- intro ----------
+  if (stepName === "intro") {
+    return (
+      <main className="onb intro">
+        <div className="intro-hero">
+          <div className="intro-halo" aria-hidden />
+          <div className="intro-buddy">
+            <Tumbler fill={0.45} size={150} arms />
+          </div>
+        </div>
+        <h1 className="intro-title">Hi, I'm Tumbli!</h1>
+        <p className="intro-sub">Your little water buddy for long days at the computer.</p>
+        <ul className="features">
+          <li>
+            <span aria-hidden>🎯</span>
+            <div>
+              <b>A goal that fits you</b>
+              <small>Based on your age, activity and weather</small>
+            </div>
+          </li>
+          <li>
+            <span aria-hidden>💧</span>
+            <div>
+              <b>Gentle reminders</b>
+              <small>I float on your screen and hop when it's time</small>
+            </div>
+          </li>
+          <li>
+            <span aria-hidden>🔒</span>
+            <div>
+              <b>Private by default</b>
+              <small>No account, no ads. Everything stays on this PC</small>
+            </div>
+          </li>
+        </ul>
+        <footer className="onb-nav">
+          <button className="primary-btn" onClick={next}>
+            Let's get started
+          </button>
+          <p className="fine">Takes about 30 seconds</p>
+        </footer>
+      </main>
+    );
+  }
+
+  // ---------- questions ----------
   let content: ReactNode;
   switch (stepName) {
-    case "intro":
-      content = (
-        <>
-          <h1>Hi, I'm Tumbli!</h1>
-          <p className="muted">
-            I'll float on your screen and remind you to drink water. Answer a few quick questions and I'll set a goal
-            that fits you.
-          </p>
-          <p className="muted small">Takes about 30 seconds. Your answers stay on this PC.</p>
-        </>
-      );
-      break;
     case "name":
       content = question(
         "What should I call you?",
@@ -194,7 +270,7 @@ export function Welcome({ initial, onDone }: Props) {
       content = question(
         "How old are you?",
         null,
-        <Choices options={AGES} value={p.ageGroup} onPick={(v) => set({ ageGroup: v })} />,
+        <Choices options={AGES} value={p.ageGroup} onPick={(v) => pickAndGo({ ageGroup: v })} />,
       );
       break;
     case "sex":
@@ -202,12 +278,20 @@ export function Welcome({ initial, onDone }: Props) {
         "What's your sex?",
         "Bodies need slightly different amounts of water.",
         <>
-          <Choices options={SEXES} value={p.sex} onPick={(v) => set({ sex: v })} />
+          <Choices
+            layout="tiles"
+            options={SEXES}
+            value={p.sex}
+            onPick={(v) =>
+              // women get a follow-up question, so don't jump ahead
+              canBePregnant({ ...p, sex: v }) ? set({ sex: v }) : pickAndGo({ sex: v, pregnancy: "none" })
+            }
+          />
           {canBePregnant(p) && (
-            <>
-              <p className="muted sub-q">Are you pregnant or breastfeeding?</p>
-              <Choices options={PREGNANCY} value={p.pregnancy} onPick={(v) => set({ pregnancy: v })} />
-            </>
+            <div className="follow-up">
+              <p className="sub">Are you pregnant or breastfeeding?</p>
+              <Choices options={PREGNANCY} value={p.pregnancy} onPick={(v) => pickAndGo({ pregnancy: v })} />
+            </div>
           )}
         </>,
       );
@@ -215,12 +299,28 @@ export function Welcome({ initial, onDone }: Props) {
     case "weight":
       content = question(
         "How much do you weigh?",
-        "This makes the goal more accurate. You can skip it.",
+        "This makes the goal more accurate.",
         <div className="weight">
           {weightOn ? (
             <>
               <div className="weight-value">
-                <b>{p.weightKg ?? 60}</b> kg
+                <button
+                  className="round-btn"
+                  aria-label="Less"
+                  onClick={() => set({ weightKg: Math.max(25, (p.weightKg ?? 60) - 1) })}
+                >
+                  −
+                </button>
+                <span>
+                  <b>{p.weightKg ?? 60}</b> kg
+                </span>
+                <button
+                  className="round-btn"
+                  aria-label="More"
+                  onClick={() => set({ weightKg: Math.min(150, (p.weightKg ?? 60) + 1) })}
+                >
+                  +
+                </button>
               </div>
               <input
                 type="range"
@@ -238,19 +338,22 @@ export function Welcome({ initial, onDone }: Props) {
                   set({ weightKg: null });
                 }}
               >
-                Skip this
+                I'd rather not say
               </button>
             </>
           ) : (
-            <button
-              className="choice"
-              onClick={() => {
-                setWeightOn(true);
-                set({ weightKg: 60 });
-              }}
-            >
-              <span className="choice-label">Add my weight</span>
-            </button>
+            <div className="weight-off">
+              <p className="sub">Skipped. I'll use a typical amount for your age.</p>
+              <button
+                className="secondary-btn"
+                onClick={() => {
+                  setWeightOn(true);
+                  set({ weightKg: 60 });
+                }}
+              >
+                Add my weight
+              </button>
+            </div>
           )}
         </div>,
       );
@@ -259,44 +362,52 @@ export function Welcome({ initial, onDone }: Props) {
       content = question(
         "How active are you?",
         null,
-        <Choices cards options={ACTIVITY} value={p.activity} onPick={(v) => set({ activity: v })} />,
+        <Choices layout="list" options={ACTIVITY} value={p.activity} onPick={(v) => pickAndGo({ activity: v })} />,
       );
       break;
     case "climate":
       content = question(
-        "What's it like where you are?",
-        "Heat and sweat use up more water.",
-        <Choices cards options={CLIMATE} value={p.climate} onPick={(v) => set({ climate: v })} />,
+        "What's the weather like where you are?",
+        null,
+        <Choices layout="list" options={CLIMATE} value={p.climate} onPick={(v) => pickAndGo({ climate: v })} />,
       );
       break;
     case "hours":
       content = question(
         "When are you usually at your computer?",
-        "I'll only remind you during these hours.",
-        <div className="hours big">
-          <select value={p.startHour} onChange={(e) => set({ startHour: Number(e.target.value) })} aria-label="Start">
-            {Array.from({ length: 24 }, (_, h) => (
-              <option key={h} value={h}>
-                {hourLabel(h)}
-              </option>
-            ))}
-          </select>
-          <span>to</span>
-          <select value={p.endHour} onChange={(e) => set({ endHour: Number(e.target.value) })} aria-label="End">
-            {Array.from({ length: 24 }, (_, h) => (
-              <option key={h} value={h}>
-                {hourLabel(h)}
-              </option>
-            ))}
-          </select>
+        null,
+        <div className="hours-pick">
+          <label>
+            <span>From</span>
+            <select value={p.startHour} onChange={(e) => set({ startHour: Number(e.target.value) })}>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>
+                  {hourLabel(h)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="hours-arrow" aria-hidden>
+            →
+          </span>
+          <label>
+            <span>To</span>
+            <select value={p.endHour} onChange={(e) => set({ endHour: Number(e.target.value) })}>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>
+                  {hourLabel(h)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>,
       );
       break;
     case "serving":
       content = question(
         "How much do you drink per break?",
-        "Think of the cup or bottle on your desk.",
-        <Choices cards options={SERVINGS} value={p.servingMl} onPick={(v) => set({ servingMl: v })} />,
+        null,
+        <Choices layout="grid2" options={SERVINGS} value={p.servingMl} onPick={(v) => pickAndGo({ servingMl: v })} />,
       );
       break;
     case "health":
@@ -304,48 +415,36 @@ export function Welcome({ initial, onDone }: Props) {
         "Has a doctor asked you to limit fluids?",
         "For example because of kidney or heart conditions.",
         <Choices
-          options={[
-            { value: "no", label: "No" },
-            { value: "yes", label: "Yes" },
-          ]}
+          layout="tiles"
+          options={HEALTH}
           value={p.fluidRestricted ? "yes" : "no"}
-          onPick={(v) => set({ fluidRestricted: v === "yes" })}
+          onPick={(v) => pickAndGo({ fluidRestricted: v === "yes" })}
         />,
       );
       break;
     case "result":
       content = (
         <>
-          <h1>{name.trim() ? `${name.trim()}'s plan` : "Your plan"}</h1>
+          <h1>{first ? `${first}'s plan` : "Your plan"}</h1>
           {plan.restricted ? (
             <p className="warn">Please follow your doctor's daily limit. Set the number of servings below to match it.</p>
           ) : (
-            <>
+            <div className="plan-hero">
               <div className="plan-total">
-                <b>{((goal * plan.servingMl) / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} L</b>
-                <span className="muted">a day</span>
+                <b>{((goal * plan.servingMl) / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })}</b>
+                <span>liters a day</span>
               </div>
-              <ul className="reasons">
+              <div className="plan-chips">
                 {plan.reasons.map((r, i) => (
-                  <li key={r.label}>
-                    <span>{r.label}</span>
-                    <span>
-                      {i > 0 ? "+" : ""}
-                      {r.ml.toLocaleString()} ml
-                    </span>
-                  </li>
-                ))}
-                <li className="reasons-total">
-                  <span>Suggested {plan.totalMl.toLocaleString()} ml, in whole servings</span>
-                  <span>
-                    {goal} × {plan.servingMl} ml
+                  <span className="chip" key={r.label}>
+                    {r.label} <b>{i > 0 ? "+" : ""}{r.ml.toLocaleString()} ml</b>
                   </span>
-                </li>
-              </ul>
-            </>
+                ))}
+              </div>
+            </div>
           )}
-          <section className="card">
-            <label className="row">
+          <section className="card plan-settings">
+            <div className="row">
               <span>Daily goal</span>
               <span className="stepper">
                 <button onClick={() => setTweak({ ...tweak, goal: Math.max(1, goal - 1) })} aria-label="Fewer">
@@ -358,7 +457,7 @@ export function Welcome({ initial, onDone }: Props) {
                   +
                 </button>
               </span>
-            </label>
+            </div>
             <label className="row">
               <span>Remind me every</span>
               <select
@@ -388,46 +487,55 @@ export function Welcome({ initial, onDone }: Props) {
               />
             </label>
           </section>
-          <p className="muted small">
-            A general guide, not medical advice. Drink more on hot days or when you exercise, and listen to your thirst.
-          </p>
+          <p className="fine">A general guide, not medical advice. Drink more on hot days or when you exercise.</p>
         </>
       );
       break;
   }
 
   const last = stepName === "result";
+  const needsNext = ["name", "weight", "hours", "result"].includes(stepName) || (stepName === "sex" && canBePregnant(p));
+
   return (
-    <main className="welcome">
-      <div className="welcome-buddy">
-        <Tumbler fill={step / (STEPS.length - 1)} size={last ? 96 : 110} arms happy={last} />
-      </div>
-      {step > 0 && (
-        <div className="dots" aria-label={`Step ${step} of ${STEPS.length - 1}`}>
-          {STEPS.slice(1).map((s, i) => (
-            <span key={s} className={i < step ? "dot on" : "dot"} />
-          ))}
+    <main className="onb">
+      <header className="onb-top">
+        <button className="icon-btn" onClick={back} aria-label="Back">
+          ‹
+        </button>
+        <div className="onb-progress" aria-label={`Step ${step} of ${total}`}>
+          <div style={{ width: `${(step / total) * 100}%` }} />
         </div>
-      )}
+        <span className="onb-count">
+          {step}/{total}
+        </span>
+      </header>
+
+      <div className="onb-buddy">
+        <div className="onb-buddy-bottle">
+          <Tumbler fill={step / total} size={last ? 60 : 72} arms happy={last} />
+        </div>
+        <div className="says" key={stepName}>
+          {SAYS[stepName]}
+        </div>
+      </div>
+
       <div className="step" key={stepName}>
         {content}
       </div>
-      <div className="nav">
-        {step > 0 && (
-          <button className="secondary-btn" onClick={back}>
-            Back
-          </button>
-        )}
+
+      <footer className="onb-nav">
         {last ? (
           <button className="primary-btn" onClick={() => void finish()} disabled={busy}>
-            Let's go 💧
+            Start drinking 💧
+          </button>
+        ) : needsNext ? (
+          <button className="primary-btn" onClick={next}>
+            {stepName === "name" && !first ? "Skip" : "Continue"}
           </button>
         ) : (
-          <button className="primary-btn" onClick={next}>
-            {step === 0 ? "Start" : name === "" && STEPS[step] === "name" ? "Skip" : "Next"}
-          </button>
+          <p className="fine">Tap an answer to continue</p>
         )}
-      </div>
+      </footer>
     </main>
   );
 }

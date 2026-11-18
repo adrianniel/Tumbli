@@ -56,6 +56,12 @@ async fn startup_set(enable: bool) -> String {
     }
 }
 
+/// Is the primary mouse button still held? The widget uses it to know when a drag really ended.
+#[tauri::command]
+fn primary_button_down() -> bool {
+    platform::primary_button_down()
+}
+
 #[tauri::command]
 fn open_settings(app: AppHandle) {
     show_settings(&app);
@@ -86,6 +92,14 @@ mod platform {
             }
             (GetTickCount().wrapping_sub(info.dwTime) / 1000) as u64
         }
+    }
+
+    pub fn primary_button_down() -> bool {
+        use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+        use windows_sys::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_SWAPBUTTON};
+        // VK_LBUTTON = 1, VK_RBUTTON = 2; left-handed setups swap them
+        let vk = if unsafe { GetSystemMetrics(SM_SWAPBUTTON) } != 0 { 2 } else { 1 };
+        (unsafe { GetAsyncKeyState(vk) } as u16 & 0x8000) != 0
     }
 
     pub fn fullscreen_busy() -> bool {
@@ -158,6 +172,9 @@ mod platform {
     pub fn fullscreen_busy() -> bool {
         false
     }
+    pub fn primary_button_down() -> bool {
+        false
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -171,7 +188,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set])
+        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down])
         .setup(|app| {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =

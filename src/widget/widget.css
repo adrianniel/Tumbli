@@ -889,3 +889,49 @@ body,
 .widget.cheering {
   justify-content: flex-end;
 }
+
+/* ---------- docked on the left edge: everything opens to the right ---------- */
+
+.widget.side-left {
+  flex-direction: row-reverse;
+}
+.side-left .bubble-card {
+  transform-origin: 0% 80%;
+}
+.side-left .bubble-card::after {
+  right: auto;
+  left: -7px;
+  border-right: none;
+  border-top: none;
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.side-left.nudging .bubble-card {
+  animation:
+    swoop-l 0.6s cubic-bezier(0.2, 1.5, 0.4, 1),
+    glow 1.8s ease-out 0.7s infinite;
+}
+@keyframes swoop-l {
+  from {
+    opacity: 0;
+    transform: translateX(-40px) scale(0.6) rotate(-4deg);
+  }
+}
+.side-left .cheer {
+  right: auto;
+  left: 82px;
+  text-align: left;
+  transform-origin: 0% 100%;
+}
+.side-left .hover-actions {
+  right: auto;
+  left: 2px;
+}
+.side-left .plus-one {
+  left: auto;
+  right: -2px;
+}
+.side-left .zzz span {
+  right: auto;
+  left: 10px;
+}
