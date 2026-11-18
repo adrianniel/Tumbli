@@ -20,8 +20,8 @@ import {
   type Settings,
 } from "../lib/store";
 
-const COMPACT = { w: 84, h: 128 };
-const EXPANDED = { w: 320, h: 136 };
+const COMPACT = { w: 100, h: 140 };
+const EXPANDED = { w: 340, h: 150 };
 const SNOOZE_MIN = 10;
 const IDLE_SECS = 5 * 60; // user counts as "away" after 5 min without input
 const TICK_MS = 5000;
@@ -109,6 +109,7 @@ export function Widget() {
   const [nudging, setNudging] = useState(false);
   const [message, setMessage] = useState(NUDGES[0]);
   const [celebrate, setCelebrate] = useState(false);
+  const [gulping, setGulping] = useState(false);
 
   // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
   const nextAt = useRef(
@@ -228,11 +229,13 @@ export function Widget() {
     const n = addGlasses(1);
     setCount(n);
     setNudging(false);
+    setGulping(true);
+    window.setTimeout(() => setGulping(false), 1100);
     nextAt.current = Date.now() + settings.intervalMin * 60_000;
     if (n === settings.goal) {
       setCelebrate(true);
       if (settings.sound) bloop();
-      window.setTimeout(() => setCelebrate(false), 4000);
+      window.setTimeout(() => setCelebrate(false), 3500);
     }
   };
 
@@ -259,32 +262,17 @@ export function Widget() {
   const days = streak(loadHistory(), settings.goal);
 
   return (
-    <div className={`widget ${nudging ? "expanded" : "compact"} ${celebrate ? "celebrate" : ""}`}>
-      <div
-        className="glass-wrap"
-        onMouseDown={startDrag}
-        onDoubleClick={openSettings}
-        title="Drag to move · double-click for settings"
-      >
-        <Tumbler fill={fill} size={nudging ? 100 : 80} happy={done} />
-        <div className="count">
-          {count}/{settings.goal}
-        </div>
-      </div>
-
-      {!nudging && (
-        <div className="hover-actions">
-          <button className="mini plus" onClick={drink} title="I drank a glass">
-            +
-          </button>
-          <button className="mini" onClick={openSettings} title="Settings">
-            ⚙
-          </button>
-        </div>
-      )}
-
+    <div
+      className={[
+        "widget",
+        nudging ? "expanded" : "compact",
+        gulping ? "gulping" : "",
+        celebrate ? "celebrate" : "",
+        done ? "done" : "",
+      ].join(" ")}
+    >
       {nudging && (
-        <div className="nudge">
+        <div className="bubble-card" role="dialog" aria-label="Water reminder">
           <div className="nudge-title">{message}</div>
           <div className="nudge-sub">
             {count} of {settings.goal} glasses today
@@ -297,16 +285,48 @@ export function Widget() {
             <button className="btn" onClick={snooze}>
               ⏰ {SNOOZE_MIN}m
             </button>
-            <button className="btn ghost" onClick={skip} title="Skip this reminder">
+            <button className="btn ghost" onClick={skip} title="Skip this reminder" aria-label="Skip">
               ✕
             </button>
           </div>
         </div>
       )}
 
-      {celebrate && done && !nudging && (
-        <div className="toast" title="Goal reached!">
-          🎉
+      <div
+        className="buddy"
+        onMouseDown={startDrag}
+        onDoubleClick={openSettings}
+        title="Drag to move · double-click for settings"
+      >
+        <div className="hop">
+          <div className="bob">
+            <div className="squish">
+              <Tumbler fill={fill} size={nudging ? 92 : 84} happy={done} arms calling={nudging} />
+            </div>
+          </div>
+        </div>
+        <div className="ground" />
+        <div className="count">
+          {count}/{settings.goal}
+        </div>
+        {gulping && <div className="plus-one">+1</div>}
+        {celebrate && (
+          <div className="sparkles" aria-hidden>
+            <span>✦</span>
+            <span>✦</span>
+            <span>✦</span>
+          </div>
+        )}
+      </div>
+
+      {!nudging && (
+        <div className="hover-actions">
+          <button className="mini plus" onClick={drink} title="I drank a glass" aria-label="I drank a glass">
+            +
+          </button>
+          <button className="mini" onClick={openSettings} title="Settings" aria-label="Settings">
+            ⚙
+          </button>
         </div>
       )}
     </div>
