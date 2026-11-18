@@ -172,3 +172,18 @@ export function loadProfile<T>(fallback: T): T {
 export function saveProfile<T>(p: T) {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
 }
+
+const TOUR_KEY = "tumbli.tourDone";
+export const TOUR_EVENT = "tumbli:tour";
+
+export function isTourDone(): boolean {
+  try {
+    return localStorage.getItem(TOUR_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function markTourDone() {
+  localStorage.setItem(TOUR_KEY, "1");
+}

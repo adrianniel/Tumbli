@@ -935,3 +935,122 @@ body,
   right: auto;
   left: 10px;
 }
+
+/* ---------- quick tour ---------- */
+
+.tour-card {
+  animation: swoop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+.side-left .tour-card {
+  animation-name: swoop-l;
+}
+.tour-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+.tour-body {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.key {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 18px;
+}
+.tour-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tour-foot .btn.primary {
+  flex: none;
+  min-width: 92px;
+}
+.tour-dots {
+  display: flex;
+  gap: 5px;
+}
+.tour-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--btn);
+  transition: width 0.25s, background 0.25s;
+}
+.tour-dots span.on {
+  width: 16px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* demos: Tumbli acts out the step */
+.touring.tour-drag .hop {
+  animation: scoot 2.2s ease-in-out infinite;
+}
+@keyframes scoot {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-14px) rotate(-6deg);
+  }
+  60% {
+    transform: translateX(6px) rotate(4deg);
+  }
+}
+.touring.tour-click .buddy::after,
+.touring.tour-log .buddy::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 56px;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 3px solid #ffc861;
+  pointer-events: none;
+  animation: tap 1.4s ease-out infinite;
+}
+@keyframes tap {
+  0% {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.touring.tour-log .buddy::before {
+  content: "+";
+  position: absolute;
+  top: 6px;
+  right: 0;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 23px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.side-left.touring.tour-log .buddy::before {
+  right: auto;
+  left: 0;
+}

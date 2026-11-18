@@ -9,6 +9,7 @@ import {
 
 } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
+import { TOUR } from "./tour";
 import { bloop } from "../lib/sound";
 import { shouldNudge } from "../lib/schedule";
 import { cheerFor, nudgeMessage, randomFact, type Fact } from "../lib/facts";
@@ -16,6 +17,8 @@ import { anchorOf, placeAt, snapToEdge, type Anchor, type Side } from "../lib/do
 import {
   addGlasses,
   CHANGED_EVENT,
+  markTourDone,
+  TOUR_EVENT,
   loadHistory,
   loadPausedUntil,
   loadSettings,
@@ -128,6 +131,8 @@ export function Widget() {
   const [boing, setBoing] = useState(0); // bumps on every click to replay the animation
   const [fact, setFact] = useState<Fact | null>(null);
   const [cheer, setCheer] = useState<{ text: string; id: number } | null>(null);
+  const [tour, setTour] = useState<number | null>(null); // step of the quick tour, if running
+  const touring = useRef(false);
   const [revealed, setRevealed] = useState(false);
   const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -190,6 +195,14 @@ export function Widget() {
       setNudging(false);
       if (until === 0) nextAt.current = Date.now() + 60_000; // check in soon after resuming
     });
+    const d = listen(TOUR_EVENT, () => {
+      setNudging(false);
+      setFact(null);
+      setCheer(null);
+      touring.current = true;
+      setTour(0);
+      setBoing((n) => n + 1);
+    });
     const b = listen("tumbli:reset-position", async () => {
       localStorage.removeItem(POS_KEY);
       setNudging(false);
@@ -201,11 +214,12 @@ export function Widget() {
       void a.then((f) => f());
       void b.then((f) => f());
       void c.then((f) => f());
+      void d.then((f) => f());
     };
   }, [refresh]);
 
   // expand / collapse the window for the speech bubble or the cheer text
-  const talking = nudging || fact !== null;
+  const talking = nudging || fact !== null || tour !== null;
   const mode = talking ? "talk" : cheer ? "cheer" : "idle";
   useEffect(() => {
     if (!placed) return;
@@ -256,7 +270,7 @@ export function Widget() {
         pausedUntil: loadPausedUntil(),
       });
 
-      if (due && !nudging) {
+      if (due && !nudging && !touring.current) {
         setFact(null); // a reminder wins over a fun fact
         setMessage(nudgeMessage(settings.name));
         setNudging(true);
@@ -283,7 +297,7 @@ export function Widget() {
 
   const tellFact = useCallback(() => {
     setBoing((n) => n + 1);
-    if (nudging) return; // during a reminder a click just makes Tumbli jump
+    if (nudging || touring.current) return; // during a reminder or the tour a click just makes Tumbli jump
     setFact(randomFact());
     setRevealed(false);
     armFactTimer();
@@ -319,6 +333,22 @@ export function Widget() {
   const skip = () => {
     setNudging(false);
     nextAt.current = Date.now() + settings.intervalMin * 60_000;
+  };
+
+  const endTour = () => {
+    markTourDone();
+    touring.current = false;
+    setTour(null);
+    // the first reminder comes one interval after the tour (15 s in dev)
+    nextAt.current = Date.now() + (import.meta.env.DEV ? 15_000 : settings.intervalMin * 60_000);
+  };
+  const nextTour = () => {
+    if (tour === null) return;
+    if (tour >= TOUR.length - 1) endTour();
+    else {
+      setTour(tour + 1);
+      setBoing((n) => n + 1);
+    }
   };
 
   const openSettings = () => void invoke("open_settings");
@@ -365,6 +395,7 @@ export function Widget() {
         side === "left" ? "side-left" : "side-right",
         talking ? "expanded" : "compact",
         nudging ? "nudging" : "",
+        tour !== null ? `touring tour-${TOUR[tour].demo ?? "none"}` : "",
         cheer && !talking ? "cheering" : "",
         gulping ? "gulping" : "",
         celebrate ? "celebrate" : "",
@@ -396,7 +427,32 @@ export function Widget() {
         </div>
       )}
 
-      {!nudging && fact && (
+      {tour !== null && (
+        <div className="bubble-card tour-card" role="dialog" aria-label="Quick tour">
+          <div className="bubble-head">
+            <div className="bubble-kicker">
+              Quick tour · {tour + 1}/{TOUR.length}
+            </div>
+            <button className="close" onClick={endTour} aria-label="Skip tour">
+              Skip
+            </button>
+          </div>
+          <div className="tour-title">{TOUR[tour].title}</div>
+          <div className="tour-body">{TOUR[tour].body}</div>
+          <div className="tour-foot">
+            <div className="tour-dots" aria-hidden>
+              {TOUR.map((_, i) => (
+                <span key={i} className={i === tour ? "on" : ""} />
+              ))}
+            </div>
+            <button className="btn primary" onClick={nextTour}>
+              {tour === TOUR.length - 1 ? "Got it! 💧" : "Next"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {tour === null && !nudging && fact && (
         <div className="bubble-card fact" role="dialog" aria-label={fact.kind === "trivia" ? "Trivia" : "Fun fact"}>
           <div className="bubble-head">
             <div className="bubble-kicker">{fact.kind === "trivia" ? "🤔 Trivia time" : "💡 Did you know?"}</div>

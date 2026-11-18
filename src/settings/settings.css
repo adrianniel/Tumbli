@@ -930,3 +930,7 @@ footer {
 .onb:has(.plan-hero) .says {
   margin-bottom: 30px;
 }
+footer {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}

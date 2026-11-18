@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getAutostart, setAutostart as applyAutostart, type AutostartState } from "../lib/autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
@@ -10,6 +10,8 @@ import {
   CHANGED_EVENT,
   dayKey,
   isOnboarded,
+  isTourDone,
+  TOUR_EVENT,
   lastDays,
   loadHistory,
   loadSettings,
@@ -76,6 +78,12 @@ export function Settings() {
     saveSettings(next);
   };
 
+  /** hand over to Tumbli on the desktop for the quick tour */
+  const startTour = async () => {
+    await emit(TOUR_EVENT);
+    await getCurrentWindow().hide();
+  };
+
   const toggleAutostart = async (on: boolean) => {
     try {
       setAutostart(await applyAutostart(on));
@@ -92,6 +100,7 @@ export function Settings() {
           setS(next);
           setOnboarded(true);
           void getAutostart().then(setAutostart).catch(() => {});
+          if (!isTourDone()) void startTour();
         }}
       />
     );
@@ -316,6 +325,9 @@ export function Settings() {
           }}
         >
           Reset today
+        </button>
+        <button className="link" onClick={() => void startTour()}>
+          Take the quick tour
         </button>
         <span className="muted small">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
       </footer>
