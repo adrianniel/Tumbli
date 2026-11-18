@@ -92,9 +92,9 @@ user's email app; change both together.
 
 ## Store ID (for the in-app rating prompt)
 
-After 3 days of use Tumbli asks for a rating and opens the Store review page. Put the app's
-**Store ID** (Partner Center › Product management › Product identity, e.g. `9NBLGGH4R32N`) in
-`STORE_PRODUCT_ID` in `src/config.ts`. Until then the prompt opens a Store search for "Tumbli". [YOU]
+After 3 days of use Tumbli asks for a rating and opens the Store review page. The app's
+**Store ID** is **9N6798TPR3KX** (Partner Center › Product management › Product identity), set as
+`STORE_PRODUCT_ID` in `src/config.ts`. The package identity is in `packaging/msix/identity.json`.
 
 ## Age rating
 
