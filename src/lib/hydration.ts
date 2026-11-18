@@ -25,8 +25,12 @@ export type Profile = {
   /** the hours the user is usually at the computer */
   startHour: number;
   endHour: number;
-  /** how much they drink each break, in ml */
-  servingMl: number;
+  /** glass by glass, or from their own tumbler */
+  mode: "glass" | "tumbler";
+  /** glass size, ml ("glass" mode) */
+  glassMl: number;
+  /** size of their tumbler / water bottle, ml ("tumbler" mode) */
+  tumblerMl: number;
   /** a doctor asked them to limit fluids (kidney, heart conditions...) */
   fluidRestricted: boolean;
 };
@@ -40,20 +44,25 @@ export const defaultProfile: Profile = {
   climate: "hot",
   startHour: 8,
   endHour: 18,
-  servingMl: 250,
+  mode: "glass",
+  glassMl: 250,
+  tumblerMl: 750,
   fluidRestricted: false,
 };
 
 export const INTERVALS = [15, 20, 30, 45, 60, 90, 120];
 
+/** About how much each reminder should get you to drink: a few good sips. */
+const SIP_TARGET_ML = 250;
+
 export type Plan = {
   /** recommended drinks per day, ml */
   totalMl: number;
-  /** servings per day */
-  goal: number;
   /** minutes between reminders */
   intervalMin: number;
-  servingMl: number;
+  tumblerMl: number;
+  /** how many tumblers the total is, e.g. 2.7 */
+  refills: number;
   startHour: number;
   endHour: number;
   /** how the total was built, for the result screen */
@@ -127,14 +136,14 @@ export function planFor(p: Profile): Plan {
 
   const sum = reasons.reduce((a, r) => a + r.ml, 0);
   const totalMl = Math.round(clamp(sum, kid ? 1000 : 1200, kid ? 2500 : 3500) / 50) * 50;
-  const servingMl = clamp(p.servingMl, 100, 1000);
-  const goal = clamp(Math.round(totalMl / servingMl), 1, 20);
+  const tumblerMl = clamp(p.tumblerMl || 750, 200, 2000);
+  const reminders = clamp(Math.round(totalMl / SIP_TARGET_ML), 4, 16);
 
   return {
     totalMl,
-    goal,
-    intervalMin: pickInterval(goal, p.startHour, p.endHour),
-    servingMl,
+    intervalMin: pickInterval(reminders, p.startHour, p.endHour),
+    tumblerMl,
+    refills: totalMl / tumblerMl,
     startHour: p.startHour,
     endHour: p.endHour,
     reasons,

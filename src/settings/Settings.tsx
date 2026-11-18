@@ -5,9 +5,20 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
 import { Welcome } from "./Welcome";
 import { factOfTheDay, greeting } from "../lib/facts";
+import { sipFor } from "../lib/schedule";
 import {
-  addGlasses,
+  canUndo,
   CHANGED_EVENT,
+  drink,
+  finishTumbler,
+  fmtMl,
+  GLASS_SIZES,
+  goalGlasses,
+  liters,
+  loadLevel,
+  refill,
+  TUMBLER_SIZES,
+  undoLast,
   dayKey,
   isOnboarded,
   isTourDone,
@@ -34,6 +45,8 @@ export function Settings() {
   const [history, setHistory] = useState<History>(loadHistory);
   const [autostart, setAutostart] = useState<AutostartState | null>(null);
   const [onboarded, setOnboarded] = useState(isOnboarded);
+  // re-render after actions that only touch the tumbler level
+  const [, bump] = useState(0);
 
   // first run: this window starts hidden, so bring it up for the welcome screen
   useEffect(() => {
@@ -106,40 +119,76 @@ export function Settings() {
     );
   }
 
-  const today = lastDays(history, 1)[0].count;
+  const tumblerMode = s.mode === "tumbler";
+  const doneMl = lastDays(history, 1)[0].ml;
   const week = lastDays(history, 7);
-  const days = streak(history, s.goal);
-  const maxBar = Math.max(s.goal, ...week.map((d) => d.count));
-  const metThisWeek = week.filter((d) => d.count >= s.goal).length;
-  const left = Math.max(0, s.goal - today);
-  const pct = Math.min(100, Math.round((today / s.goal) * 100));
-  const liters = (ml: number) => (ml / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const days = streak(history, s.goalMl);
+  const maxBar = Math.max(s.goalMl, ...week.map((d) => d.ml));
+  const metThisWeek = week.filter((d) => d.ml >= s.goalMl).length;
+  const leftMl = Math.max(0, s.goalMl - doneMl);
+  const pct = Math.min(100, Math.round((doneMl / s.goalMl) * 100));
+  const glasses = Math.floor(doneMl / s.glassMl);
+  const goalG = goalGlasses(s);
+  const level = loadLevel(s);
+  const sip = sipFor(s);
   const fact = factOfTheDay();
+  const act = (f: () => unknown) => {
+    f();
+    bump((n) => n + 1);
+  };
 
   return (
     <main className="settings">
       <header className="hero">
         <div className="hero-buddy">
-          <Tumbler fill={today / s.goal} size={104} happy={today >= s.goal} arms />
+          <Tumbler
+            fill={tumblerMode ? level / s.tumblerMl : doneMl / s.goalMl}
+            size={104}
+            happy={doneMl >= s.goalMl}
+            arms
+          />
         </div>
         <div className="hero-main">
           <div className="hello">{greeting(s.name)} 👋</div>
           <div className="big">
-            {today}
-            <span> of {s.goal} glasses</span>
+            {tumblerMode ? (
+              <>
+                {liters(doneMl)}
+                <span> of {liters(s.goalMl)} L</span>
+              </>
+            ) : (
+              <>
+                {glasses}
+                <span> of {goalG} glasses</span>
+              </>
+            )}
           </div>
           <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
             <div className="progress-fill" style={{ width: `${pct}%` }} />
           </div>
           <div className="muted">
-            {liters(today * s.glassMl)} L of {liters(s.goal * s.glassMl)} L
-            {left > 0 ? ` · ${left} to go` : " · goal reached! 🎉"}
+            {tumblerMode ? `Tumbler: ${fmtMl(level)} of ${fmtMl(s.tumblerMl)} left` : `${fmtMl(doneMl)} so far`}
+            {leftMl > 0 ? ` · ${fmtMl(leftMl)} to go` : " · goal reached! 🎉"}
           </div>
           <div className="hero-actions">
-            <button className="pill primary" onClick={() => addGlasses(1)}>
-              + Log a glass
-            </button>
-            <button className="pill" onClick={() => addGlasses(-1)} disabled={today === 0}>
+            {tumblerMode ? (
+              <>
+                <button className="pill primary" onClick={() => act(() => drink(sip, s))} disabled={level <= 0}>
+                  + {sip} ml
+                </button>
+                <button className="pill" onClick={() => act(() => finishTumbler(s))} disabled={level <= 0}>
+                  Finished it
+                </button>
+                <button className="pill" onClick={() => act(() => refill(s))}>
+                  🔄 Refilled
+                </button>
+              </>
+            ) : (
+              <button className="pill primary" onClick={() => act(() => drink(s.glassMl, s))}>
+                + Log a glass
+              </button>
+            )}
+            <button className="pill" onClick={() => act(undoLast)} disabled={!canUndo()}>
               Undo
             </button>
           </div>
@@ -163,10 +212,14 @@ export function Settings() {
         </div>
         <div className="stat">
           <span className="stat-icon" aria-hidden>
-            💧
+            {tumblerMode ? "🧴" : "💧"}
           </span>
-          <b>{liters(s.goal * s.glassMl)} L</b>
-          <span>daily plan</span>
+          <b>
+            {tumblerMode
+              ? (doneMl / s.tumblerMl).toLocaleString(undefined, { maximumFractionDigits: 1 })
+              : fmtMl(s.goalMl)}
+          </b>
+          <span>{tumblerMode ? "tumblers today" : "daily plan"}</span>
         </div>
       </div>
 
@@ -177,12 +230,12 @@ export function Settings() {
             <div className="bar-col" key={d.key}>
               <div className="bar-track">
                 <div
-                  className={`bar ${d.count >= s.goal ? "met" : ""} ${i === week.length - 1 ? "today" : ""}`}
-                  style={{ height: `${Math.max(3, (d.count / maxBar) * 100)}%` }}
+                  className={`bar ${d.ml >= s.goalMl ? "met" : ""} ${i === week.length - 1 ? "today" : ""}`}
+                  style={{ height: `${Math.max(3, (d.ml / maxBar) * 100)}%` }}
                 />
-                <div className="goal-line" style={{ bottom: `${(s.goal / maxBar) * 100}%` }} />
+                <div className="goal-line" style={{ bottom: `${(s.goalMl / maxBar) * 100}%` }} />
               </div>
-              <div className="bar-num">{d.count}</div>
+              <div className="bar-num">{liters(d.ml)}</div>
               <div className="bar-label">{d.label}</div>
             </div>
           ))}
@@ -222,29 +275,71 @@ export function Settings() {
           />
         </label>
 
+        <div className="row">
+          <span>
+            Track by
+            <small>{tumblerMode ? "Tumbli mirrors your own tumbler" : "Log a glass at a time"}</small>
+          </span>
+          <span className="seg" role="radiogroup" aria-label="Track by">
+            <button role="radio" aria-checked={!tumblerMode} className={!tumblerMode ? "on" : ""} onClick={() => update({ mode: "glass" })}>
+              🥛 Glass
+            </button>
+            <button role="radio" aria-checked={tumblerMode} className={tumblerMode ? "on" : ""} onClick={() => update({ mode: "tumbler" })}>
+              🧴 Tumbler
+            </button>
+          </span>
+        </div>
+
         <label className="row">
+          <span>{tumblerMode ? "Tumbler size" : "Glass size"}</span>
+          {tumblerMode ? (
+            <select value={s.tumblerMl} onChange={(e) => update({ tumblerMl: Number(e.target.value) })}>
+              {TUMBLER_SIZES.map((ml) => (
+                <option key={ml} value={ml}>
+                  {fmtMl(ml)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select
+              value={s.glassMl}
+              onChange={(e) => {
+                const glassMl = Number(e.target.value);
+                // keep the same number of glasses when the glass size changes
+                update({ glassMl, goalMl: goalG * glassMl });
+              }}
+            >
+              {GLASS_SIZES.map((ml) => (
+                <option key={ml} value={ml}>
+                  {ml} ml
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+
+        <div className="row">
           <span>Daily goal</span>
           <span className="stepper">
-            <button onClick={() => update({ goal: Math.max(1, s.goal - 1) })} aria-label="Fewer glasses">
+            <button
+              onClick={() =>
+                update({ goalMl: tumblerMode ? Math.max(500, s.goalMl - 100) : Math.max(1, goalG - 1) * s.glassMl })
+              }
+              aria-label="Lower goal"
+            >
               −
             </button>
-            <b>{s.goal} glasses</b>
-            <button onClick={() => update({ goal: Math.min(20, s.goal + 1) })} aria-label="More glasses">
+            <b>{tumblerMode ? fmtMl(s.goalMl) : `${goalG} glasses`}</b>
+            <button
+              onClick={() =>
+                update({ goalMl: tumblerMode ? Math.min(5000, s.goalMl + 100) : Math.min(20, goalG + 1) * s.glassMl })
+              }
+              aria-label="Raise goal"
+            >
               +
             </button>
           </span>
-        </label>
-
-        <label className="row">
-          <span>Glass size</span>
-          <select value={s.glassMl} onChange={(e) => update({ glassMl: Number(e.target.value) })}>
-            {[150, 200, 250, 300, 350, 500].map((ml) => (
-              <option key={ml} value={ml}>
-                {ml} ml
-              </option>
-            ))}
-          </select>
-        </label>
+        </div>
 
         <label className="row">
           <span>Remind me every</span>
@@ -321,7 +416,7 @@ export function Settings() {
         <button
           className="link"
           onClick={() => {
-            if (confirm("Reset today's count to 0?")) resetToday();
+            if (confirm("Reset today's total to 0?")) resetToday();
           }}
         >
           Reset today

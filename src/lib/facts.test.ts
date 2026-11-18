@@ -37,16 +37,21 @@ describe("greeting", () => {
 import { cheerFor } from "./facts";
 
 describe("cheerFor", () => {
+  const goalMl = 2000;
   it("celebrates milestones", () => {
-    expect(cheerFor(1, 8, "")).toBe("First glass of the day! ☀️");
-    expect(cheerFor(4, 8, "")).toBe("Halfway there! 🎉");
-    expect(cheerFor(7, 8, "")).toBe("Just 1 more to go! 💪");
-    expect(cheerFor(8, 8, "Ana")).toBe("Goal reached, Ana! 🏆");
-    expect(cheerFor(9, 8, "")).toBe("Extra credit! 🌟");
+    expect(cheerFor({ before: 0, after: 250, goalMl })).toBe("First sips of the day! ☀️");
+    expect(cheerFor({ before: 900, after: 1100, goalMl })).toBe("Halfway there! 🎉");
+    expect(cheerFor({ before: 1500, after: 1700, goalMl })).toBe("Almost there! 300 ml to go 💪");
+    expect(cheerFor({ before: 1900, after: 2100, goalMl, name: "Ana" })).toBe("Goal reached, Ana! 🏆");
+    expect(cheerFor({ before: 2100, after: 2300, goalMl })).toBe("Extra credit! 🌟");
+  });
+
+  it("asks for a refill when the tumbler runs out", () => {
+    expect(cheerFor({ before: 300, after: 750, goalMl, empty: true })).toBe("Empty! Time for a refill 🔄");
   });
 
   it("encourages in between", () => {
-    expect(cheerFor(2, 8, "", () => 0.99)).toBe("6 more to go!");
-    expect(cheerFor(3, 8, "Ana", () => 0.8)).toBe("Great job, Ana! ✨");
+    expect(cheerFor({ before: 250, after: 500, goalMl }, () => 0.99)).toBe("1.5 L to go!");
+    expect(cheerFor({ before: 250, after: 500, goalMl, name: "Ana" }, () => 0.8)).toBe("Great job, Ana! ✨");
   });
 });

@@ -1,36 +1,52 @@
 import { emit } from "@tauri-apps/api/event";
 
+/** How the user logs water: glass by glass, or from their own tumbler that Tumbli mirrors. */
+export type TrackMode = "glass" | "tumbler";
+
 export type Settings = {
-  goal: number; // glasses per day
+  mode: TrackMode;
+  /** daily goal, ml */
+  goalMl: number;
+  /** glass size in "glass" mode, ml */
+  glassMl: number;
+  /** size of the user's real tumbler / bottle, ml; Tumbli mirrors it */
+  tumblerMl: number;
   intervalMin: number; // minutes between reminders
   startHour: number; // reminders only between startHour..endHour (local time)
   endHour: number;
-  glassMl: number;
   sound: boolean;
   hideOnFullscreen: boolean;
   /** what Tumbli calls the user; empty if they skipped it */
   name: string;
 };
 
-/** date (YYYY-MM-DD) -> glasses drunk that day */
+/** date (YYYY-MM-DD) -> ml drunk that day */
 export type History = Record<string, number>;
 
 export const CHANGED_EVENT = "tumbli:changed";
 
 const SETTINGS_KEY = "tumbli.settings";
-const HISTORY_KEY = "tumbli.history";
+const HISTORY_KEY = "tumbli.historyMl";
+const LEGACY_HISTORY_KEY = "tumbli.history"; // glasses per day, before tumblers
+const LEVEL_KEY = "tumbli.level";
+const UNDO_KEY = "tumbli.undo";
 const KEEP_DAYS = 90;
 
 export const defaultSettings: Settings = {
-  goal: 8,
+  mode: "glass",
+  goalMl: 2000,
+  glassMl: 250,
+  tumblerMl: 750,
   intervalMin: 45,
   startHour: 8,
   endHour: 20,
-  glassMl: 250,
   sound: true,
   hideOnFullscreen: true,
   name: "",
 };
+
+export const TUMBLER_SIZES = [350, 500, 650, 750, 1000, 1200];
+export const GLASS_SIZES = [150, 200, 250, 300, 350, 500];
 
 export function dayKey(d = new Date()): string {
   const y = d.getFullYear();
@@ -48,8 +64,18 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+type LegacySettings = Partial<Settings> & { goal?: number };
+
 export function loadSettings(): Settings {
-  return { ...defaultSettings, ...readJson<Partial<Settings>>(SETTINGS_KEY, {}) };
+  const raw = readJson<LegacySettings>(SETTINGS_KEY, {});
+  const { goal, ...rest } = raw;
+  const s: Settings = { ...defaultSettings, ...rest };
+  // older versions counted glasses: goal x glass size becomes the ml goal
+  if (raw.goalMl === undefined && goal) {
+    s.goalMl = goal * s.glassMl;
+    s.mode = "glass";
+  }
+  return s;
 }
 
 export function saveSettings(s: Settings) {
@@ -57,8 +83,21 @@ export function saveSettings(s: Settings) {
   void emit(CHANGED_EVENT);
 }
 
+/** ml per glass the old glass-based history used (to convert it once) */
+function legacyGlassMl(): number {
+  return readJson<LegacySettings>(SETTINGS_KEY, {}).glassMl ?? 250;
+}
+
 export function loadHistory(): History {
-  return readJson<History>(HISTORY_KEY, {});
+  const h = readJson<History | null>(HISTORY_KEY, null);
+  if (h) return h;
+  const legacy = readJson<History | null>(LEGACY_HISTORY_KEY, null);
+  if (!legacy) return {};
+  const ml = legacyGlassMl();
+  const converted: History = {};
+  for (const [k, v] of Object.entries(legacy)) converted[k] = v * ml;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(converted));
+  return converted;
 }
 
 function saveHistory(h: History) {
@@ -71,15 +110,15 @@ function saveHistory(h: History) {
   void emit(CHANGED_EVENT);
 }
 
-export function todayCount(h = loadHistory()): number {
+export function todayMl(h = loadHistory()): number {
   return h[dayKey()] ?? 0;
 }
 
-/** Add (or subtract) glasses for today. Returns the new count. */
-export function addGlasses(delta: number): number {
+/** Add (or subtract) ml for today. Returns today's new total. */
+export function addMl(delta: number): number {
   const h = loadHistory();
   const k = dayKey();
-  h[k] = Math.max(0, (h[k] ?? 0) + delta);
+  h[k] = Math.max(0, Math.round((h[k] ?? 0) + delta));
   saveHistory(h);
   return h[k];
 }
@@ -90,13 +129,82 @@ export function resetToday() {
   saveHistory(h);
 }
 
+// ---------- the tumbler itself ----------
+
+/** How much is left in the user's tumbler right now, ml. Starts full. */
+export function loadLevel(s = loadSettings()): number {
+  const raw = localStorage.getItem(LEVEL_KEY);
+  const v = raw === null ? s.tumblerMl : Number(raw);
+  return Math.max(0, Math.min(s.tumblerMl, Number.isFinite(v) ? v : s.tumblerMl));
+}
+
+function saveLevel(ml: number) {
+  localStorage.setItem(LEVEL_KEY, String(Math.max(0, Math.round(ml))));
+  void emit(CHANGED_EVENT);
+}
+
+/** the last action; level -1 means it didn't touch the tumbler (glass mode) */
+type Undo = { ml: number; level: number };
+
+/** Glasses in the daily goal ("glass" mode). */
+export function goalGlasses(s: Pick<Settings, "goalMl" | "glassMl">) {
+  return Math.max(1, Math.round(s.goalMl / s.glassMl));
+}
+
+export type DrinkResult = {
+  /** ml actually logged (can't drink more than is in the tumbler) */
+  drank: number;
+  total: number;
+  level: number;
+};
+
+/** Drink from the tumbler. */
+export function drink(amountMl: number, s = loadSettings()): DrinkResult {
+  if (s.mode === "glass") {
+    const ml = Math.max(0, Math.round(amountMl));
+    localStorage.setItem(UNDO_KEY, JSON.stringify({ ml, level: -1 } satisfies Undo));
+    return { drank: ml, total: addMl(ml), level: -1 };
+  }
+  const level = loadLevel(s);
+  const drank = Math.max(0, Math.min(Math.round(amountMl), level));
+  if (drank === 0) return { drank: 0, total: todayMl(), level };
+  localStorage.setItem(UNDO_KEY, JSON.stringify({ ml: drank, level } satisfies Undo));
+  saveLevel(level - drank);
+  return { drank, total: addMl(drank), level: level - drank };
+}
+
+/** Drink whatever is left. */
+export function finishTumbler(s = loadSettings()): DrinkResult {
+  return drink(loadLevel(s), s);
+}
+
+/** The tumbler was refilled. */
+export function refill(s = loadSettings()) {
+  localStorage.setItem(UNDO_KEY, JSON.stringify({ ml: 0, level: loadLevel(s) } satisfies Undo));
+  saveLevel(s.tumblerMl);
+}
+
+/** Undo the last drink or refill. Returns false when there's nothing to undo. */
+export function undoLast(): boolean {
+  const u = readJson<Undo | null>(UNDO_KEY, null);
+  if (!u) return false;
+  localStorage.removeItem(UNDO_KEY);
+  if (u.ml) addMl(-u.ml);
+  if (u.level >= 0) saveLevel(u.level);
+  return true;
+}
+
+export function canUndo(): boolean {
+  return localStorage.getItem(UNDO_KEY) !== null;
+}
+
 /** Consecutive days (ending today or yesterday) where the goal was reached. */
-export function streak(h: History, goal: number): number {
+export function streak(h: History, goalMl: number): number {
   const d = new Date();
   let n = 0;
-  if ((h[dayKey(d)] ?? 0) >= goal) n++;
+  if ((h[dayKey(d)] ?? 0) >= goalMl) n++;
   d.setDate(d.getDate() - 1);
-  while ((h[dayKey(d)] ?? 0) >= goal) {
+  while ((h[dayKey(d)] ?? 0) >= goalMl) {
     n++;
     d.setDate(d.getDate() - 1);
   }
@@ -104,17 +212,28 @@ export function streak(h: History, goal: number): number {
 }
 
 export function lastDays(h: History, days: number) {
-  const out: { key: string; label: string; count: number }[] = [];
+  const out: { key: string; label: string; ml: number }[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     out.push({
       key: dayKey(d),
       label: i === 0 ? "Today" : d.toLocaleDateString(undefined, { weekday: "short" }),
-      count: h[dayKey(d)] ?? 0,
+      ml: h[dayKey(d)] ?? 0,
     });
   }
   return out;
+}
+
+/** "1.2 L" / "750 ml" */
+export function fmtMl(ml: number): string {
+  if (ml >= 1000) return `${(ml / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} L`;
+  return `${Math.round(ml)} ml`;
+}
+
+/** "1.2" (liters, one decimal) for tight spots like the widget badge */
+export function liters(ml: number): string {
+  return (ml / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 const ONBOARDED_KEY = "tumbli.onboarded";

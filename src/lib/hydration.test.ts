@@ -7,7 +7,7 @@ describe("planFor", () => {
   it("uses about 30 ml/kg for an adult", () => {
     const plan = planFor(p({ weightKg: 70 }));
     expect(plan.totalMl).toBe(2100);
-    expect(plan.goal).toBe(8); // 2100 / 250
+    expect(plan.intervalMin).toBe(60); // ~8 reminders over 10 h
   });
 
   it("falls back to an age/sex baseline when weight is skipped", () => {
@@ -45,8 +45,8 @@ describe("planFor", () => {
     expect(plan.totalMl).toBe(2150);
   });
 
-  it("turns the total into servings of the chosen size", () => {
-    expect(planFor(p({ weightKg: 70, servingMl: 500 })).goal).toBe(4);
+  it("counts the total in refills of the user's tumbler", () => {
+    expect(planFor(p({ weightKg: 70, tumblerMl: 700 })).refills).toBe(3);
   });
 
   it("flags a doctor's fluid limit", () => {

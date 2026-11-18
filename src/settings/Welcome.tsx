@@ -48,18 +48,30 @@ const CLIMATE: Option<Climate>[] = [
   { value: "warm", label: "Warm", hint: "Sometimes sweaty", icon: "⛅" },
   { value: "hot", label: "Hot and humid", hint: "I sweat most days", icon: "☀️" },
 ];
-const SERVINGS: Option<number>[] = [
+const MODES: Option<"glass" | "tumbler">[] = [
+  { value: "glass", label: "By the glass", hint: "I fill a glass or cup each time", icon: "🥛" },
+  { value: "tumbler", label: "From my tumbler", hint: "I keep a bottle or tumbler on my desk", icon: "🧴" },
+];
+const GLASSES: Option<number>[] = [
   { value: 150, label: "150 ml", hint: "Small cup", icon: "🍵" },
   { value: 250, label: "250 ml", hint: "A glass", icon: "🥛" },
-  { value: 350, label: "350 ml", hint: "Mug or can", icon: "☕" },
+  { value: 350, label: "350 ml", hint: "Mug", icon: "☕" },
+  { value: 500, label: "500 ml", hint: "Big glass", icon: "🍺" },
+];
+const TUMBLERS: Option<number>[] = [
   { value: 500, label: "500 ml", hint: "Small bottle", icon: "🧴" },
+  { value: 650, label: "650 ml", hint: "Classic bottle", icon: "🧴" },
+  { value: 750, label: "750 ml", hint: "Sport bottle", icon: "🥤" },
+  { value: 1000, label: "1 L", hint: "Big bottle", icon: "🫗" },
+  { value: 1200, label: "1.2 L", hint: "40 oz tumbler", icon: "🥤" },
+  { value: 350, label: "350 ml", hint: "Mini tumbler", icon: "🥤" },
 ];
 const HEALTH: Option<string>[] = [
   { value: "no", label: "No", icon: "👍" },
   { value: "yes", label: "Yes", icon: "🩺" },
 ];
 
-const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "serving", "health", "result"] as const;
+const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "mode", "size", "health", "result"] as const;
 type StepName = (typeof STEPS)[number];
 
 function hourLabel(h: number) {
@@ -124,8 +136,14 @@ export function Welcome({ initial, onDone }: Props) {
 
   const plan = useMemo(() => planFor(p), [p]);
   // the result screen can fine-tune what the check suggested
-  const [tweak, setTweak] = useState<{ goal?: number; intervalMin?: number }>({});
-  const goal = tweak.goal ?? plan.goal;
+  const [tweak, setTweak] = useState<{ goalMl?: number; intervalMin?: number }>({});
+  const tumblerMode = p.mode === "tumbler";
+  // glass mode: whole glasses; tumbler mode: liters in 100 ml steps
+  const suggestedMl = tumblerMode
+    ? Math.round(plan.totalMl / 100) * 100
+    : Math.max(1, Math.round(plan.totalMl / p.glassMl)) * p.glassMl;
+  const goalMl = tweak.goalMl ?? suggestedMl;
+  const glasses = Math.round(goalMl / p.glassMl);
   const intervalMin = tweak.intervalMin ?? plan.intervalMin;
 
   const stepName: StepName = STEPS[step];
@@ -157,8 +175,10 @@ export function Welcome({ initial, onDone }: Props) {
     const s: Settings = {
       ...initial,
       name: first.slice(0, 30),
-      goal,
-      glassMl: plan.servingMl,
+      mode: p.mode,
+      glassMl: p.glassMl,
+      tumblerMl: p.tumblerMl,
+      goalMl,
       intervalMin,
       startHour: plan.startHour,
       endHour: plan.endHour,
@@ -186,7 +206,8 @@ export function Welcome({ initial, onDone }: Props) {
     activity: "Moving around makes you thirstier.",
     climate: "Heat makes you sweat out water.",
     hours: "I'll stay quiet outside these hours.",
-    serving: "What's on your desk right now?",
+    mode: "How do you usually drink?",
+    size: tumblerMode ? "Show me your tumbler!" : "What do you drink from?",
     health: "Last one, I promise!",
     result: "Here's your plan! 🎉",
   };
@@ -403,12 +424,30 @@ export function Welcome({ initial, onDone }: Props) {
         </div>,
       );
       break;
-    case "serving":
+    case "mode":
       content = question(
-        "How much do you drink per break?",
-        null,
-        <Choices layout="grid2" options={SERVINGS} value={p.servingMl} onPick={(v) => pickAndGo({ servingMl: v })} />,
+        "How do you drink water?",
+        "I'll track it the way you drink.",
+        <Choices layout="list" options={MODES} value={p.mode} onPick={(v) => pickAndGo({ mode: v })} />,
       );
+      break;
+    case "size":
+      content = tumblerMode
+        ? question(
+            "How big is your tumbler?",
+            "I'll be your tumbler on screen: I empty as you drink and you refill me.",
+            <Choices
+              layout="grid"
+              options={TUMBLERS}
+              value={p.tumblerMl}
+              onPick={(v) => pickAndGo({ tumblerMl: v })}
+            />,
+          )
+        : question(
+            "How big is your glass?",
+            null,
+            <Choices layout="grid2" options={GLASSES} value={p.glassMl} onPick={(v) => pickAndGo({ glassMl: v })} />,
+          );
       break;
     case "health":
       content = question(
@@ -431,8 +470,13 @@ export function Welcome({ initial, onDone }: Props) {
           ) : (
             <div className="plan-hero">
               <div className="plan-total">
-                <b>{((goal * plan.servingMl) / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })}</b>
+                <b>{(goalMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })}</b>
                 <span>liters a day</span>
+              </div>
+              <div className="plan-equals">
+                {tumblerMode
+                  ? `≈ ${(goalMl / p.tumblerMl).toLocaleString(undefined, { maximumFractionDigits: 1 })} of your ${p.tumblerMl >= 1000 ? `${p.tumblerMl / 1000} L` : `${p.tumblerMl} ml`} tumbler`
+                  : `${glasses} glasses of ${p.glassMl} ml`}
               </div>
               <div className="plan-chips">
                 {plan.reasons.map((r, i) => (
@@ -447,13 +491,31 @@ export function Welcome({ initial, onDone }: Props) {
             <div className="row">
               <span>Daily goal</span>
               <span className="stepper">
-                <button onClick={() => setTweak({ ...tweak, goal: Math.max(1, goal - 1) })} aria-label="Fewer">
+                <button
+                  onClick={() =>
+                    setTweak({
+                      ...tweak,
+                      goalMl: tumblerMode ? Math.max(500, goalMl - 100) : Math.max(1, glasses - 1) * p.glassMl,
+                    })
+                  }
+                  aria-label="Less"
+                >
                   −
                 </button>
                 <b>
-                  {goal} × {plan.servingMl} ml
+                  {tumblerMode
+                    ? `${(goalMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} L`
+                    : `${glasses} × ${p.glassMl} ml`}
                 </b>
-                <button onClick={() => setTweak({ ...tweak, goal: Math.min(20, goal + 1) })} aria-label="More">
+                <button
+                  onClick={() =>
+                    setTweak({
+                      ...tweak,
+                      goalMl: tumblerMode ? Math.min(5000, goalMl + 100) : Math.min(20, glasses + 1) * p.glassMl,
+                    })
+                  }
+                  aria-label="More"
+                >
                   +
                 </button>
               </span>

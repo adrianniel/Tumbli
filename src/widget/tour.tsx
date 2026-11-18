@@ -14,7 +14,8 @@ export const TOUR: TourStep[] = [
     title: "Drank some water?",
     body: (
       <>
-        Hover over me and press <Key>+</Key>, or tap <Key>I drank!</Key> when I remind you.
+        Hover over me and press <Key>+</Key> after a drink. Using a tumbler? <Key>✓</Key> means you finished it and{" "}
+        <Key>🔄</Key> means you refilled it.
       </>
     ),
     demo: "log",

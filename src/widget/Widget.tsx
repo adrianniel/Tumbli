@@ -11,11 +11,17 @@ import {
 import { Tumbler } from "../components/Tumbler";
 import { TOUR } from "./tour";
 import { bloop } from "../lib/sound";
-import { shouldNudge } from "../lib/schedule";
+import { shouldNudge, sipFor } from "../lib/schedule";
 import { cheerFor, nudgeMessage, randomFact, type Fact } from "../lib/facts";
 import { anchorOf, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 import {
-  addGlasses,
+  drink as logDrink,
+  finishTumbler,
+  fmtMl,
+  goalGlasses,
+  liters,
+  loadLevel,
+  refill,
   CHANGED_EVENT,
   markTourDone,
   TOUR_EVENT,
@@ -25,7 +31,8 @@ import {
   pauseEnd,
   savePausedUntil,
   streak,
-  todayCount,
+  todayMl,
+  type DrinkResult,
   type Settings,
 } from "../lib/store";
 
@@ -123,7 +130,9 @@ async function placeInitially(reset = false): Promise<Side> {
 
 export function Widget() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
-  const [count, setCount] = useState(() => todayCount());
+  const [doneMl, setDoneMl] = useState(() => todayMl());
+  const [level, setLevel] = useState(() => loadLevel()); // ml left in the tumbler (tumbler mode)
+  const [lastDrank, setLastDrank] = useState(0);
   const [nudging, setNudging] = useState(false);
   const [message, setMessage] = useState("");
   const [celebrate, setCelebrate] = useState(false);
@@ -148,7 +157,8 @@ export function Widget() {
   const refresh = useCallback(() => {
     const s = loadSettings();
     setSettings(s);
-    setCount(todayCount());
+    setDoneMl(todayMl());
+    setLevel(loadLevel(s));
     setPausedUntil(loadPausedUntil());
   }, []);
 
@@ -265,7 +275,7 @@ export function Widget() {
         now,
         nextAt: nextAt.current,
         settings,
-        count: todayCount(),
+        doneMl: todayMl(),
         busy: status.busy,
         pausedUntil: loadPausedUntil(),
       });
@@ -307,22 +317,55 @@ export function Widget() {
 
   // ---------- actions ----------
 
-  const drink = () => {
-    const n = addGlasses(1);
-    setCount(n);
+  const cheerUp = (text: string) => {
+    const id = Date.now();
+    setCheer({ text, id });
+    window.setTimeout(() => setCheer((c) => (c?.id === id ? null : c)), CHEER_MS);
+  };
+
+  /** after any drink: animate, cheer, schedule the next reminder */
+  const afterDrink = (before: number, r: DrinkResult) => {
+    setDoneMl(r.total);
+    if (r.level >= 0) setLevel(r.level);
     setNudging(false);
+    setLastDrank(r.drank);
     setGulping(true);
     window.setTimeout(() => setGulping(false), 1100);
-    // Tumbli cheers you on with floating text
-    const id = Date.now();
-    setCheer({ text: cheerFor(n, settings.goal, settings.name), id });
-    window.setTimeout(() => setCheer((c) => (c?.id === id ? null : c)), CHEER_MS);
+    cheerUp(
+      cheerFor({ before, after: r.total, goalMl: settings.goalMl, name: settings.name, empty: r.level === 0 }),
+    );
     nextAt.current = Date.now() + settings.intervalMin * 60_000;
-    if (n === settings.goal) {
+    if (before < settings.goalMl && r.total >= settings.goalMl) {
       setCelebrate(true);
       if (settings.sound) bloop();
       window.setTimeout(() => setCelebrate(false), 3500);
     }
+  };
+
+  const tumblerMode = settings.mode === "tumbler";
+  const sipMl = sipFor(settings);
+
+  /** a glass (glass mode) or a few sips (tumbler mode) */
+  const drink = () => {
+    if (tumblerMode && loadLevel(settings) <= 0) {
+      cheerUp("I'm empty! Refill me first 🔄");
+      return;
+    }
+    const before = todayMl();
+    afterDrink(before, logDrink(tumblerMode ? sipMl : settings.glassMl, settings));
+  };
+
+  const finishIt = () => {
+    const before = todayMl();
+    const r = finishTumbler(settings);
+    if (r.drank > 0) afterDrink(before, r);
+  };
+
+  const doRefill = () => {
+    refill(settings);
+    setLevel(settings.tumblerMl);
+    setBoing((n) => n + 1);
+    cheerUp("All full! 💧");
   };
 
   const snooze = () => {
@@ -383,9 +426,14 @@ export function Widget() {
     openSettings();
   };
 
-  const fill = count / settings.goal;
-  const done = count >= settings.goal;
-  const days = streak(loadHistory(), settings.goal);
+  const glasses = Math.floor(doneMl / settings.glassMl);
+  const goalG = goalGlasses(settings);
+  const empty = tumblerMode && level <= 0;
+  // glass mode fills up toward the goal; tumbler mode mirrors the real tumbler
+  const fill = tumblerMode ? level / settings.tumblerMl : doneMl / settings.goalMl;
+  const done = doneMl >= settings.goalMl;
+  const days = streak(loadHistory(), settings.goalMl);
+  const badge = tumblerMode ? `${liters(doneMl)}/${liters(settings.goalMl)} L` : `${glasses}/${goalG}`;
   const sleeping = pausedUntil > nowTick && !talking;
 
   return (
@@ -401,6 +449,7 @@ export function Widget() {
         celebrate ? "celebrate" : "",
         sleeping ? "sleeping" : "",
         done ? "done" : "",
+        empty ? "empty" : "",
       ].join(" ")}
       onMouseEnter={() => (hovering.current = true)}
       onMouseLeave={() => (hovering.current = false)}
@@ -410,13 +459,31 @@ export function Widget() {
           <div className="bubble-kicker">💧 Reminder</div>
           <div className="nudge-title">{message}</div>
           <div className="nudge-sub">
-            {count} of {settings.goal} glasses today
-            {days > 0 && <> · 🔥 {days} day streak</>}
+            {tumblerMode ? (
+              empty ? (
+                <>Your tumbler is empty. Refill it first!</>
+              ) : (
+                <>
+                  Drink about {sipMl} ml · {fmtMl(doneMl)} of {fmtMl(settings.goalMl)}
+                </>
+              )
+            ) : (
+              <>
+                {glasses} of {goalG} glasses today
+              </>
+            )}
+            {days > 0 && <> · 🔥 {days}</>}
           </div>
           <div className="nudge-actions">
-            <button className="btn primary" onClick={drink}>
-              I drank!
-            </button>
+            {empty ? (
+              <button className="btn primary" onClick={doRefill}>
+                Refilled 🔄
+              </button>
+            ) : (
+              <button className="btn primary" onClick={drink}>
+                {tumblerMode ? "Drank some" : "I drank!"}
+              </button>
+            )}
             <button className="btn" onClick={snooze}>
               {SNOOZE_MIN} min
             </button>
@@ -520,16 +587,14 @@ export function Widget() {
           </div>
         </div>
         <div className="ground" />
-        <div className="count">
-          {count}/{settings.goal}
-        </div>
+        <div className="count">{badge}</div>
         {sleeping && (
           <div className="zzz" aria-hidden>
             <span>z</span>
             <span>z</span>
           </div>
         )}
-        {gulping && <div className="plus-one">+1</div>}
+        {gulping && <div className="plus-one">{tumblerMode ? `+${lastDrank} ml` : "+1"}</div>}
         {nudging && (
           <>
             <div className="ripples" aria-hidden>
@@ -557,11 +622,32 @@ export function Widget() {
         )}
       </div>
 
+      {empty && !talking && (
+        <button className="refill-chip" onClick={doRefill} title="I refilled my tumbler">
+          🔄 Refill
+        </button>
+      )}
+
       {!talking && (
         <div className="hover-actions">
-          <button className="mini plus" onClick={drink} title="I drank a glass" aria-label="I drank a glass">
+          <button
+            className="mini plus"
+            onClick={drink}
+            title={tumblerMode ? `I drank ~${sipMl} ml` : "I drank a glass"}
+            aria-label={tumblerMode ? "I drank some" : "I drank a glass"}
+          >
             +
           </button>
+          {tumblerMode && (
+            <>
+              <button className="mini" onClick={finishIt} title="I finished my tumbler" aria-label="Finished my tumbler">
+                ✓
+              </button>
+              <button className="mini" onClick={doRefill} title="I refilled my tumbler" aria-label="Refilled my tumbler">
+                🔄
+              </button>
+            </>
+          )}
           <button className="mini" onClick={openSettings} title="Settings" aria-label="Settings">
             ⚙
           </button>

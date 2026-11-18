@@ -934,3 +934,32 @@ footer {
   flex-wrap: wrap;
   row-gap: 6px;
 }
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  gap: 2px;
+}
+.seg button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.seg button.on {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.hero-actions {
+  flex-wrap: wrap;
+}
+.plan-equals {
+  margin-top: -4px;
+  font-weight: 600;
+  color: var(--ink);
+}

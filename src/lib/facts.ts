@@ -67,22 +67,36 @@ export function nudgeMessage(name: string | undefined, rand = Math.random) {
   return lines[Math.floor(rand() * lines.length)];
 }
 
-/** What Tumbli cheers right after a glass is logged. */
-export function cheerFor(count: number, goal: number, name: string | undefined, rand = Math.random) {
+const fmt = (ml: number) =>
+  ml >= 1000 ? `${(ml / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} L` : `${Math.round(ml / 10) * 10} ml`;
+
+export type CheerInput = {
+  /** ml today before and after this drink */
+  before: number;
+  after: number;
+  goalMl: number;
+  name?: string;
+  /** the tumbler is now empty */
+  empty?: boolean;
+};
+
+/** What Tumbli cheers right after you drink. */
+export function cheerFor({ before, after, goalMl, name, empty = false }: CheerInput, rand = Math.random) {
   const n = (name ?? "").trim();
-  const left = goal - count;
-  if (count === goal) return n ? `Goal reached, ${n}! 🏆` : "Goal reached! 🏆";
-  if (count > goal) return "Extra credit! 🌟";
-  if (count === 1) return "First glass of the day! ☀️";
-  if (left === 1) return "Just 1 more to go! 💪";
-  if (count === Math.ceil(goal / 2)) return "Halfway there! 🎉";
+  const left = goalMl - after;
+  if (before < goalMl && after >= goalMl) return n ? `Goal reached, ${n}! 🏆` : "Goal reached! 🏆";
+  if (before >= goalMl) return "Extra credit! 🌟";
+  if (empty) return "Empty! Time for a refill 🔄";
+  if (before === 0) return "First sips of the day! ☀️";
+  if (before < goalMl / 2 && after >= goalMl / 2) return "Halfway there! 🎉";
+  if (left <= 500) return `Almost there! ${fmt(left)} to go 💪`;
   const lines = [
     "Nice sip! 💧",
     "Your brain says thanks! 🧠",
     "Keep it flowing! 🌊",
     "Hydration hero! 🦸",
     n ? `Great job, ${n}! ✨` : "Great job! ✨",
-    `${left} more to go!`,
+    `${fmt(left)} to go!`,
   ];
   return lines[Math.floor(rand() * lines.length)];
 }
