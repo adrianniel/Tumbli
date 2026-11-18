@@ -127,3 +127,29 @@ export function isOnboarded(): boolean {
 export function markOnboarded() {
   localStorage.setItem(ONBOARDED_KEY, "1");
 }
+
+const PAUSE_KEY = "tumbli.pausedUntil";
+
+/** Reminders are paused until this time (ms since epoch); 0 = not paused. */
+export function loadPausedUntil(): number {
+  try {
+    return Number(localStorage.getItem(PAUSE_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function savePausedUntil(t: number) {
+  if (t > 0) localStorage.setItem(PAUSE_KEY, String(t));
+  else localStorage.removeItem(PAUSE_KEY);
+  void emit(CHANGED_EVENT);
+}
+
+/** When a pause of the given kind would end, counted from `now`. */
+export function pauseEnd(kind: "hour" | "day", now = new Date()): number {
+  if (kind === "hour") return now.getTime() + 60 * 60_000;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow.getTime();
+}

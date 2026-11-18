@@ -15,7 +15,10 @@ import {
   addGlasses,
   CHANGED_EVENT,
   loadHistory,
+  loadPausedUntil,
   loadSettings,
+  pauseEnd,
+  savePausedUntil,
   streak,
   todayCount,
   type Settings,
@@ -104,6 +107,8 @@ export function Widget() {
   const [message, setMessage] = useState(NUDGES[0]);
   const [celebrate, setCelebrate] = useState(false);
   const [gulping, setGulping] = useState(false);
+  const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
+  const [nowTick, setNowTick] = useState(() => Date.now());
 
   // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
   const nextAt = useRef(
@@ -116,6 +121,7 @@ export function Widget() {
     const s = loadSettings();
     setSettings(s);
     setCount(todayCount());
+    setPausedUntil(loadPausedUntil());
   }, []);
 
   // first placement + show (resizing waits for this, or the two race)
@@ -153,6 +159,13 @@ export function Widget() {
   // sync with the settings window and the tray menu
   useEffect(() => {
     const a = listen(CHANGED_EVENT, refresh);
+    const c = listen<string>("tumbli:pause", (e) => {
+      const until = e.payload === "resume" ? 0 : pauseEnd(e.payload === "day" ? "day" : "hour");
+      savePausedUntil(until);
+      setPausedUntil(until);
+      setNudging(false);
+      if (until === 0) nextAt.current = Date.now() + 60_000; // check in soon after resuming
+    });
     const b = listen("tumbli:reset-position", async () => {
       localStorage.removeItem(POS_KEY);
       setNudging(false);
@@ -162,6 +175,7 @@ export function Widget() {
     return () => {
       void a.then((f) => f());
       void b.then((f) => f());
+      void c.then((f) => f());
     };
   }, [refresh]);
 
@@ -182,6 +196,8 @@ export function Widget() {
         lastDay.current = now.toDateString();
         refresh();
       }
+
+      setNowTick(Date.now());
 
       let status: SystemStatus = { idle_secs: 0, busy: false };
       try {
@@ -210,6 +226,7 @@ export function Widget() {
         settings,
         count: todayCount(),
         busy: status.busy,
+        pausedUntil: loadPausedUntil(),
       });
 
       if (due && !nudging) {
@@ -256,6 +273,7 @@ export function Widget() {
   const fill = count / settings.goal;
   const done = count >= settings.goal;
   const days = streak(loadHistory(), settings.goal);
+  const sleeping = pausedUntil > nowTick && !nudging;
 
   return (
     <div
@@ -264,6 +282,7 @@ export function Widget() {
         nudging ? "expanded" : "compact",
         gulping ? "gulping" : "",
         celebrate ? "celebrate" : "",
+        sleeping ? "sleeping" : "",
         done ? "done" : "",
       ].join(" ")}
     >
@@ -297,7 +316,7 @@ export function Widget() {
         <div className="hop">
           <div className="bob">
             <div className="squish">
-              <Tumbler fill={fill} size={nudging ? 92 : 84} happy={done} arms calling={nudging} />
+              <Tumbler fill={fill} size={nudging ? 92 : 84} happy={done} arms calling={nudging} sleeping={sleeping} />
             </div>
           </div>
         </div>
@@ -305,6 +324,12 @@ export function Widget() {
         <div className="count">
           {count}/{settings.goal}
         </div>
+        {sleeping && (
+          <div className="zzz" aria-hidden>
+            <span>z</span>
+            <span>z</span>
+          </div>
+        )}
         {gulping && <div className="plus-one">+1</div>}
         {celebrate && (
           <div className="sparkles" aria-hidden>

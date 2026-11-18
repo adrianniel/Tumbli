@@ -9,6 +9,8 @@ type Props = {
   arms?: boolean;
   /** surprised "o" mouth, used while reminding */
   calling?: boolean;
+  /** eyes shut, used while reminders are paused */
+  sleeping?: boolean;
 };
 
 // A wide insulated sport bottle: straight body, rounded shoulders.
@@ -19,7 +21,7 @@ const EMPTY = "#D3E9FB";
 const FULL = "#2E8BE6";
 
 /** Tumbli: a sport bottle with a strap cap and a face. Its color rises with `fill`. */
-export function Tumbler({ fill, size = 64, happy = false, arms = false, calling = false }: Props) {
+export function Tumbler({ fill, size = 64, happy = false, arms = false, calling = false, sleeping = false }: Props) {
   const level = Math.max(0, Math.min(1, fill));
   // Body interior spans y = 28..97 in the viewBox.
   const waterTop = 97 - level * 69;
@@ -71,7 +73,12 @@ export function Tumbler({ fill, size = 64, happy = false, arms = false, calling 
 
       {/* face */}
       <g className="face">
-        {happy ? (
+        {sleeping ? (
+          <>
+            <path d="M40.5 52 Q43.5 55 46.5 52" stroke={INK} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+            <path d="M53.5 52 Q56.5 55 59.5 52" stroke={INK} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+          </>
+        ) : happy ? (
           <>
             <path d="M40.5 53 Q43.5 49 46.5 53" stroke={INK} strokeWidth="2.6" fill="none" strokeLinecap="round" />
             <path d="M53.5 53 Q56.5 49 59.5 53" stroke={INK} strokeWidth="2.6" fill="none" strokeLinecap="round" />

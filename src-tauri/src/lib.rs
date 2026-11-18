@@ -90,9 +90,27 @@ pub fn run() {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =
                 MenuItem::with_id(app, "reset_pos", "Reset widget position", true, None::<&str>)?;
+            let pause_hour_i =
+                MenuItem::with_id(app, "pause_60", "Pause for 1 hour", true, None::<&str>)?;
+            let pause_day_i =
+                MenuItem::with_id(app, "pause_day", "Pause until tomorrow", true, None::<&str>)?;
+            let resume_i = MenuItem::with_id(app, "resume", "Resume reminders", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit Tumbli", true, None::<&str>)?;
-            let sep = PredefinedMenuItem::separator(app)?;
-            let menu = Menu::with_items(app, &[&settings_i, &reset_i, &sep, &quit_i])?;
+            let sep1 = PredefinedMenuItem::separator(app)?;
+            let sep2 = PredefinedMenuItem::separator(app)?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &settings_i,
+                    &reset_i,
+                    &sep1,
+                    &pause_hour_i,
+                    &pause_day_i,
+                    &resume_i,
+                    &sep2,
+                    &quit_i,
+                ],
+            )?;
 
             TrayIconBuilder::with_id("tumbli-tray")
                 .icon(app.default_window_icon().unwrap().clone())
@@ -103,6 +121,16 @@ pub fn run() {
                     "settings" => show_settings(app),
                     "reset_pos" => {
                         let _ = app.emit("tumbli:reset-position", ());
+                    }
+                    // the widget owns the reminder state; it just needs to hear about it
+                    "pause_60" => {
+                        let _ = app.emit("tumbli:pause", "hour");
+                    }
+                    "pause_day" => {
+                        let _ = app.emit("tumbli:pause", "day");
+                    }
+                    "resume" => {
+                        let _ = app.emit("tumbli:pause", "resume");
                     }
                     "quit" => app.exit(0),
                     _ => {}

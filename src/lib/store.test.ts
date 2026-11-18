@@ -101,3 +101,20 @@ describe("lastDays", () => {
     expect(days[0].count).toBe(0);
   });
 });
+
+describe("pause", () => {
+  it("pauses for an hour or until midnight", async () => {
+    const { pauseEnd } = await import("./store");
+    const now = new Date(2026, 10, 18, 14, 30);
+    expect(pauseEnd("hour", now)).toBe(new Date(2026, 10, 18, 15, 30).getTime());
+    expect(pauseEnd("day", now)).toBe(new Date(2026, 10, 19, 0, 0).getTime());
+  });
+
+  it("stores and clears the pause", async () => {
+    const { loadPausedUntil, savePausedUntil } = await import("./store");
+    savePausedUntil(123);
+    expect(loadPausedUntil()).toBe(123);
+    savePausedUntil(0);
+    expect(loadPausedUntil()).toBe(0);
+  });
+});
