@@ -58,6 +58,35 @@ async fn startup_set(enable: bool) -> String {
 
 /// Move and resize the calling window in one step (physical px). Doing size and position
 /// separately shows an in-between frame where Tumbli jumps, which looks like a flicker.
+/// Show (and accept clicks on) only this part of the widget window: x, y, w, h in
+/// physical px from the window's top-left. Unlike a resize, nothing is laid out or
+/// redrawn at a new size, so the change is instant and Tumbli never jumps.
+#[tauri::command]
+fn set_widget_region(window: tauri::WebviewWindow, x: i32, y: i32, w: i32, h: i32) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Graphics::Gdi::{CreateRectRgn, DeleteObject, SetWindowRgn};
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        unsafe {
+            let rgn = CreateRectRgn(x, y, x + w, y + h);
+            if rgn.is_null() {
+                return Err("CreateRectRgn failed".into());
+            }
+            // on success the window owns the region; on failure it's ours to free
+            if SetWindowRgn(hwnd.0 as _, rgn, 1) == 0 {
+                DeleteObject(rgn);
+                return Err("SetWindowRgn failed".into());
+            }
+        }
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, x, y, w, h);
+        Ok(())
+    }
+}
+
 #[tauri::command]
 fn set_widget_bounds(window: tauri::WebviewWindow, x: i32, y: i32, w: i32, h: i32) -> Result<(), String> {
     #[cfg(windows)]
@@ -225,7 +254,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down, set_widget_bounds])
+        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down, set_widget_bounds, set_widget_region])
         .setup(|app| {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =

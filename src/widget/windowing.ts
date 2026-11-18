@@ -1,12 +1,17 @@
 /**
- * The widget's own window: its sizes per mode, where it sits on screen, and how it
- * grows/shrinks while staying docked to a screen edge.
+ * The widget's own window: where it sits on screen and which part of it shows.
+ *
+ * The window always has the size of the biggest mode (a speech bubble) and stays
+ * put. Each mode only changes the window *region*, the part that is drawn and takes
+ * clicks; the rest is not there at all, so clicks go to the apps behind it.
+ * Resizing the window instead made Tumbli jump for a frame (WebView2 redraws a
+ * moment after the window changes size), which showed as a flicker on hover.
  */
 import { invoke } from "@tauri-apps/api/core";
 import { availableMonitors, getCurrentWindow, LogicalSize, PhysicalPosition } from "@tauri-apps/api/window";
-import { anchorOf, keepOnScreen, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
+import { anchorOf, dockTo, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 
-/** Window size (logical px) for each thing the widget can be doing. */
+/** The part of the window (logical px) each thing the widget can be doing needs. */
 export const SIZES = {
   idle: { w: 76, h: 140 }, // just Tumbli, hugging the screen edge
   hover: { w: 140, h: 140 }, // room for the 2x2 quick buttons
@@ -14,6 +19,9 @@ export const SIZES = {
   cheer: { w: 300, h: 170 }, // floating cheer text
 } as const;
 export type WindowMode = keyof typeof SIZES;
+
+/** The window itself: big enough for every mode. */
+const FRAME = { w: 350, h: 240 };
 
 const POS_KEY = "tumbli.widget.anchor.v3"; // docked side + edge + bottom, physical px
 const EDGE_MARGIN = 2; // logical px between the window and the screen edge
@@ -34,7 +42,7 @@ async function windowRect() {
   return { x: pos.x, y: pos.y, w: size.width, h: size.height };
 }
 
-/** Move + resize in one native step so there's no in-between frame (no flicker). */
+/** Move + resize in one native step so there's no in-between frame. */
 async function setBounds(x: number, y: number, w: number, h: number) {
   try {
     await invoke("set_widget_bounds", { x, y, w, h });
@@ -46,26 +54,53 @@ async function setBounds(x: number, y: number, w: number, h: number) {
   }
 }
 
-/**
- * Resize while keeping the docked edge and the bottom where they are:
- * docked right it grows to the left, docked left it grows to the right,
- * and the result always stays inside the screen.
- */
-export async function resizeTo(mode: WindowMode, side: Side) {
-  const { w, h } = SIZES[mode];
-  const sf = await win.scaleFactor();
-  const pw = Math.round(w * sf);
-  const ph = Math.round(h * sf);
-  const at = placeAt(anchorOf(await windowRect(), side), pw, ph);
-  const fit = keepOnScreen({ ...at, w: pw, h: ph }, await workAreas());
-  await setBounds(fit.x, fit.y, pw, ph);
+/** Physical size of what a mode shows, in the docked bottom corner of the window. */
+function regionFor(mode: WindowMode, side: Side, sf: number, frame: { w: number; h: number }) {
+  const w = Math.min(frame.w, Math.round(SIZES[mode].w * sf));
+  const h = Math.min(frame.h, Math.round(SIZES[mode].h * sf));
+  return { x: side === "right" ? frame.w - w : 0, y: frame.h - h, w, h };
 }
 
-/** Slide to the nearest side edge after a drag, with a little gap. Returns the side. */
-export async function snapAfterDrag(): Promise<Side> {
+/** Show the part of the window this mode needs. Instant: nothing moves or resizes. */
+export async function showMode(mode: WindowMode, side: Side) {
+  try {
+    const sf = await win.scaleFactor();
+    const size = await win.outerSize();
+    await invoke("set_widget_region", regionFor(mode, side, sf, { w: size.width, h: size.height }));
+  } catch {
+    // the browser preview has no window region; the page there is sized per mode
+  }
+}
+
+/** Where Tumbli itself is: the docked bottom corner of the window. */
+function tumbliIn(win: { x: number; y: number; w: number; h: number }, side: Side, sf: number) {
+  const w = Math.round(SIZES.idle.w * sf);
+  const h = Math.round(SIZES.idle.h * sf);
+  return { x: side === "right" ? win.x + win.w - w : win.x, y: win.y + win.h - h, w, h };
+}
+
+/**
+ * After a drag: slide Tumbli to the nearest side edge, with a little gap, and keep
+ * the whole window on screen so a speech bubble always fits. `onSide` runs as soon
+ * as the side is known, so Tumbli can move to the other end of the window first.
+ */
+export async function snapAfterDrag(side: Side, onSide: (side: Side) => void): Promise<Side> {
   const sf = await win.scaleFactor();
-  const from = await windowRect();
-  const to = snapToEdge(from, await workAreas(), Math.round(EDGE_MARGIN * sf));
+  const margin = Math.round(EDGE_MARGIN * sf);
+  const areas = await workAreas();
+  let from = await windowRect();
+  const tumbli = tumbliIn(from, side, sf);
+  const newSide = snapToEdge(tumbli, areas, margin).side;
+
+  if (newSide !== side) {
+    // Tumbli is drawn at the other end of the window on this side: shift the
+    // window so Tumbli stays where the user dropped it, then slide from there
+    from = { ...from, x: newSide === "right" ? tumbli.x + tumbli.w - from.w : tumbli.x };
+    onSide(newSide);
+    await win.setPosition(new PhysicalPosition(from.x, from.y));
+  }
+  const to = dockTo({ ...from, y: tumbli.y + tumbli.h - from.h }, newSide, areas, margin);
+
   const steps = 9;
   for (let i = 1; i <= steps; i++) {
     const t = 1 - Math.pow(1 - i / steps, 3); // ease-out
@@ -74,16 +109,16 @@ export async function snapAfterDrag(): Promise<Side> {
     );
     await new Promise((r) => setTimeout(r, 16));
   }
-  localStorage.setItem(POS_KEY, JSON.stringify(anchorOf(to, to.side)));
-  return to.side;
+  localStorage.setItem(POS_KEY, JSON.stringify(anchorOf(to, newSide)));
+  return newSide;
 }
 
 /** Put the widget where it was last docked (or bottom-right the first time). */
 export async function placeInitially(reset = false): Promise<Side> {
   if (reset) localStorage.removeItem(POS_KEY);
   const sf = await win.scaleFactor();
-  const w = Math.round(SIZES.idle.w * sf);
-  const h = Math.round(SIZES.idle.h * sf);
+  const w = Math.round(FRAME.w * sf);
+  const h = Math.round(FRAME.h * sf);
 
   let saved: Anchor | null = null;
   try {
@@ -92,14 +127,14 @@ export async function placeInitially(reset = false): Promise<Side> {
     saved = null;
   }
   const areas = await workAreas();
-  const start = saved
-    ? { ...placeAt(saved, w, h), w, h }
-    : (() => {
-        const a = areas[0] ?? { x: 0, y: 0, w: 1280, h: 720 };
-        return { x: a.x + a.w - w, y: a.y + a.h - h, w, h };
-      })();
-  // snapping also pulls back a spot that is no longer on any monitor
-  const to = areas.length ? snapToEdge(start, areas, Math.round(EDGE_MARGIN * sf)) : { ...start, side: "right" as Side };
+  if (!areas.length) {
+    await setBounds(0, 0, w, h);
+    return "right";
+  }
+  const a = areas[0];
+  const start = saved ? { ...placeAt(saved, w, h), w, h } : { x: a.x + a.w - w, y: a.y + a.h - h, w, h };
+  // docking also pulls back a spot that is no longer on any monitor
+  const to = dockTo(start, saved?.side ?? "right", areas, Math.round(EDGE_MARGIN * sf));
   await setBounds(to.x, to.y, w, h);
   return to.side;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anchorOf, pickArea, placeAt, snapToEdge } from "./dock";
+import { anchorOf, dockTo, pickArea, placeAt, snapToEdge } from "./dock";
 
 // one 1920x1080 screen with a 48px taskbar at the bottom
 const screen = { x: 0, y: 0, w: 1920, h: 1032 };
@@ -27,6 +27,18 @@ describe("snapToEdge", () => {
 
   it("falls back to the nearest screen when dropped off screen", () => {
     expect(pickArea(win(-500, 300), [screen])).toBe(screen);
+  });
+});
+
+describe("dockTo", () => {
+  it("docks to the side it's told, even when the window is mostly on the other half", () => {
+    expect(dockTo(win(300, 400), "right", [screen], 2)).toEqual({ x: 1818, y: 400, w: 100, h: 140, side: "right" });
+    expect(dockTo(win(1500, 400), "left", [screen], 2)).toMatchObject({ x: 2, side: "left" });
+  });
+
+  it("keeps the whole window on screen, so a speech bubble always fits", () => {
+    const frame = { x: 1500, y: -100, w: 350, h: 240 };
+    expect(dockTo(frame, "right", [screen], 2)).toMatchObject({ x: 1920 - 350 - 2, y: 2 });
   });
 });
 

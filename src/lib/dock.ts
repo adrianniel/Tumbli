@@ -32,7 +32,12 @@ export function pickArea(win: Rect, areas: Rect[]): Rect {
  */
 export function snapToEdge(win: Rect, areas: Rect[], margin: number): Rect & { side: Side } {
   const a = pickArea(win, areas);
-  const side: Side = center(win).x < a.x + a.w / 2 ? "left" : "right";
+  return dockTo(win, center(win).x < a.x + a.w / 2 ? "left" : "right", areas, margin);
+}
+
+/** Like snapToEdge, but to the given side. */
+export function dockTo(win: Rect, side: Side, areas: Rect[], margin: number): Rect & { side: Side } {
+  const a = pickArea(win, areas);
   const x = side === "left" ? a.x + margin : a.x + a.w - win.w - margin;
   const minY = a.y + margin;
   const maxY = a.y + a.h - win.h - margin;
