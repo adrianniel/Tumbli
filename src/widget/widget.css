@@ -12,14 +12,13 @@
   user-select: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card: rgba(24, 32, 44, 0.96);
-    --ink: #e6f2ff;
-    --muted: #9db4c9;
-    --btn: rgba(127, 211, 255, 0.16);
-    --border: rgba(255, 255, 255, 0.12);
-  }
+/* dark theme (the default; see Settings > Dark mode) */
+:root[data-theme="dark"] {
+  --card: rgba(24, 32, 44, 0.96);
+  --ink: #e6f2ff;
+  --muted: #9db4c9;
+  --btn: rgba(127, 211, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.12);
 }
 
 html,
@@ -1108,17 +1107,16 @@ body,
   font-family: "Nunito Variable", "Segoe UI", sans-serif;
   font-weight: 600;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card: rgba(17, 36, 55, 0.97);
-    --ink: #e7f2fb;
-    --muted: #8ea7bd;
-    --accent: #3aa3f0;
-    --primary: #7fc6f7;
-    --on-primary: #08233a;
-    --btn: rgba(58, 163, 240, 0.16);
-    --border: rgba(255, 255, 255, 0.09);
-  }
+/* dark theme (the default; see Settings > Dark mode) */
+:root[data-theme="dark"] {
+  --card: rgba(17, 36, 55, 0.97);
+  --ink: #e7f2fb;
+  --muted: #8ea7bd;
+  --accent: #3aa3f0;
+  --primary: #7fc6f7;
+  --on-primary: #08233a;
+  --btn: rgba(58, 163, 240, 0.16);
+  --border: rgba(255, 255, 255, 0.09);
 }
 
 .bubble-card {

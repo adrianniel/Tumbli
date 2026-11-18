@@ -418,6 +418,18 @@ export function Settings() {
       <section className="card">
         <h2>Behavior</h2>
         <label className="row">
+          <span>
+            Dark mode
+            <small>Turn off for the light look</small>
+          </span>
+          <input
+            className="switch"
+            type="checkbox"
+            checked={s.theme === "dark"}
+            onChange={(e) => update({ theme: e.target.checked ? "dark" : "light" })}
+          />
+        </label>
+        <label className="row">
           <span>Play a sound</span>
           <input
             className="switch"

@@ -413,13 +413,13 @@ const scenes = {
   "6-light-mode": {
     kicker: "Light or dark",
     title: "Easy on the eyes, day and night",
-    sub: "Tumbli follows your Windows theme. Here it is in light mode, with the Monday recap.",
-    bullets: ["Matches light and dark mode", "Weekly recap", "Pause from the tray icon anytime"],
+    sub: "Tumbli is dark by default. Prefer it bright? One switch in Settings.",
+    bullets: ["Dark or light, your choice", "A recap of your week every Monday", "Pause from the tray icon anytime"],
     scale: 1.12,
     desktop: ({ deskW, deskH }) =>
       win({ x: 24, y: 40, w: 600, h: 420, title: "Notes", icon: smallTile("#7D4BD6"), body: notesBody(false), dim: true }) +
-      settingsWindow("demo&tumbler", { x: 150, y: deskH - TASKBAR_H - 752 - 14 }) +
-      widget("demo&tumbler&recap", { ...sizes.talk, deskW, deskH, bottom: 50 }),
+      settingsWindow("demo&tumbler&theme=light", { x: 150, y: deskH - TASKBAR_H - 752 - 14 }) +
+      widget("demo&tumbler&recap&theme=light", { ...sizes.talk, deskW, deskH, bottom: 50 }),
   },
 };
 

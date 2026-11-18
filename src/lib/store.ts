@@ -3,6 +3,9 @@ import { emit } from "@tauri-apps/api/event";
 /** How the user logs water: glass by glass, or from their own tumbler that Tumbli mirrors. */
 export type TrackMode = "glass" | "tumbler";
 
+/** Look of both windows. Dark by default; the settings panel has a switch. */
+export type Theme = "dark" | "light";
+
 export type Settings = {
   mode: TrackMode;
   /** daily goal, ml */
@@ -23,6 +26,7 @@ export type Settings = {
   shortcut: string;
   /** what Tumbli is wearing (unlocked through achievements); null = nothing */
   outfit: string | null;
+  theme: Theme;
 };
 
 /** date (YYYY-MM-DD) -> ml drunk that day */
@@ -51,6 +55,7 @@ export const defaultSettings: Settings = {
   shortcutOn: true,
   shortcut: "CommandOrControl+Alt+W",
   outfit: null,
+  theme: "dark",
 };
 
 /** Shortcuts to choose from (the first is the default). */

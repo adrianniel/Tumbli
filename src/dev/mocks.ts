@@ -78,4 +78,8 @@ export function setupBrowserMocks(label: string) {
     }
     localStorage.setItem("tumbli.tourDone", "1");
   }
+  if (q.get("theme")) {
+    const st = JSON.parse(localStorage.getItem("tumbli.settings") ?? "{}");
+    localStorage.setItem("tumbli.settings", JSON.stringify({ ...st, theme: q.get("theme") }));
+  }
 }

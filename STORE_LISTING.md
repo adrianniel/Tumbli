@@ -40,7 +40,7 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 7. Pause reminders for an hour or until tomorrow
 8. Daily streaks and a 7-day history chart
 9. Starts with Windows (optional)
-10. Light and dark mode
+10. Dark mode by default, light mode with one switch
 11. No account, no ads, no data collection
 
 ## Search terms (max 7)
@@ -59,7 +59,7 @@ Upload in this order from `store-assets/screenshots/` (3840×2160 PNG):
 6. `6-light-mode.png`: light mode with the weekly recap
 
 Each one shows the real app UI on a Windows-style desktop (taskbar, tray icon, other
-windows). Shots 1–5 are in dark mode, like most people will see Tumbli; shot 6 shows light mode. To regenerate: run `npm run dev`, then `npm run screenshots`.
+windows). Shots 1–5 are in dark mode, Tumbli's default; shot 6 shows light mode (a switch in Settings). To regenerate: run `npm run dev`, then `npm run screenshots`.
 
 ## Store logos
 
