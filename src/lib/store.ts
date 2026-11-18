@@ -153,3 +153,19 @@ export function pauseEnd(kind: "hour" | "day", now = new Date()): number {
   tomorrow.setHours(0, 0, 0, 0);
   return tomorrow.getTime();
 }
+
+/** Start the hydration check again next time the settings window renders. */
+export function resetOnboarding() {
+  localStorage.removeItem(ONBOARDED_KEY);
+}
+
+const PROFILE_KEY = "tumbli.profile";
+
+/** Answers from the hydration check, so a retake starts from them. */
+export function loadProfile<T>(fallback: T): T {
+  return { ...fallback, ...readJson<Partial<T>>(PROFILE_KEY, {}) };
+}
+
+export function saveProfile<T>(p: T) {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+}

@@ -11,6 +11,7 @@ import {
   lastDays,
   loadHistory,
   loadSettings,
+  resetOnboarding,
   resetToday,
   saveSettings,
   streak,
@@ -128,6 +129,25 @@ export function Settings() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card plan-card">
+        <div>
+          <h2>Your hydration plan</h2>
+          <div>
+            {((s.goal * s.glassMl) / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} L a day ·{" "}
+            {s.goal} × {s.glassMl} ml
+          </div>
+        </div>
+        <button
+          className="link"
+          onClick={() => {
+            resetOnboarding();
+            setOnboarded(false);
+          }}
+        >
+          Retake check
+        </button>
       </section>
 
       <section className="card">
