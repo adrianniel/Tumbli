@@ -1271,3 +1271,9 @@ body,
 .count.refill-badge:hover {
   filter: brightness(1.08);
 }
+
+/* Tumbli stays pinned to its docked edge in every mode, so when the window
+   grows or shrinks around it, it never jumps (no flicker between frames) */
+.widget.compact {
+  justify-content: flex-end;
+}

@@ -80,8 +80,19 @@ async function resizeAnchored(w: number, h: number, side: Side) {
   const ph = Math.round(h * sf);
   const at = placeAt(anchorOf(await windowRect(), side), pw, ph);
   const fit = keepOnScreen({ ...at, w: pw, h: ph }, await workAreas());
-  await win.setSize(new LogicalSize(w, h));
-  await win.setPosition(new PhysicalPosition(fit.x, fit.y));
+  await setBounds(fit.x, fit.y, pw, ph);
+}
+
+/** Move + resize in one native step so there's no in-between frame (no flicker). */
+async function setBounds(x: number, y: number, w: number, h: number) {
+  try {
+    await invoke("set_widget_bounds", { x, y, w, h });
+  } catch {
+    // not available (e.g. the browser preview): fall back to two steps
+    const sf = await win.scaleFactor();
+    await win.setSize(new LogicalSize(w / sf, h / sf));
+    await win.setPosition(new PhysicalPosition(x, y));
+  }
 }
 
 /** Slide to the nearest side edge after a drag, with a little gap. Returns the side. */
@@ -105,7 +116,6 @@ async function placeInitially(reset = false): Promise<Side> {
   const sf = await win.scaleFactor();
   const w = Math.round(COMPACT.w * sf);
   const h = Math.round(COMPACT.h * sf);
-  await win.setSize(new LogicalSize(COMPACT.w, COMPACT.h));
 
   let saved: Anchor | null = null;
   if (!reset) {
@@ -126,7 +136,7 @@ async function placeInitially(reset = false): Promise<Side> {
   const to = areas.length
     ? snapToEdge(start, areas, Math.round(EDGE_MARGIN * sf))
     : { ...start, side: "right" as Side };
-  await win.setPosition(new PhysicalPosition(to.x, to.y));
+  await setBounds(to.x, to.y, w, h);
   return to.side;
 }
 
@@ -618,7 +628,7 @@ export function Widget() {
               <div className="squish">
                 <Tumbler
                   fill={fill}
-                  size={talking ? 92 : 84}
+                  size={84}
                   happy={done && !talking}
                   arms
                   calling={talking}

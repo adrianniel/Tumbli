@@ -56,6 +56,41 @@ async fn startup_set(enable: bool) -> String {
     }
 }
 
+/// Move and resize the calling window in one step (physical px). Doing size and position
+/// separately shows an in-between frame where Tumbli jumps, which looks like a flicker.
+#[tauri::command]
+fn set_widget_bounds(window: tauri::WebviewWindow, x: i32, y: i32, w: i32, h: i32) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            SetWindowPos, SWP_NOACTIVATE, SWP_NOOWNERZORDER, SWP_NOZORDER,
+        };
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        let ok = unsafe {
+            SetWindowPos(
+                hwnd.0 as _,
+                std::ptr::null_mut(),
+                x,
+                y,
+                w,
+                h,
+                SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER,
+            )
+        };
+        if ok == 0 {
+            return Err("SetWindowPos failed".into());
+        }
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        window
+            .set_position(tauri::PhysicalPosition::new(x, y))
+            .and_then(|_| window.set_size(tauri::PhysicalSize::new(w.max(1) as u32, h.max(1) as u32)))
+            .map_err(|e| e.to_string())
+    }
+}
+
 /// Is the primary mouse button still held? The widget uses it to know when a drag really ended.
 #[tauri::command]
 fn primary_button_down() -> bool {
@@ -188,7 +223,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down])
+        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down, set_widget_bounds])
         .setup(|app| {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =
