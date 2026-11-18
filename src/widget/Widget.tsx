@@ -11,7 +11,7 @@ import {
 import { Tumbler } from "../components/Tumbler";
 import { bloop } from "../lib/sound";
 import { shouldNudge } from "../lib/schedule";
-import { nudgeMessage, randomFact, type Fact } from "../lib/facts";
+import { cheerFor, nudgeMessage, randomFact, type Fact } from "../lib/facts";
 import {
   addGlasses,
   CHANGED_EVENT,
@@ -27,6 +27,8 @@ import {
 
 const COMPACT = { w: 100, h: 140 };
 const EXPANDED = { w: 350, h: 240 };
+const CHEERING = { w: 300, h: 170 }; // room for the floating cheer text
+const CHEER_MS = 2800;
 const SNOOZE_MIN = 10;
 const IDLE_SECS = 5 * 60; // user counts as "away" after 5 min without input
 const TICK_MS = 5000;
@@ -102,6 +104,7 @@ export function Widget() {
   const [gulping, setGulping] = useState(false);
   const [boing, setBoing] = useState(0); // bumps on every click to replay the animation
   const [fact, setFact] = useState<Fact | null>(null);
+  const [cheer, setCheer] = useState<{ text: string; id: number } | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -173,13 +176,14 @@ export function Widget() {
     };
   }, [refresh]);
 
-  // expand / collapse the window for the speech bubble
+  // expand / collapse the window for the speech bubble or the cheer text
   const talking = nudging || fact !== null;
+  const mode = talking ? "talk" : cheer ? "cheer" : "idle";
   useEffect(() => {
     if (!placed) return;
-    const target = talking ? EXPANDED : COMPACT;
+    const target = mode === "talk" ? EXPANDED : mode === "cheer" ? CHEERING : COMPACT;
     void resizeAnchored(target.w, target.h);
-  }, [talking, placed]);
+  }, [mode, placed]);
 
   // reminder loop
   useEffect(() => {
@@ -267,6 +271,10 @@ export function Widget() {
     setNudging(false);
     setGulping(true);
     window.setTimeout(() => setGulping(false), 1100);
+    // Tumbli cheers you on with floating text
+    const id = Date.now();
+    setCheer({ text: cheerFor(n, settings.goal, settings.name), id });
+    window.setTimeout(() => setCheer((c) => (c?.id === id ? null : c)), CHEER_MS);
     nextAt.current = Date.now() + settings.intervalMin * 60_000;
     if (n === settings.goal) {
       setCelebrate(true);
@@ -328,6 +336,7 @@ export function Widget() {
         "widget",
         talking ? "expanded" : "compact",
         nudging ? "nudging" : "",
+        cheer && !talking ? "cheering" : "",
         gulping ? "gulping" : "",
         celebrate ? "celebrate" : "",
         sleeping ? "sleeping" : "",
@@ -394,6 +403,12 @@ export function Widget() {
         </div>
       )}
 
+      {cheer && !talking && (
+        <div className="cheer" key={cheer.id} role="status">
+          {cheer.text}
+        </div>
+      )}
+
       <div
         className="buddy"
         onMouseDown={onMouseDown}
@@ -430,6 +445,24 @@ export function Widget() {
           </div>
         )}
         {gulping && <div className="plus-one">+1</div>}
+        {nudging && (
+          <>
+            <div className="ripples" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="alert-mark" aria-hidden>
+              !
+            </div>
+            <div className="splash" aria-hidden>
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </>
+        )}
         {celebrate && (
           <div className="sparkles" aria-hidden>
             <span>✦</span>

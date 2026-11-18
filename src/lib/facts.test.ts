@@ -33,3 +33,20 @@ describe("greeting", () => {
     expect(nudgeMessage("", () => 0)).not.toContain(",  ");
   });
 });
+
+import { cheerFor } from "./facts";
+
+describe("cheerFor", () => {
+  it("celebrates milestones", () => {
+    expect(cheerFor(1, 8, "")).toBe("First glass of the day! ☀️");
+    expect(cheerFor(4, 8, "")).toBe("Halfway there! 🎉");
+    expect(cheerFor(7, 8, "")).toBe("Just 1 more to go! 💪");
+    expect(cheerFor(8, 8, "Ana")).toBe("Goal reached, Ana! 🏆");
+    expect(cheerFor(9, 8, "")).toBe("Extra credit! 🌟");
+  });
+
+  it("encourages in between", () => {
+    expect(cheerFor(2, 8, "", () => 0.99)).toBe("6 more to go!");
+    expect(cheerFor(3, 8, "Ana", () => 0.8)).toBe("Great job, Ana! ✨");
+  });
+});

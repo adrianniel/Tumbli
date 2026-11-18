@@ -580,3 +580,312 @@ body,
     transform: rotate(14deg);
   }
 }
+
+/* ---------- cheer: floating text after a glass, no bubble ---------- */
+
+.cheer {
+  position: absolute;
+  right: 82px;
+  bottom: 70px;
+  max-width: 200px;
+  text-align: right;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  pointer-events: none;
+  /* outline so it reads on any wallpaper */
+  text-shadow:
+    0 0 1px #0e3f6e,
+    1px 1px 0 #0e3f6e,
+    -1px -1px 0 #0e3f6e,
+    1px -1px 0 #0e3f6e,
+    -1px 1px 0 #0e3f6e,
+    0 2px 6px rgba(0, 0, 0, 0.45);
+  transform-origin: 100% 100%;
+  animation: cheer-float 2.8s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+@keyframes cheer-float {
+  0% {
+    opacity: 0;
+    transform: translate(10px, 12px) scale(0.5) rotate(-6deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.12) rotate(2deg);
+  }
+  24% {
+    transform: translate(0, -2px) scale(1) rotate(0);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(0, -14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, -26px) scale(0.96);
+  }
+}
+.cheering .squish {
+  animation: gulp 0.9s ease;
+}
+.cheering .tumbler .arm-r,
+.cheering .tumbler .arm-l {
+  animation: cheer-arms 0.35s ease-in-out 4 alternate;
+}
+.cheering .tumbler .arm-l {
+  transform-origin: 100% 0%;
+}
+@keyframes cheer-arms {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(-30deg);
+  }
+}
+
+/* ---------- reminder: grab attention ---------- */
+
+.hop {
+  position: relative;
+  z-index: 1;
+}
+
+/* a big hop + shake that repeats every few seconds until you answer */
+.nudging .hop {
+  transform-origin: 50% 100%;
+  animation: attention 5s ease-in-out 0.1s infinite;
+}
+@keyframes attention {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0) rotate(0) scale(1, 1);
+  }
+  4% {
+    transform: translateY(2px) scale(1.12, 0.86);
+  }
+  11% {
+    transform: translateY(-28px) scale(0.92, 1.1);
+  }
+  17% {
+    transform: translateY(0) scale(1.1, 0.9);
+  }
+  21% {
+    transform: translateY(-10px) scale(1, 1);
+  }
+  25% {
+    transform: translateY(0) scale(1.04, 0.96);
+  }
+  28% {
+    transform: rotate(-9deg);
+  }
+  31% {
+    transform: rotate(9deg);
+  }
+  34% {
+    transform: rotate(-6deg);
+  }
+  37% {
+    transform: rotate(4deg);
+  }
+}
+
+/* both arms wave hello */
+.nudging .tumbler .arm-l {
+  transform-origin: 100% 0%;
+  animation: wave-hi-l 0.4s ease-in-out infinite alternate;
+}
+.nudging .tumbler .arm-r {
+  animation: wave-hi 0.4s ease-in-out infinite alternate;
+}
+@keyframes wave-hi-l {
+  from {
+    transform: rotate(40deg);
+  }
+  to {
+    transform: rotate(95deg);
+  }
+}
+
+/* water ripples spreading out behind Tumbli */
+.ripples span {
+  position: absolute;
+  left: 50%;
+  top: 62px;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 3px solid rgba(46, 139, 230, 0.85);
+  box-shadow: 0 0 10px rgba(46, 139, 230, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  animation: ripple 2.4s ease-out infinite;
+}
+.ripples span:nth-child(2) {
+  animation-delay: 0.8s;
+}
+.ripples span:nth-child(3) {
+  animation-delay: 1.6s;
+}
+@keyframes ripple {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+/* "!" popping above Tumbli's head */
+.alert-mark {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  background: #ff8a3d;
+  color: #fff;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  animation:
+    alert-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1),
+    alert-bounce 5s ease-in-out 0.1s infinite;
+}
+@keyframes alert-pop {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+}
+@keyframes alert-bounce {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  11% {
+    transform: translateY(-34px) rotate(-12deg) scale(1.2);
+  }
+  21% {
+    transform: translateY(-12px) rotate(10deg);
+  }
+  28% {
+    transform: translateY(0) rotate(-8deg);
+  }
+}
+
+/* droplets splashing out each time Tumbli lands */
+.splash span {
+  position: absolute;
+  left: 50%;
+  top: 92px;
+  width: 8px;
+  height: 11px;
+  margin-left: -4px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: #5fb8f5;
+  box-shadow: 0 0 0 1px rgba(14, 63, 110, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  animation: splash 5s ease-out 0.1s infinite;
+}
+.splash span:nth-child(1) {
+  --dx: -34px;
+  --dy: -26px;
+}
+.splash span:nth-child(2) {
+  --dx: -16px;
+  --dy: -40px;
+}
+.splash span:nth-child(3) {
+  --dx: 18px;
+  --dy: -38px;
+}
+.splash span:nth-child(4) {
+  --dx: 36px;
+  --dy: -22px;
+}
+@keyframes splash {
+  0%,
+  16% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  17% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 1;
+    transform: translate(var(--dx), var(--dy)) scale(1);
+  }
+  40%,
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 1.3), calc(var(--dy) * -0.2)) scale(0.6);
+  }
+}
+
+/* the bubble swoops in and keeps glowing */
+.nudging .bubble-card {
+  animation:
+    swoop 0.6s cubic-bezier(0.2, 1.5, 0.4, 1),
+    glow 1.8s ease-out 0.7s infinite;
+}
+@keyframes swoop {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.6) rotate(4deg);
+  }
+}
+@keyframes glow {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(46, 139, 230, 0.7);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 12px rgba(46, 139, 230, 0);
+  }
+}
+.nudging .nudge-title {
+  animation: title-pop 5s ease-in-out 0.1s infinite;
+  transform-origin: 0 50%;
+}
+@keyframes title-pop {
+  0%,
+  10%,
+  22%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.06);
+  }
+}
+
+/* respect people who turn animations off in Windows */
+@media (prefers-reduced-motion: reduce) {
+  .nudging .hop,
+  .alert-mark,
+  .ripples span,
+  .splash span,
+  .nudging .bubble-card,
+  .nudging .nudge-title,
+  .bob,
+  .squish {
+    animation: none !important;
+  }
+}
+/* while cheering, Tumbli stays in its corner and the text floats to its left */
+.widget.cheering {
+  justify-content: flex-end;
+}

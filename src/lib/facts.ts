@@ -66,3 +66,23 @@ export function nudgeMessage(name: string | undefined, rand = Math.random) {
     : ["Tumbli says: sip time! 💧", "Water break!", "Hydrate, then dominate 💪", "Sip, sip, hooray! 🥤"];
   return lines[Math.floor(rand() * lines.length)];
 }
+
+/** What Tumbli cheers right after a glass is logged. */
+export function cheerFor(count: number, goal: number, name: string | undefined, rand = Math.random) {
+  const n = (name ?? "").trim();
+  const left = goal - count;
+  if (count === goal) return n ? `Goal reached, ${n}! 🏆` : "Goal reached! 🏆";
+  if (count > goal) return "Extra credit! 🌟";
+  if (count === 1) return "First glass of the day! ☀️";
+  if (left === 1) return "Just 1 more to go! 💪";
+  if (count === Math.ceil(goal / 2)) return "Halfway there! 🎉";
+  const lines = [
+    "Nice sip! 💧",
+    "Your brain says thanks! 🧠",
+    "Keep it flowing! 🌊",
+    "Hydration hero! 🦸",
+    n ? `Great job, ${n}! ✨` : "Great job! ✨",
+    `${left} more to go!`,
+  ];
+  return lines[Math.floor(rand() * lines.length)];
+}
