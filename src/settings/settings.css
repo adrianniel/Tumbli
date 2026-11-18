@@ -1761,3 +1761,139 @@ footer {
   color: #c25a00 !important;
   font-weight: 700 !important;
 }
+
+/* ================= wardrobe + achievements ================= */
+
+.card-sub {
+  margin: -2px 0 10px;
+}
+.wardrobe {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.outfit-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 18px 6px 10px;
+  border-radius: 16px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s, background 0.15s;
+}
+.outfit-tile:hover:not(:disabled) {
+  border-color: var(--water);
+  transform: translateY(-1px);
+}
+.outfit-tile.on {
+  border-color: var(--water);
+  background: var(--water-soft);
+  box-shadow: inset 0 0 0 1px var(--water);
+}
+.outfit-tile b {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.outfit-tile small {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.25;
+  text-align: center;
+}
+.outfit-tile.locked {
+  cursor: default;
+}
+.outfit-tile.locked .outfit-art svg {
+  filter: grayscale(1);
+  opacity: 0.38;
+}
+.outfit-art {
+  position: relative;
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+}
+.outfit-lock {
+  position: absolute;
+  right: -6px;
+  bottom: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: var(--shadow);
+}
+
+.achievements {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.achievements li {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.achievements li:first-child {
+  border-top: none;
+}
+.ach-icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 181, 46, 0.16);
+  color: #c98400;
+}
+.achievements li.done .ach-icon {
+  background: rgba(32, 164, 127, 0.16);
+  color: var(--mint);
+}
+.ach-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ach-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ach-top b {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.ach-top small {
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.achievements li.done .ach-top small {
+  color: var(--mint);
+}
+.ach-bar {
+  margin-top: 5px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--water-soft);
+  overflow: hidden;
+}
+.ach-bar div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sun);
+}

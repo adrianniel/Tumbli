@@ -18,6 +18,7 @@ import {
 } from "../components/Icons";
 import { Welcome } from "./Welcome";
 import { Feedback } from "./Feedback";
+import { Achievements, Wardrobe } from "./Wardrobe";
 import { factOfTheDay, greeting } from "../lib/facts";
 import { sipFor } from "../lib/schedule";
 import {
@@ -174,6 +175,7 @@ export function Settings() {
             size={104}
             happy={doneMl >= s.goalMl}
             arms
+            outfit={s.outfit}
           />
         </div>
         <div className="hero-main">
@@ -279,6 +281,9 @@ export function Settings() {
         {fact.kind === "trivia" && <div className="muted small">Answer: {fact.a}</div>}
         <div className="muted small">Tip: click Tumbli on your desktop for more.</div>
       </section>
+
+      <Wardrobe current={s.outfit} onWear={(o) => update({ outfit: o })} />
+      <Achievements history={history} goalMl={s.goalMl} />
 
       <section className="card">
         <div className="card-head">

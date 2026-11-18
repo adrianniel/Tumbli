@@ -1277,3 +1277,8 @@ body,
 .widget.compact {
   justify-content: flex-end;
 }
+
+/* the award bubble: a little gold */
+.award .bubble-kicker {
+  color: #c98400;
+}

@@ -143,3 +143,45 @@ export function FactBubble({
     </Bubble>
   );
 }
+
+export function AwardBubble({
+  title,
+  desc,
+  outfitName,
+  onWear,
+  onClose,
+}: {
+  title: string;
+  desc: string;
+  /** set when the achievement unlocks an outfit */
+  outfitName?: string;
+  onWear: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Bubble className="award" label="Achievement unlocked">
+      <div className="bubble-kicker">Achievement unlocked!</div>
+      <div className="nudge-title">{title}</div>
+      <div className="nudge-sub">
+        {desc}
+        {outfitName && <> · New outfit: {outfitName}</>}
+      </div>
+      <div className="nudge-actions">
+        {outfitName ? (
+          <>
+            <button className="btn primary" onClick={onWear}>
+              Wear it
+            </button>
+            <button className="btn" onClick={onClose}>
+              Not now
+            </button>
+          </>
+        ) : (
+          <button className="btn primary" onClick={onClose}>
+            Nice!
+          </button>
+        )}
+      </div>
+    </Bubble>
+  );
+}

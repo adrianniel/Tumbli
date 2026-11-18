@@ -71,6 +71,12 @@ export function setupBrowserMocks(label: string) {
     );
     localStorage.setItem("tumbli.level", q.has("empty") ? "0" : "300");
     localStorage.setItem("tumbli.onboarded", "1");
+    // a few unlocked outfits for the wardrobe preview
+    localStorage.setItem("tumbli.achievements", JSON.stringify({ "first-sip": day(5), "goal-getter": day(4), "on-a-roll": day(2) }));
+    if (q.get("outfit")) {
+      const st = JSON.parse(localStorage.getItem("tumbli.settings") ?? "{}");
+      localStorage.setItem("tumbli.settings", JSON.stringify({ ...st, outfit: q.get("outfit") }));
+    }
     localStorage.setItem("tumbli.tourDone", "1");
   }
 }

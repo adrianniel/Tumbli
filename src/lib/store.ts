@@ -21,6 +21,8 @@ export type Settings = {
   /** global keyboard shortcut that logs a drink from anywhere */
   shortcutOn: boolean;
   shortcut: string;
+  /** what Tumbli is wearing (unlocked through achievements); null = nothing */
+  outfit: string | null;
 };
 
 /** date (YYYY-MM-DD) -> ml drunk that day */
@@ -48,6 +50,7 @@ export const defaultSettings: Settings = {
   name: "",
   shortcutOn: true,
   shortcut: "CommandOrControl+Alt+W",
+  outfit: null,
 };
 
 /** Shortcuts to choose from (the first is the default). */
@@ -139,9 +142,20 @@ export function todayMl(h = loadHistory()): number {
 export function addMl(delta: number): number {
   const h = loadHistory();
   const k = dayKey();
-  h[k] = Math.max(0, Math.round((h[k] ?? 0) + delta));
+  const before = h[k] ?? 0;
+  h[k] = Math.max(0, Math.round(before + delta));
+  bumpLifetime(h[k] - before, h);
   saveHistory(h);
   return h[k];
+}
+
+const LIFETIME_KEY = "tumbli.lifetimeMl";
+/** lifetime ml (also read by achievements.ts); starts from what the history holds */
+function bumpLifetime(delta: number, h: History) {
+  if (!delta) return;
+  const raw = localStorage.getItem(LIFETIME_KEY);
+  const base = raw === null ? Object.values(h).reduce((a, b) => a + b, 0) - delta : Number(raw) || 0;
+  localStorage.setItem(LIFETIME_KEY, String(Math.max(0, base + delta)));
 }
 
 export function resetToday() {

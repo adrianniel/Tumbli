@@ -23,6 +23,7 @@ import {
   loadSettings,
   markTourDone,
   refill,
+  saveSettings,
   streak,
   todayMl,
   TOUR_EVENT,
@@ -30,7 +31,8 @@ import {
   type Settings,
 } from "../lib/store";
 import { Buddy, HoverActions } from "./Buddy";
-import { FactBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { AwardBubble, FactBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { ACHIEVEMENTS, checkAchievements, outfitName, type Achievement } from "../lib/achievements";
 import { TOUR } from "./tour";
 import { useDocking } from "./useDocking";
 import { useGestures } from "./useGestures";
@@ -72,6 +74,7 @@ export function Widget() {
   const [celebrate, setCelebrate] = useState(false);
   const [gulping, setGulping] = useState(false);
   const [boing, setBoing] = useState(0);
+  const [award, setAward] = useState<Achievement | null>(null);
   const [hover, setHover] = useState(false);
   const hovering = useRef(false);
   const hoverTimer = useRef<number | undefined>(undefined);
@@ -79,7 +82,10 @@ export function Widget() {
 
   const reminders = useReminders({
     settings,
-    onNewDay: refresh,
+    onNewDay: () => {
+      refresh();
+      celebrateAchievements();
+    },
     canNudge: () => !touring.current,
     onNudge: () => {
       setFact(null); // a reminder wins over a fun fact
@@ -89,7 +95,7 @@ export function Widget() {
   });
   const { nudging } = reminders;
 
-  const talking = nudging || fact !== null || tour !== null;
+  const talking = nudging || fact !== null || tour !== null || award !== null;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
 
   const { side, startDrag } = useDocking(mode, () => {
@@ -161,6 +167,23 @@ export function Widget() {
     window.setTimeout(() => setCheer((c) => (c?.id === id ? null : c)), CHEER_MS);
   };
 
+  /** show a newly earned achievement (prefer one that comes with an outfit) */
+  const celebrateAchievements = useCallback(() => {
+    const s = loadSettings();
+    const fresh = checkAchievements(s.goalMl);
+    if (!fresh.length || touring.current) return;
+    const pick = [...fresh].reverse().find((a) => a.outfit) ?? fresh[fresh.length - 1];
+    setFact(null);
+    setAward(pick);
+    setCelebrate(true);
+    if (s.sound) bloop();
+    window.setTimeout(() => setCelebrate(false), 3500);
+  }, []);
+  useEffect(() => {
+    const t = window.setTimeout(celebrateAchievements, 4000); // e.g. earned while Tumbli was closed
+    return () => window.clearTimeout(t);
+  }, [celebrateAchievements]);
+
   /** after any drink: animate, cheer, schedule the next reminder */
   const afterDrink = (before: number, r: DrinkResult) => {
     setDoneMl(r.total);
@@ -178,6 +201,8 @@ export function Widget() {
       if (settings.sound) bloop();
       window.setTimeout(() => setCelebrate(false), 3500);
     }
+    // let the cheer play, then show anything newly unlocked
+    window.setTimeout(celebrateAchievements, 1600);
   };
 
   /** a glass (glass mode) or a few sips (tumbler mode) */
@@ -221,6 +246,7 @@ export function Widget() {
     }
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
+    if (q.has("award")) setAward(ACHIEVEMENTS[Number(q.get("award")) || 3]);
     if (q.has("tour")) {
       touring.current = true;
       setTour(Number(q.get("tour")) || 0);
@@ -301,7 +327,21 @@ export function Widget() {
 
       {tour !== null && <TourBubble step={tour} onNext={nextTour} onSkip={endTour} />}
 
-      {tour === null && !nudging && fact && (
+      {award && !nudging && tour === null && (
+        <AwardBubble
+          title={award.title}
+          desc={award.desc}
+          outfitName={award.outfit ? outfitName(award.outfit) : undefined}
+          onWear={() => {
+            saveSettings({ ...loadSettings(), outfit: award.outfit ?? null });
+            setAward(null);
+            setBoing((n) => n + 1);
+          }}
+          onClose={() => setAward(null)}
+        />
+      )}
+
+      {tour === null && !nudging && !award && fact && (
         <FactBubble
           fact={fact}
           revealed={revealed}
@@ -327,6 +367,7 @@ export function Widget() {
         happy={done && !talking}
         calling={talking}
         sleeping={sleeping}
+        outfit={award?.outfit ?? settings.outfit}
         badge={badge}
         empty={empty}
         onRefill={doRefill}

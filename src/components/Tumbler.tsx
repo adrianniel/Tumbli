@@ -25,7 +25,7 @@ const EMPTY = "#D3E9FB";
 const FULL = "#2E8BE6";
 
 /** Tumbli: a sport bottle with a strap cap and a face. Its color rises with `fill`. */
-export function Tumbler({ fill, size = 64, happy = false, arms = false, calling = false, sleeping = false, look }: Props) {
+export function Tumbler({ fill, size = 64, happy = false, arms = false, calling = false, sleeping = false, look, outfit }: Props) {
   const lx = (look?.x ?? 0) * 1.6;
   const ly = (look?.y ?? 0) * 1.3;
   const level = Math.max(0, Math.min(1, fill));
@@ -105,6 +105,68 @@ export function Tumbler({ fill, size = 64, happy = false, arms = false, calling 
         <ellipse cx="37" cy="58.5" rx="3.4" ry="2" fill="#FF8FA6" />
         <ellipse cx="63" cy="58.5" rx="3.4" ry="2" fill="#FF8FA6" />
       </g>
+
+      {outfit && <OutfitArt id={outfit} />}
     </svg>
   );
+}
+
+const CORAL = "#FF7466";
+const GOLD = "#FFC24B";
+
+/** Accessories drawn on top of Tumbli, in the same 0..100 space (some reach above the top). */
+function OutfitArt({ id }: { id: string }) {
+  switch (id) {
+    case "partyhat":
+      return (
+        <g className="outfit">
+          <path d="M40 13 L50 -14 L60 13 Z" fill={CORAL} stroke={INK} strokeWidth="2" strokeLinejoin="round" />
+          <path d="M44.5 1 L55.5 4 M42.5 7 L57.5 10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" opacity="0.85" />
+          <circle cx="50" cy="-15" r="3.2" fill={GOLD} stroke={INK} strokeWidth="1.6" />
+        </g>
+      );
+    case "bowtie":
+      return (
+        <g className="outfit">
+          <path d="M50 35 L40.5 29.5 L40.5 40.5 Z" fill={CORAL} stroke={INK} strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M50 35 L59.5 29.5 L59.5 40.5 Z" fill={CORAL} stroke={INK} strokeWidth="1.8" strokeLinejoin="round" />
+          <circle cx="50" cy="35" r="2.8" fill={CORAL} stroke={INK} strokeWidth="1.8" />
+        </g>
+      );
+    case "sunglasses":
+      return (
+        <g className="outfit">
+          <path d="M37 50 L28.5 47.5 M63 50 L71.5 47.5" stroke={INK} strokeWidth="2" strokeLinecap="round" />
+          <rect x="37" y="47.5" width="12.5" height="8.5" rx="3.2" fill={INK} />
+          <rect x="50.5" y="47.5" width="12.5" height="8.5" rx="3.2" fill={INK} />
+          <path d="M49 50.5 L51 50.5" stroke={INK} strokeWidth="2.2" />
+          <path d="M39.5 50 L43.5 50 M53 50 L57 50" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round" opacity="0.7" />
+        </g>
+      );
+    case "headphones":
+      return (
+        <g className="outfit">
+          <path d="M25.5 40 Q25.5 4 50 4 Q74.5 4 74.5 40" fill="none" stroke={INK} strokeWidth="3.6" strokeLinecap="round" />
+          <rect x="20.5" y="37" width="9" height="16" rx="4" fill={CORAL} stroke={INK} strokeWidth="2" />
+          <rect x="70.5" y="37" width="9" height="16" rx="4" fill={CORAL} stroke={INK} strokeWidth="2" />
+        </g>
+      );
+    case "crown":
+      return (
+        <g className="outfit">
+          <path
+            d="M37.5 13 L37.5 -2 L43.8 4.5 L50 -7 L56.2 4.5 L62.5 -2 L62.5 13 Z"
+            fill={GOLD}
+            stroke="#A87400"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          <circle cx="50" cy="7" r="2.2" fill={CORAL} />
+          <circle cx="42" cy="8.5" r="1.4" fill="#2E8BE6" />
+          <circle cx="58" cy="8.5" r="1.4" fill="#2E8BE6" />
+        </g>
+      );
+    default:
+      return null;
+  }
 }
