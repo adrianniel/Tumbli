@@ -25,3 +25,4 @@ dist-ssr
 
 # MSIX output
 dist-msix
+store-assets/screenshots/src

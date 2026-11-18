@@ -38,6 +38,7 @@ npm install
 npm run tauri dev     # run with hot reload (first reminder pops after 15 s)
 npm run tauri build   # build installers into src-tauri/target/release/bundle
 npm test              # unit tests (Vitest)
+npm run screenshots   # regenerate Store screenshots (headless Edge)
 ```
 
 ## Microsoft Store (MSIX)
@@ -60,3 +61,6 @@ The Store build is an MSIX package made from the release exe:
 The manifest declares `runFullTrust` (all desktop apps need it) and a `windows.startupTask`
 so "Start with Windows" works inside the package; the app switches between that and the
 registry-based autostart automatically.
+
+Store copy (description, features, keywords, certification notes) is in [STORE_LISTING.md](STORE_LISTING.md),
+screenshots in `store-assets/screenshots/`, and the privacy policy in [docs/privacy.html](docs/privacy.html).
