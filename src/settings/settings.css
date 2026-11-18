@@ -1,0 +1,227 @@
+:root {
+  --bg: #f3f8fc;
+  --card: #ffffff;
+  --ink: #0f3557;
+  --muted: #5b7690;
+  --accent: #1a8fe3;
+  --accent-soft: rgba(26, 143, 227, 0.12);
+  --met: #19b37a;
+  --border: rgba(15, 53, 87, 0.1);
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111821;
+    --card: #1a2430;
+    --ink: #e6f2ff;
+    --muted: #93abc1;
+    --accent-soft: rgba(95, 211, 255, 0.14);
+    --border: rgba(255, 255, 255, 0.08);
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.settings {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hero h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+.big {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.big span {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.muted {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.today-actions {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.today-actions button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 18px;
+  cursor: pointer;
+}
+.today-actions button:first-child {
+  background: var(--accent);
+  color: #fff;
+}
+.today-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.card h2 + .row {
+  border-top: none;
+}
+.row small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--accent-soft);
+  border: none;
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+select option {
+  background: var(--card);
+}
+.hours {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stepper button {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 15px;
+  cursor: pointer;
+}
+.stepper b {
+  min-width: 78px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.bars {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bar-track {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.bar {
+  width: 70%;
+  max-width: 26px;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--accent);
+  min-height: 2px;
+  transition: height 0.4s;
+}
+.bar.met {
+  background: var(--met);
+}
+.goal-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--muted);
+  opacity: 0.5;
+}
+.bar-num {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.bar-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+}

@@ -1,0 +1,203 @@
+:root {
+  --card: rgba(255, 255, 255, 0.92);
+  --ink: #0f3557;
+  --muted: #4d6b85;
+  --accent: #1a8fe3;
+  --accent-ink: #ffffff;
+  --btn: rgba(26, 143, 227, 0.1);
+  --border: rgba(15, 53, 87, 0.12);
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card: rgba(24, 32, 44, 0.92);
+    --ink: #e6f2ff;
+    --muted: #9db4c9;
+    --btn: rgba(95, 211, 255, 0.14);
+    --border: rgba(255, 255, 255, 0.12);
+  }
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+.widget {
+  position: absolute;
+  inset: 4px;
+  box-sizing: border-box;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.widget.compact {
+  justify-content: center;
+}
+
+.glass-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: grab;
+  padding: 6px 8px 4px;
+}
+.glass-wrap:active {
+  cursor: grabbing;
+}
+
+.count {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+
+.glass .water {
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.glass .wave {
+  animation: wave 2.6s linear infinite;
+}
+@keyframes wave {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(50px);
+  }
+}
+
+/* small buttons that appear on hover in compact mode */
+.hover-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.widget:hover .hover-actions {
+  opacity: 1;
+}
+.mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--btn);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.mini.plus {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+.mini:hover {
+  filter: brightness(1.1);
+}
+
+/* the reminder card */
+.widget.expanded {
+  animation: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1), nudge 1.2s ease-in-out 0.4s 2;
+}
+@keyframes pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+@keyframes nudge {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-1.5deg);
+  }
+  40% {
+    transform: rotate(1.5deg);
+  }
+  60% {
+    transform: rotate(-1deg);
+  }
+  80% {
+    transform: rotate(1deg);
+  }
+}
+
+.nudge {
+  flex: 1;
+  padding: 10px 12px 10px 2px;
+  min-width: 0;
+}
+.nudge-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.nudge-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 3px 0 9px;
+}
+.nudge-actions {
+  display: flex;
+  gap: 6px;
+}
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--btn);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  flex: 1;
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--muted);
+  padding: 7px 8px;
+}
+.btn:hover {
+  filter: brightness(1.08);
+}
+
+.toast {
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  font-size: 20px;
+  animation: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.widget.celebrate {
+  box-shadow: 0 0 0 3px rgba(95, 211, 255, 0.7), 0 2px 6px rgba(0, 0, 0, 0.18);
+}
