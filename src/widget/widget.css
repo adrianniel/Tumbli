@@ -1247,12 +1247,15 @@ body,
   top: 0;
 }
 
-/* quick buttons as a 2x2 grid beside Tumbli, so they never get clipped */
+/* quick buttons as a 2x2 grid beside Tumbli, so they never get clipped.
+   Measured from the bottom: the window is taller than the part that shows on
+   hover (the bottom 140 px), so centering would push the top row out of view. */
 .hover-actions {
   display: grid;
   grid-template-columns: repeat(2, 26px);
   gap: 6px;
-  margin-bottom: 30px;
+  align-self: flex-end;
+  margin-bottom: 54px;
 }
 
 /* empty tumbler: the badge under Tumbli turns into the Refill button */
