@@ -1248,3 +1248,11 @@ body,
 .refill-chip {
   top: 0;
 }
+
+/* quick buttons as a 2x2 grid beside Tumbli, so they never get clipped */
+.hover-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 26px);
+  gap: 6px;
+  margin-bottom: 30px;
+}

@@ -38,7 +38,7 @@ import {
 } from "../lib/store";
 
 const COMPACT = { w: 76, h: 140 }; // just Tumbli, hugging the screen edge
-const HOVER = { w: 112, h: 140 }; // room for the quick buttons, opened on hover
+const HOVER = { w: 140, h: 140 }; // room for the 2x2 quick buttons, opened on hover
 const EXPANDED = { w: 350, h: 240 };
 const CHEERING = { w: 300, h: 170 }; // room for the floating cheer text
 const CHEER_MS = 2800;
@@ -611,7 +611,6 @@ export function Widget() {
         onMouseUp={onMouseUp}
         onMouseLeave={() => (press.current = null)}
         onDoubleClick={onDoubleClick}
-        title="Click me for a fun fact · drag to move · double-click for settings"
       >
         <div className="hop">
           <div className={boing ? `boing boing-${boing % 2}` : "boing"}>
