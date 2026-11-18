@@ -185,3 +185,43 @@ export function AwardBubble({
     </Bubble>
   );
 }
+
+export function RecapBubble({
+  liters,
+  goalDays,
+  best,
+  changePct,
+  onStats,
+  onClose,
+}: {
+  liters: string;
+  goalDays: number;
+  best: string | null;
+  changePct: number | null;
+  onStats: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Bubble className="recap" label="Your week">
+      <div className="bubble-kicker">Your week with Tumbli</div>
+      <div className="nudge-title">{liters} L last week</div>
+      <div className="nudge-sub">
+        Goal reached on {goalDays} of 7 days{best && <> · best: {best}</>}
+        {changePct !== null && (
+          <span className={changePct >= 0 ? "trend up" : "trend down"}>
+            {" "}
+            · {changePct >= 0 ? "↑" : "↓"} {Math.abs(changePct)}% vs the week before
+          </span>
+        )}
+      </div>
+      <div className="nudge-actions">
+        <button className="btn primary" onClick={onStats}>
+          See my stats
+        </button>
+        <button className="btn" onClick={onClose}>
+          Nice!
+        </button>
+      </div>
+    </Bubble>
+  );
+}

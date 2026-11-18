@@ -1282,3 +1282,15 @@ body,
 .award .bubble-kicker {
   color: #c98400;
 }
+
+.recap .bubble-kicker {
+  color: #1e8fe1;
+}
+.trend.up {
+  color: #20a47f;
+  font-weight: 800;
+}
+.trend.down {
+  color: #ff7466;
+  font-weight: 800;
+}

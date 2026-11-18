@@ -19,6 +19,7 @@ import {
 import { Welcome } from "./Welcome";
 import { Feedback } from "./Feedback";
 import { Achievements, Wardrobe } from "./Wardrobe";
+import { recapFor } from "../lib/recap";
 import { factOfTheDay, greeting } from "../lib/facts";
 import { sipFor } from "../lib/schedule";
 import {
@@ -161,6 +162,7 @@ export function Settings() {
   const level = loadLevel(s);
   const sip = sipFor(s);
   const fact = factOfTheDay();
+  const lastWeek = recapFor(history, s.goalMl);
   const act = (f: () => unknown) => {
     f();
     bump((n) => n + 1);
@@ -270,6 +272,17 @@ export function Settings() {
             </div>
           ))}
         </div>
+        {lastWeek && (
+          <p className="last-week">
+            Last week: <b>{fmtMl(lastWeek.totalMl)}</b> · goal on {lastWeek.goalDays}/7 days
+            {lastWeek.changePct !== null && (
+              <span className={lastWeek.changePct >= 0 ? "trend up" : "trend down"}>
+                {" "}
+                {lastWeek.changePct >= 0 ? "↑" : "↓"} {Math.abs(lastWeek.changePct)}%
+              </span>
+            )}
+          </p>
+        )}
       </section>
 
       <section className="card fact-card">

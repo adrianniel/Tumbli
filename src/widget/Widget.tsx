@@ -31,7 +31,8 @@ import {
   type Settings,
 } from "../lib/store";
 import { Buddy, HoverActions } from "./Buddy";
-import { AwardBubble, FactBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { AwardBubble, FactBubble, RecapBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { markRecapShown, pendingRecap, recapFor, type Recap } from "../lib/recap";
 import { ACHIEVEMENTS, checkAchievements, outfitName, type Achievement } from "../lib/achievements";
 import { TOUR } from "./tour";
 import { useDocking } from "./useDocking";
@@ -75,6 +76,7 @@ export function Widget() {
   const [gulping, setGulping] = useState(false);
   const [boing, setBoing] = useState(0);
   const [award, setAward] = useState<Achievement | null>(null);
+  const [recap, setRecap] = useState<Recap | null>(null);
   const [hover, setHover] = useState(false);
   const hovering = useRef(false);
   const hoverTimer = useRef<number | undefined>(undefined);
@@ -85,6 +87,7 @@ export function Widget() {
     onNewDay: () => {
       refresh();
       celebrateAchievements();
+      window.setTimeout(showRecap, 5000);
     },
     canNudge: () => !touring.current,
     onNudge: () => {
@@ -95,7 +98,7 @@ export function Widget() {
   });
   const { nudging } = reminders;
 
-  const talking = nudging || fact !== null || tour !== null || award !== null;
+  const talking = nudging || fact !== null || tour !== null || award !== null || recap !== null;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
 
   const { side, startDrag } = useDocking(mode, () => {
@@ -184,6 +187,22 @@ export function Widget() {
     return () => window.clearTimeout(t);
   }, [celebrateAchievements]);
 
+  /** a new week: show how the last one went (once) */
+  const showRecap = useCallback(() => {
+    if (touring.current) return;
+    const s = loadSettings();
+    const r = pendingRecap(loadHistory(), s.goalMl);
+    if (r) setRecap(r);
+  }, []);
+  useEffect(() => {
+    const t = window.setTimeout(showRecap, 9000); // after any achievement bubble
+    return () => window.clearTimeout(t);
+  }, [showRecap]);
+  const closeRecap = () => {
+    if (recap) markRecapShown(recap);
+    setRecap(null);
+  };
+
   /** after any drink: animate, cheer, schedule the next reminder */
   const afterDrink = (before: number, r: DrinkResult) => {
     setDoneMl(r.total);
@@ -247,6 +266,12 @@ export function Widget() {
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
     if (q.has("award")) setAward(ACHIEVEMENTS[Number(q.get("award")) || 3]);
+    if (q.has("recap")) {
+      // preview with this week's numbers standing in for last week's
+      const next = new Date();
+      next.setDate(next.getDate() + 7);
+      setRecap(recapFor(loadHistory(), loadSettings().goalMl, next));
+    }
     if (q.has("tour")) {
       touring.current = true;
       setTour(Number(q.get("tour")) || 0);
@@ -341,7 +366,21 @@ export function Widget() {
         />
       )}
 
-      {tour === null && !nudging && !award && fact && (
+      {recap && !award && !nudging && tour === null && (
+        <RecapBubble
+          liters={(recap.totalMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+          goalDays={recap.goalDays}
+          best={recap.best ? recap.best.label : null}
+          changePct={recap.changePct}
+          onStats={() => {
+            closeRecap();
+            openSettings();
+          }}
+          onClose={closeRecap}
+        />
+      )}
+
+      {tour === null && !nudging && !award && !recap && fact && (
         <FactBubble
           fact={fact}
           revealed={revealed}
