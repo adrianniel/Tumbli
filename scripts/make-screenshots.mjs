@@ -351,7 +351,7 @@ const scenes = {
     kicker: "Meet Tumbli",
     title: "A water buddy for your desktop",
     sub: "Tumbli floats at the edge of your screen and fills up as you drink. One click logs a glass.",
-    bullets: ["Always on top, never in the way", "Docks to any edge of the screen", "Free: no account, no ads"],
+    bullets: ["Always on top, never in the way", "Docks to the left or right edge", "Free: no account, no ads"],
     dark: true,
     scale: 1.6,
     desktop: ({ deskW, deskH }) =>

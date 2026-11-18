@@ -13,13 +13,15 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 
 ## Short description (max 100 characters)
 
-> A cute floating water bottle that reminds you to drink water while you work or study.
+> A cute water bottle that floats on your desktop and reminds you to drink water while you work.
 
 ## Description
 
-> Tumbli is a little sport bottle that floats on your desktop and helps you stay hydrated through long days at the computer.
+> Meet Tumbli, a little sport bottle with a face that lives at the edge of your screen and keeps you hydrated through long days at the computer.
 >
-> Set a daily goal (8 glasses by default) and Tumbli fills up as you drink. Every so often it hops, waves and pops up a friendly reminder. One click logs a glass, snoozes, or skips.
+> A 30-second check-in looks at your age, weight, activity and weather and suggests a daily goal that fits you. Track by the glass, or by your own tumbler or bottle: Tumbli mirrors it, so when yours is empty, Tumbli is too.
+>
+> Tumbli fills up as you drink. Every so often it hops, waves and pops up a friendly reminder. Log a drink, snooze or skip in one click, or press Ctrl+Alt+W from any app without touching the mouse.
 >
 > Tumbli is made to stay out of your way:
 > • It only reminds you during your active hours
@@ -27,21 +29,31 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 > • It hides during fullscreen games, videos and presentations
 > • Pause it for an hour or until tomorrow from the tray icon
 >
-> Track your progress with daily streaks and a 7-day history. No account, no ads, no tracking: everything stays on your PC.
+> Keep your streak going and unlock achievements, plus outfits for Tumbli: a party hat, a bow tie, sunglasses, headphones and a crown. Every Monday it shows how last week went. Click Tumbli anytime for a water fact or a bit of trivia.
+>
+> Dark mode by default, light mode with one switch. No account, no ads, no tracking: everything stays on your PC.
+>
+> Tumbli's goal is a general guide, not medical advice. If a doctor has told you how much to drink, follow that.
 
 ## Features (up to 20, each max 200 characters)
 
-1. A cute animated water bottle that floats on your desktop
-2. Fills up as you drink toward your daily goal
-3. Gentle reminders every 15 minutes to 2 hours
-4. Log a glass, snooze or skip with one click
-5. Only reminds you during your active hours
-6. Stays quiet when you're away and hides during fullscreen apps
-7. Pause reminders for an hour or until tomorrow
-8. Daily streaks and a 7-day history chart
-9. Starts with Windows (optional)
-10. Dark mode by default, light mode with one switch
-11. No account, no ads, no data collection
+1. A cute animated water bottle that floats on your desktop and docks to the left or right edge of your screen
+2. A personal daily goal from a 30-second check-in (age, weight, activity and weather)
+3. Track by the glass, or by your own tumbler or bottle that Tumbli mirrors
+4. Fills up as you drink toward your daily goal
+5. Gentle reminders every 15 minutes to 2 hours, spread over your active hours
+6. Log a drink, snooze or skip with one click
+7. Log a drink from any app with a keyboard shortcut (Ctrl+Alt+W)
+8. Stays quiet while you're away and hides during fullscreen games, videos and slides
+9. Pause reminders for an hour or until tomorrow from the tray icon
+10. Daily streaks, today at a glance and a 7-day history chart
+11. A recap of your week every Monday
+12. Achievements that unlock outfits for Tumbli
+13. Water facts and trivia: just click Tumbli
+14. Dark mode by default, light mode with one switch
+15. Starts with Windows (optional)
+16. Send feedback right from the app
+17. No account, no ads, no data collection
 
 ## Search terms (max 7)
 

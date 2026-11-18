@@ -11,7 +11,7 @@ async function boot() {
     const { inBrowser, setupBrowserMocks } = await import("../dev/mocks");
     if (inBrowser()) setupBrowserMocks("widget");
   }
-  followTheme();
+  followTheme({ colorScheme: false }); // keep the transparent window transparent
   // loaded after the mocks: the widget talks to its window as soon as it loads
   const { Widget } = await import("./Widget");
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

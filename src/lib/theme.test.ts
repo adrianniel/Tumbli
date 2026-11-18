@@ -26,4 +26,11 @@ describe("theme", () => {
     applyTheme("dark");
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
+
+  it("can leave the color scheme alone (the transparent widget)", () => {
+    document.documentElement.style.colorScheme = "";
+    applyTheme("dark", { colorScheme: false });
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.style.colorScheme).toBe("");
+  });
 });
