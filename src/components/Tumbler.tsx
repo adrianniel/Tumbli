@@ -11,6 +11,8 @@ type Props = {
   calling?: boolean;
   /** eyes shut, used while reminders are paused */
   sleeping?: boolean;
+  /** where Tumbli looks, each axis -1..1 (eyes follow the mouse on the intro) */
+  look?: { x: number; y: number };
 };
 
 // A wide insulated sport bottle: straight body, rounded shoulders.
@@ -21,7 +23,9 @@ const EMPTY = "#D3E9FB";
 const FULL = "#2E8BE6";
 
 /** Tumbli: a sport bottle with a strap cap and a face. Its color rises with `fill`. */
-export function Tumbler({ fill, size = 64, happy = false, arms = false, calling = false, sleeping = false }: Props) {
+export function Tumbler({ fill, size = 64, happy = false, arms = false, calling = false, sleeping = false, look }: Props) {
+  const lx = (look?.x ?? 0) * 1.6;
+  const ly = (look?.y ?? 0) * 1.3;
   const level = Math.max(0, Math.min(1, fill));
   // Body interior spans y = 28..97 in the viewBox.
   const waterTop = 97 - level * 69;
@@ -85,10 +89,10 @@ export function Tumbler({ fill, size = 64, happy = false, arms = false, calling 
           </>
         ) : (
           <>
-            <ellipse className="eye" cx="43.5" cy="52" rx="3" ry="3.6" fill={INK} />
-            <ellipse className="eye" cx="56.5" cy="52" rx="3" ry="3.6" fill={INK} />
-            <circle cx="44.6" cy="50.6" r="1" fill="#FFFFFF" />
-            <circle cx="57.6" cy="50.6" r="1" fill="#FFFFFF" />
+            <ellipse className="eye" cx={43.5 + lx} cy={52 + ly} rx="3" ry="3.6" fill={INK} />
+            <ellipse className="eye" cx={56.5 + lx} cy={52 + ly} rx="3" ry="3.6" fill={INK} />
+            <circle cx={44.6 + lx} cy={50.6 + ly} r="1" fill="#FFFFFF" />
+            <circle cx={57.6 + lx} cy={50.6 + ly} r="1" fill="#FFFFFF" />
           </>
         )}
         {calling ? (

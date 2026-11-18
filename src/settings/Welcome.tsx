@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Tumbler } from "../components/Tumbler";
+import { Intro } from "./Intro";
 import { Chips, HourRange, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
 import {
-  IconBell,
   IconBottle,
   IconChair,
   IconCheck,
@@ -10,11 +10,9 @@ import {
   IconCloudSun,
   IconDumbbell,
   IconGlass,
-  IconLock,
   IconRun,
   IconSnow,
   IconSun,
-  IconTarget,
   IconWalk,
 } from "../components/Icons";
 import { setAutostart as applyAutostart } from "../lib/autostart";
@@ -242,58 +240,7 @@ export function Welcome({ initial, onDone }: Props) {
   );
 
   // ---------- intro ----------
-  if (stepName === "intro") {
-    return (
-      <main className="onb intro">
-        <div className="intro-hero">
-          <div className="intro-halo" aria-hidden />
-          <div className="intro-buddy">
-            <Tumbler fill={0.45} size={150} arms />
-          </div>
-        </div>
-        <div className="intro-kicker">Meet Tumbli</div>
-        <h1 className="intro-title">Hi! I'm a tumbler, just like yours.</h1>
-        <p className="intro-sub">
-          I'll sit on your screen while you work, fill up as you drink, and give you a nudge when it's time for water.
-        </p>
-        <ul className="features">
-          <li>
-            <span aria-hidden>
-              <IconTarget />
-            </span>
-            <div>
-              <b>A goal that fits you</b>
-              <small>Based on your age, activity and weather</small>
-            </div>
-          </li>
-          <li>
-            <span aria-hidden>
-              <IconBell />
-            </span>
-            <div>
-              <b>Gentle reminders</b>
-              <small>I float on your screen and hop when it's time</small>
-            </div>
-          </li>
-          <li>
-            <span aria-hidden>
-              <IconLock />
-            </span>
-            <div>
-              <b>Private by default</b>
-              <small>No account, no ads. Everything stays on this PC</small>
-            </div>
-          </li>
-        </ul>
-        <footer className="onb-nav">
-          <button className="primary-btn" onClick={next}>
-            Let's get started
-          </button>
-          <p className="fine">Takes about 30 seconds</p>
-        </footer>
-      </main>
-    );
-  }
+  if (stepName === "intro") return <Intro onStart={next} />;
 
   // ---------- questions ----------
   let content: ReactNode;

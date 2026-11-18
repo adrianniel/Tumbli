@@ -1259,3 +1259,381 @@ footer {
     );
   }
 }
+
+/* ================= intro: Tumbli's entrance ================= */
+
+.intro2 {
+  padding-top: 18px;
+  gap: 10px;
+}
+
+/* the stage Tumbli lands on */
+.stage {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  display: grid;
+  place-items: center;
+}
+.halo2 {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 210px;
+  height: 210px;
+  margin-left: -105px;
+  border-radius: 50%;
+  background: var(--hero);
+  overflow: hidden;
+  animation: halo-in 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.halo2::before {
+  /* water sloshing at the bottom of the halo */
+  content: "";
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -8%;
+  height: 44%;
+  background: var(--water);
+  opacity: 0.2;
+  border-radius: 45% 55% 0 0 / 30% 30% 0 0;
+  animation: slosh 4s ease-in-out infinite alternate;
+}
+.halo2::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(30, 143, 225, 0.35);
+  animation: spin 30s linear infinite;
+}
+@keyframes halo-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* bubbles rising inside the halo */
+.bub {
+  position: absolute;
+  bottom: -12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(30, 143, 225, 0.45);
+  background: rgba(255, 255, 255, 0.35);
+  animation: bub-rise 5s ease-in infinite;
+}
+.b1 {
+  left: 22%;
+  animation-delay: 1.2s;
+}
+.b2 {
+  left: 70%;
+  width: 7px;
+  height: 7px;
+  animation-delay: 2.4s;
+}
+.b3 {
+  left: 45%;
+  width: 13px;
+  height: 13px;
+  animation-delay: 3.4s;
+}
+.b4 {
+  left: 82%;
+  animation-delay: 4.3s;
+}
+@keyframes bub-rise {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(6px, -110px);
+  }
+  100% {
+    transform: translate(-4px, -230px);
+    opacity: 0;
+  }
+}
+
+/* Tumbli drops in from above and lands with a squash */
+.dropper {
+  position: relative;
+  z-index: 2;
+  margin-top: 10px;
+  animation: drop-in 1s cubic-bezier(0.3, 0, 0.3, 1) both;
+  transform-origin: 50% 100%;
+}
+@keyframes drop-in {
+  0% {
+    transform: translateY(-230px) scale(0.9, 1.12);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  52% {
+    transform: translateY(0) scale(0.95, 1.08);
+  }
+  62% {
+    transform: translateY(0) scale(1.18, 0.82);
+  }
+  76% {
+    transform: translateY(-22px) scale(0.96, 1.05);
+  }
+  88% {
+    transform: translateY(0) scale(1.06, 0.95);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+.buddy-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transform-origin: 50% 100%;
+}
+.floaty {
+  display: block;
+  animation: float 3s ease-in-out 1.1s infinite;
+}
+.buddy-btn.poke-0 {
+  animation: poke-a 0.7s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.buddy-btn.poke-1 {
+  animation: poke-b 0.7s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+@keyframes poke-a {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: scale(1.12, 0.86);
+  }
+  45% {
+    transform: translateY(-26px) rotate(-12deg) scale(0.95, 1.06);
+  }
+  70% {
+    transform: translateY(0) rotate(6deg) scale(1.06, 0.95);
+  }
+}
+@keyframes poke-b {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: scale(1.12, 0.86);
+  }
+  45% {
+    transform: translateY(-26px) rotate(12deg) scale(0.95, 1.06);
+  }
+  70% {
+    transform: translateY(0) rotate(-6deg) scale(1.06, 0.95);
+  }
+}
+.intro2 .arm-r {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: welcome-wave 0.5s ease-in-out 1.1s infinite alternate;
+}
+
+/* a shadow that grows as Tumbli lands */
+.shadow2 {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 92px;
+  height: 14px;
+  margin-left: -46px;
+  border-radius: 50%;
+  background: rgba(14, 47, 74, 0.18);
+  filter: blur(2px);
+  animation: shadow-in 1s cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+@keyframes shadow-in {
+  0% {
+    transform: scaleX(0.2);
+    opacity: 0;
+  }
+  52%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  62% {
+    transform: scaleX(1.25);
+  }
+}
+
+/* water splashing out on landing */
+.splash2 span {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  width: 9px;
+  height: 12px;
+  margin-left: -4px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--water);
+  opacity: 0;
+  --a: calc(var(--i) * 36deg - 90deg);
+  animation: splash-out 0.75s ease-out 0.55s both;
+}
+@keyframes splash-out {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-70px) scale(1);
+  }
+}
+
+/* the speech bubble, typed out */
+.says2 {
+  position: absolute;
+  z-index: 3;
+  right: 6px;
+  top: 6px;
+  max-width: 150px;
+  min-height: 20px;
+  padding: 10px 13px;
+  border-radius: 18px 18px 18px 5px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.25;
+  animation: says-pop 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) 0.9s both;
+  transform-origin: 0% 100%;
+}
+@keyframes says-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--water);
+  animation: caret 0.9s steps(1) infinite;
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* the name, letter by letter */
+.wordmark {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 56px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: -1px;
+  color: var(--ink);
+}
+.wordmark span {
+  display: inline-block;
+  animation:
+    letter-in 0.55s cubic-bezier(0.2, 1.6, 0.4, 1) calc(0.75s + var(--i) * 0.07s) both,
+    letter-wave 3.2s ease-in-out calc(2s + var(--i) * 0.12s) infinite;
+}
+.wordmark span:nth-child(odd) {
+  color: var(--water-deep);
+}
+@keyframes letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px) rotate(-14deg) scale(0.6);
+  }
+}
+@keyframes letter-wave {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+}
+.tagline {
+  margin: 0;
+  max-width: 330px;
+  color: var(--muted);
+  font-size: 14.5px;
+  animation: fade-up 0.5s ease-out 1.25s both;
+}
+.traits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.trait {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  animation: fade-up 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) calc(1.45s + var(--i) * 0.12s) both;
+}
+.trait svg {
+  color: var(--water-deep);
+}
+.intro-cta {
+  width: 100%;
+  animation: fade-up 0.5s ease-out 1.9s both;
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro2 * {
+    animation: none !important;
+  }
+}
+/* the bubble sits right next to Tumbli
+'s head, not in the corner */
+.says2 {
+  right: auto;
+  left: calc(50% + 58px);
+  top: 14px;
+  max-width: 140px;
+}
