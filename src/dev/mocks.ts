@@ -69,7 +69,7 @@ export function setupBrowserMocks(label: string) {
       "tumbli.historyMl",
       JSON.stringify({ [day(0)]: 1250, [day(1)]: 2000, [day(2)]: 2250, [day(3)]: 1500, [day(4)]: 2000, [day(5)]: 750 }),
     );
-    localStorage.setItem("tumbli.level", "300");
+    localStorage.setItem("tumbli.level", q.has("empty") ? "0" : "300");
     localStorage.setItem("tumbli.onboarded", "1");
     localStorage.setItem("tumbli.tourDone", "1");
   }

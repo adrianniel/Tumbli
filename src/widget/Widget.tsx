@@ -629,7 +629,20 @@ export function Widget() {
           </div>
         </div>
         <div className="ground" />
-        <div className="count">{badge}</div>
+        {empty && !nudging ? (
+          // empty tumbler: the badge itself becomes the Refill button, right under Tumbli
+          <button
+            className="count refill-badge"
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onClick={doRefill}
+            title="I refilled my tumbler"
+          >
+            <IconRefill size={11} strokeWidth={2.8} /> Refill
+          </button>
+        ) : (
+          <div className="count">{badge}</div>
+        )}
         {sleeping && (
           <div className="zzz" aria-hidden>
             <span>z</span>
@@ -663,12 +676,6 @@ export function Widget() {
           </div>
         )}
       </div>
-
-      {empty && !talking && (
-        <button className="refill-chip" onClick={doRefill} title="I refilled my tumbler">
-          <IconRefill size={12} strokeWidth={2.6} /> Refill
-        </button>
-      )}
 
       {mode === "hover" && (
         <div className="hover-actions">
