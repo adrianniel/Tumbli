@@ -65,11 +65,10 @@ Partner Center uses the icons inside the MSIX package. If it asks for a separate
 
 ## Privacy policy URL
 
-Tumbli collects no personal data, so a privacy policy is optional, but having one helps reviewers and users.
-The policy is in `docs/privacy.html`. Host it with GitHub Pages (Settings › Pages › Deploy from branch › `main` / `/docs`),
-which on a private repo needs a paid GitHub plan; or make the repo public; or host the file anywhere public. [YOU]
+**https://adrianniel.github.io/Tumbli/privacy.html**
 
-URL: `https://<your-github-username>.github.io/Tumbli/privacy.html` [YOU]
+Hosted with GitHub Pages from `docs/` on `main` (edit `docs/privacy.html` and push to update it).
+Tumbli collects no personal data, so the policy is short, but having one helps reviewers and users.
 
 ## Support contact
 
