@@ -52,7 +52,7 @@ function page(kicker, title, sub, scene, { dark = false } = {}) {
     .scene{flex:1;height:960px;position:relative;display:flex;align-items:center;justify-content:center}
     .win{border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 40px 80px -30px rgba(10,30,50,.45),0 0 0 1px rgba(14,47,74,.08);flex:none}
     .titlebar{height:36px;display:flex;align-items:center;gap:10px;padding:0 16px;background:#f3f3f3;font:600 15px "Segoe UI",sans-serif;color:#333}
-    .appicon{width:16px;height:16px;border-radius:4px;background:#bfe3ff;box-shadow:inset 0 -6px 0 #2e8be6}
+    .appicon{width:16px;height:16px;background:url(/app-icon.svg) center/contain no-repeat}
     .ctrls{margin-left:auto;color:#666;letter-spacing:2px}
     iframe{border:0;transform-origin:0 0;display:block;background:transparent}
     .bare{position:absolute}
