@@ -20,6 +20,42 @@ fn system_status() -> SystemStatus {
     }
 }
 
+#[derive(serde::Serialize)]
+struct StartupStatus {
+    /// running from the Microsoft Store (MSIX) package
+    packaged: bool,
+    /// StartupTask state when packaged: enabled, disabled, disabled_by_user, ...
+    state: String,
+}
+
+/// "Start with Windows" for the MSIX build goes through the package's StartupTask;
+/// the plain installer uses tauri-plugin-autostart from the frontend instead.
+#[tauri::command]
+async fn startup_status() -> StartupStatus {
+    #[cfg(windows)]
+    if startup::is_packaged() {
+        return StartupStatus {
+            packaged: true,
+            state: startup::state(),
+        };
+    }
+    StartupStatus {
+        packaged: false,
+        state: String::new(),
+    }
+}
+
+#[tauri::command]
+async fn startup_set(enable: bool) -> String {
+    #[cfg(windows)]
+    return startup::set(enable);
+    #[cfg(not(windows))]
+    {
+        let _ = enable;
+        String::new()
+    }
+}
+
 #[tauri::command]
 fn open_settings(app: AppHandle) {
     show_settings(&app);
@@ -64,6 +100,56 @@ mod platform {
     }
 }
 
+#[cfg(windows)]
+mod startup {
+    use windows::core::HSTRING;
+    use windows::ApplicationModel::{StartupTask, StartupTaskState};
+    use windows_sys::Win32::Storage::Packaging::Appx::GetCurrentPackageFullName;
+
+    /// Must match TaskId in packaging/msix/AppxManifest.template.xml
+    const TASK_ID: &str = "TumbliStartup";
+    const APPMODEL_ERROR_NO_PACKAGE: u32 = 15700;
+
+    pub fn is_packaged() -> bool {
+        let mut len: u32 = 0;
+        unsafe { GetCurrentPackageFullName(&mut len, std::ptr::null_mut()) != APPMODEL_ERROR_NO_PACKAGE }
+    }
+
+    fn task() -> windows::core::Result<StartupTask> {
+        StartupTask::GetAsync(&HSTRING::from(TASK_ID))?.get()
+    }
+
+    fn name(s: StartupTaskState) -> &'static str {
+        match s {
+            StartupTaskState::Enabled => "enabled",
+            StartupTaskState::Disabled => "disabled",
+            StartupTaskState::DisabledByUser => "disabled_by_user",
+            StartupTaskState::DisabledByPolicy => "disabled_by_policy",
+            StartupTaskState::EnabledByPolicy => "enabled_by_policy",
+            _ => "unknown",
+        }
+    }
+
+    pub fn state() -> String {
+        task().and_then(|t| t.State()).map(name).unwrap_or("unknown").to_string()
+    }
+
+    pub fn set(enable: bool) -> String {
+        task()
+            .and_then(|t| {
+                if enable {
+                    t.RequestEnableAsync()?.get()
+                } else {
+                    t.Disable()?;
+                    t.State()
+                }
+            })
+            .map(name)
+            .unwrap_or("unknown")
+            .to_string()
+    }
+}
+
 #[cfg(not(windows))]
 mod platform {
     pub fn idle_secs() -> u64 {
@@ -85,7 +171,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .invoke_handler(tauri::generate_handler![system_status, open_settings])
+        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set])
         .setup(|app| {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =

@@ -39,3 +39,24 @@ npm run tauri dev     # run with hot reload (first reminder pops after 15 s)
 npm run tauri build   # build installers into src-tauri/target/release/bundle
 npm test              # unit tests (Vitest)
 ```
+
+## Microsoft Store (MSIX)
+
+The Store build is an MSIX package made from the release exe:
+
+1. In Partner Center open **Tumbli > Product management > Product identity** and copy
+   `Package/Identity/Name`, `Package/Identity/Publisher` and `Package/Properties/PublisherDisplayName`
+   into `packaging/msix/identity.json`.
+2. Build and pack:
+
+   ```bash
+   npm run tauri build -- --no-bundle
+   powershell -ExecutionPolicy Bypass -File scripts/package-msix.ps1
+   ```
+
+3. Upload `dist-msix/Tumbli_<version>_x64.msix` in the submission's **Packages** step.
+   The Store signs it. Bump `version` in `src-tauri/tauri.conf.json` for every new submission.
+
+The manifest declares `runFullTrust` (all desktop apps need it) and a `windows.startupTask`
+so "Start with Windows" works inside the package; the app switches between that and the
+registry-based autostart automatically.

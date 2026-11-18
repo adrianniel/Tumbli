@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { enable } from "@tauri-apps/plugin-autostart";
+import { setAutostart as applyAutostart } from "../lib/autostart";
 import { Tumbler } from "../components/Tumbler";
 import { markOnboarded, saveSettings, type Settings } from "../lib/store";
 
@@ -17,7 +17,7 @@ export function Welcome({ initial, onDone }: Props) {
     // dev builds never register themselves to start with Windows
     if (autostart && !import.meta.env.DEV) {
       try {
-        await enable();
+        await applyAutostart(true);
       } catch {
         // not fatal: it can be switched on later in settings
       }

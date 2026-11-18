@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { getAutostart, setAutostart as applyAutostart, type AutostartState } from "../lib/autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
 import { Welcome } from "./Welcome";
@@ -27,7 +27,7 @@ function hourLabel(h: number) {
 export function Settings() {
   const [s, setS] = useState<SettingsT>(loadSettings);
   const [history, setHistory] = useState<History>(loadHistory);
-  const [autostart, setAutostart] = useState<boolean | null>(null);
+  const [autostart, setAutostart] = useState<AutostartState | null>(null);
   const [onboarded, setOnboarded] = useState(isOnboarded);
 
   // first run: this window starts hidden, so bring it up for the welcome screen
@@ -46,9 +46,9 @@ export function Settings() {
     const un = listen(CHANGED_EVENT, refresh);
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
-    isEnabled()
+    getAutostart()
       .then(setAutostart)
-      .catch(() => setAutostart(false));
+      .catch(() => setAutostart({ enabled: false, blockedByUser: false }));
     return () => {
       void un.then((f) => f());
       window.removeEventListener("focus", onFocus);
@@ -63,11 +63,9 @@ export function Settings() {
 
   const toggleAutostart = async (on: boolean) => {
     try {
-      if (on) await enable();
-      else await disable();
-      setAutostart(await isEnabled());
+      setAutostart(await applyAutostart(on));
     } catch {
-      setAutostart(await isEnabled().catch(() => false));
+      setAutostart(await getAutostart().catch(() => ({ enabled: false, blockedByUser: false })));
     }
   };
 
@@ -78,7 +76,7 @@ export function Settings() {
         onDone={(next) => {
           setS(next);
           setOnboarded(true);
-          void isEnabled().then(setAutostart).catch(() => {});
+          void getAutostart().then(setAutostart).catch(() => {});
         }}
       />
     );
@@ -209,11 +207,14 @@ export function Settings() {
           />
         </label>
         <label className="row">
-          <span>Start with Windows</span>
+          <span>
+            Start with Windows
+            {autostart?.blockedByUser && <small>Turned off in Windows Settings › Apps › Startup</small>}
+          </span>
           <input
             type="checkbox"
-            disabled={autostart === null}
-            checked={!!autostart}
+            disabled={autostart === null || autostart.blockedByUser}
+            checked={!!autostart?.enabled}
             onChange={(e) => void toggleAutostart(e.target.checked)}
           />
         </label>
