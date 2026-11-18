@@ -20,8 +20,8 @@ import {
   type Settings,
 } from "../lib/store";
 
-const COMPACT = { w: 92, h: 120 };
-const EXPANDED = { w: 320, h: 132 };
+const COMPACT = { w: 84, h: 128 };
+const EXPANDED = { w: 320, h: 136 };
 const SNOOZE_MIN = 10;
 const IDLE_SECS = 5 * 60; // user counts as "away" after 5 min without input
 const TICK_MS = 5000;
@@ -266,7 +266,7 @@ export function Widget() {
         onDoubleClick={openSettings}
         title="Drag to move · double-click for settings"
       >
-        <Tumbler fill={fill} size={nudging ? 86 : 64} happy={done} />
+        <Tumbler fill={fill} size={nudging ? 100 : 80} happy={done} />
         <div className="count">
           {count}/{settings.goal}
         </div>

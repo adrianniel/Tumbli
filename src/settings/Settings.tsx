@@ -68,7 +68,7 @@ export function Settings() {
   return (
     <main className="settings">
       <header className="hero">
-        <Tumbler fill={today / s.goal} size={76} happy={today >= s.goal} />
+        <Tumbler fill={today / s.goal} size={88} happy={today >= s.goal} />
         <div>
           <h1>Tumbli</h1>
           <div className="big">
