@@ -82,6 +82,10 @@ export function Widget() {
   const [award, setAward] = useState<Achievement | null>(null);
   const [recap, setRecap] = useState<Recap | null>(null);
   const [askRating, setAskRating] = useState(false);
+  // dev preview: widget.html?outfit=crown shows an outfit without touching storage
+  const [devOutfit] = useState(() =>
+    import.meta.env.DEV ? new URLSearchParams(location.search).get("outfit") : null,
+  );
   const [hover, setHover] = useState(false);
   const hovering = useRef(false);
   const hoverTimer = useRef<number | undefined>(undefined);
@@ -451,7 +455,7 @@ export function Widget() {
         happy={done && !talking}
         calling={talking}
         sleeping={sleeping}
-        outfit={award?.outfit ?? settings.outfit}
+        outfit={award?.outfit ?? devOutfit ?? settings.outfit}
         badge={badge}
         empty={empty}
         onRefill={doRefill}

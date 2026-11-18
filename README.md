@@ -38,7 +38,7 @@ npm install
 npm run tauri dev     # run with hot reload (first reminder pops after 15 s)
 npm run tauri build   # build installers into src-tauri/target/release/bundle
 npm test              # unit tests (Vitest)
-npm run screenshots   # regenerate Store screenshots (headless Edge)
+npm run screenshots   # regenerate Store screenshots from the real UI (needs `npm run dev` running)
 ```
 
 ## Microsoft Store (MSIX)

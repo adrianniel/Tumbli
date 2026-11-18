@@ -1,14 +1,20 @@
-// Renders the Microsoft Store screenshots (1920x1080) from HTML scenes with headless Edge.
-// Usage: npm run screenshots   ->  store-assets/screenshots/*.png
+// Renders the Microsoft Store screenshots (1920x1080) from the REAL app UI.
+//
+// The scenes embed the dev-server pages (settings.html / widget.html with the
+// browser mocks from src/dev/mocks.ts), so the screenshots always match the app.
+//
+// Usage:  npm run dev            (in another terminal; serves http://localhost:1420)
+//         npm run screenshots    -> store-assets/screenshots/*.png
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "store-assets", "screenshots");
-const srcDir = join(outDir, "src");
+const srcDir = join(outDir, "src"); // served by the dev server too (git-ignored)
+const DEV = "http://localhost:1420";
 mkdirSync(srcDir, { recursive: true });
 
 const EDGE = [
@@ -17,162 +23,122 @@ const EDGE = [
 ].find((p) => existsSync(p));
 if (!EDGE) throw new Error("Microsoft Edge not found");
 
-const INK = "#0E3F6E";
-const BODY = "M27 41 Q27 30 39 28 L61 28 Q73 30 73 41 L73 90 Q73 97 66 97 L34 97 Q27 97 27 90 Z";
-let clipId = 0;
+const res = await fetch(`${DEV}/settings.html`).catch(() => null);
+if (!res?.ok) throw new Error(`The dev server isn't running at ${DEV}. Start it with: npm run dev`);
 
-/** Same drawing as src/components/Tumbler.tsx, as a static SVG string. */
-function bottle({ fill = 0.4, h = 300, mood = "normal", arms = true, wave = false } = {}) {
-  const id = `c${clipId++}`;
-  const top = 97 - Math.max(0, Math.min(1, fill)) * 69;
-  const eyes =
-    mood === "sleeping"
-      ? `<path d="M40.5 52 Q43.5 55 46.5 52" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M53.5 52 Q56.5 55 59.5 52" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`
-      : mood === "happy"
-        ? `<path d="M40.5 53 Q43.5 49 46.5 53" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M53.5 53 Q56.5 49 59.5 53" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`
-        : `<ellipse cx="43.5" cy="52" rx="3" ry="3.6" fill="${INK}"/><ellipse cx="56.5" cy="52" rx="3" ry="3.6" fill="${INK}"/><circle cx="44.6" cy="50.6" r="1" fill="#fff"/><circle cx="57.6" cy="50.6" r="1" fill="#fff"/>`;
-  const mouth =
-    mood === "calling"
-      ? `<ellipse cx="50" cy="61" rx="2.6" ry="3" fill="${INK}"/>`
-      : `<path d="M45.5 59.5 Q50 63.5 54.5 59.5" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
-  const armR = wave ? "M72 64 Q82 56 84 46" : "M72 66 Q80 62 82 54";
-  return `<svg width="${Math.round(h * 0.7)}" height="${h}" viewBox="15 0 70 100" overflow="visible">
-  <defs><clipPath id="${id}"><path d="${BODY}"/></clipPath></defs>
-  ${arms ? `<path d="M28 66 Q20 70 19 78" stroke="${INK}" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="${armR}" stroke="${INK}" stroke-width="4.5" fill="none" stroke-linecap="round"/>` : ""}
-  <path d="${BODY}" fill="#D3E9FB"/>
-  <g clip-path="url(#${id})">
-    <path d="M0 ${top} Q12.5 ${top - 2.5} 25 ${top} T50 ${top} T75 ${top} T100 ${top} V100 H0 Z" fill="#2E8BE6"/>
-    <rect x="0" y="90" width="100" height="10" fill="${INK}"/>
-  </g>
-  <path d="${BODY}" fill="none" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M33 45 L33 82" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity="0.55"/>
-  <rect x="38" y="22" width="24" height="7" rx="1.5" fill="#C9D6E3" stroke="${INK}" stroke-width="2.2"/>
-  <path d="M41 12 L41 6.5 Q41 2.5 45 2.5 L55 2.5 Q59 2.5 59 6.5 L59 12" fill="none" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>
-  <rect x="34" y="11" width="32" height="12" rx="3.5" fill="${INK}"/>
-  <rect x="37" y="13.5" width="26" height="2.2" rx="1.1" fill="#2E8BE6" opacity="0.8"/>
-  ${eyes}${mouth}
-  <ellipse cx="37" cy="58.5" rx="3.4" ry="2" fill="#FF8FA6"/><ellipse cx="63" cy="58.5" rx="3.4" ry="2" fill="#FF8FA6"/>
-</svg>`;
-}
-
-const badge = (t, size = 26) =>
-  `<span style="display:inline-block;padding:3px ${size / 2}px;border-radius:999px;background:${INK};color:#fff;font-weight:700;font-size:${size}px">${t}</span>`;
-const shadow = (w) =>
-  `<div style="width:${w}px;height:${w / 6}px;border-radius:50%;background:rgba(14,63,110,.22);margin-top:-6px"></div>`;
-
-function page(title, sub, scene) {
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
-  *{box-sizing:border-box} body{margin:0;width:1920px;height:1080px;overflow:hidden;font-family:"Segoe UI Variable Display","Segoe UI",sans-serif;background:#E6F2FC;color:#0F2A44}
-  .wrap{display:flex;height:100%;align-items:center;padding:0 120px;gap:80px}
-  .copy{width:640px;flex:none} h1{font-size:76px;line-height:1.05;margin:0 0 24px;font-weight:700;letter-spacing:-1px} p{font-size:30px;line-height:1.45;margin:0;color:#3E5A76}
-  .scene{flex:1;height:820px;border-radius:36px;background:#1B2633;position:relative;overflow:hidden}
-  .win{position:absolute;border-radius:18px;background:#243244}
-  .line{height:16px;border-radius:8px;background:#33465C;margin:14px 0}
-  .bubble{background:#fff;border-radius:28px;padding:26px 30px;box-shadow:0 8px 24px rgba(0,0,0,.25);position:relative}
-  .btn{border:none;border-radius:16px;padding:14px 22px;font:600 22px "Segoe UI",sans-serif}
-  .row{display:flex;justify-content:space-between;align-items:center;padding:20px 0;border-top:1px solid #E3ECF5;font-size:24px}
-  </style></head><body><div class="wrap"><div class="copy"><h1>${title}</h1><p>${sub}</p></div><div class="scene">${scene}</div></div></body></html>`;
-}
-
-const fakeWindows = `
-  <div class="win" style="left:60px;top:60px;width:620px;height:420px;padding:40px">
-    <div class="line" style="width:60%"></div><div class="line"></div><div class="line" style="width:85%"></div><div class="line" style="width:70%"></div><div class="line" style="width:90%"></div>
-  </div>
-  <div class="win" style="left:300px;top:300px;width:520px;height:340px;padding:40px;background:#2A3A4F">
-    <div class="line" style="width:40%"></div><div class="line" style="width:95%"></div><div class="line" style="width:75%"></div>
+/** an app window with a Windows-style title bar, showing a real page */
+const appWindow = (src, { w = 440, h = 720, scale = 1.22 } = {}) => `
+  <div class="win" style="width:${w * scale}px;height:${h * scale + 36}px">
+    <div class="titlebar"><span class="appicon"></span>Tumbli<span class="ctrls">–&nbsp;&nbsp;▢&nbsp;&nbsp;✕</span></div>
+    <iframe src="${src}" style="width:${w}px;height:${h}px;transform:scale(${scale})"></iframe>
   </div>`;
 
+/** a bare page (the floating widget has no window chrome) */
+const frame = (src, { w, h, scale, style = "" }) =>
+  `<iframe class="bare" src="${src}" style="width:${w}px;height:${h}px;transform:scale(${scale});${style}"></iframe>`;
+
+function page(kicker, title, sub, scene, { dark = false } = {}) {
+  return `<!doctype html><html><head><meta charset="utf-8">
+  <link rel="stylesheet" href="/node_modules/@fontsource-variable/fredoka/index.css">
+  <link rel="stylesheet" href="/node_modules/@fontsource-variable/nunito/index.css">
+  <style>
+    *{box-sizing:border-box} html,body{margin:0}
+    body{width:1920px;height:1080px;overflow:hidden;background:${dark ? "#0a1724" : "#e6f0f6"};color:${dark ? "#e7f2fb" : "#0e2f4a"};font-family:"Nunito Variable",sans-serif}
+    .wrap{display:flex;height:100%;align-items:center;padding:0 110px;gap:70px}
+    .copy{width:620px;flex:none}
+    .kicker{font:600 26px "Fredoka Variable";letter-spacing:3px;text-transform:uppercase;color:#ff7466;margin-bottom:18px}
+    h1{font:600 78px/1.04 "Fredoka Variable";margin:0 0 26px;letter-spacing:-1px}
+    p{font:500 30px/1.45 "Nunito Variable";margin:0;color:${dark ? "#9fb6ca" : "#4d6680"}}
+    .scene{flex:1;height:960px;position:relative;display:flex;align-items:center;justify-content:center}
+    .win{border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 40px 80px -30px rgba(10,30,50,.45),0 0 0 1px rgba(14,47,74,.08);flex:none}
+    .titlebar{height:36px;display:flex;align-items:center;gap:10px;padding:0 16px;background:#f3f3f3;font:600 15px "Segoe UI",sans-serif;color:#333}
+    .appicon{width:16px;height:16px;border-radius:4px;background:#bfe3ff;box-shadow:inset 0 -6px 0 #2e8be6}
+    .ctrls{margin-left:auto;color:#666;letter-spacing:2px}
+    iframe{border:0;transform-origin:0 0;display:block;background:transparent}
+    .bare{position:absolute}
+    .desktop{position:absolute;inset:40px 0;border-radius:28px;background:#1b2a3a;overflow:hidden}
+    .app{position:absolute;border-radius:14px;background:#243649}
+    .bar{height:14px;border-radius:7px;background:#33485f;margin:14px 0}
+    .label{position:absolute;font:600 22px "Fredoka Variable";color:#0e2f4a;text-align:center;width:200px}
+  </style></head><body><div class="wrap"><div class="copy"><div class="kicker">${kicker}</div><h1>${title}</h1><p>${sub}</p></div><div class="scene">${scene}</div></div></body></html>`;
+}
+
+const desktopApps = `
+  <div class="app" style="left:40px;top:40px;width:640px;height:420px;padding:36px"><div class="bar" style="width:55%"></div><div class="bar"></div><div class="bar" style="width:80%"></div><div class="bar" style="width:66%"></div></div>
+  <div class="app" style="left:260px;top:330px;width:560px;height:330px;padding:36px;background:#2a3d52"><div class="bar" style="width:40%"></div><div class="bar" style="width:90%"></div><div class="bar" style="width:70%"></div></div>`;
+
+const outfits = ["partyhat", "bowtie", "sunglasses", "headphones", "crown"];
+const outfitNames = ["Party hat", "Bow tie", "Sunglasses", "Headphones", "Crown"];
+
 const scenes = {
-  "1-reminder": page(
-    "Your floating water buddy",
-    "Tumbli lives on your desktop and hops up with a friendly nudge when it's time to drink.",
-    `${fakeWindows}
-    <div style="position:absolute;right:60px;bottom:60px;display:flex;align-items:flex-end;gap:18px">
-      <div class="bubble" style="width:430px;margin-bottom:150px">
-        <div style="font-size:30px;font-weight:700">Time to drink!</div>
-        <div style="font-size:21px;color:#4A6480;margin:6px 0 18px">3 of 8 glasses today · 🔥 5</div>
-        <div style="display:flex;gap:10px"><button class="btn" style="flex:1;background:#2E8BE6;color:#fff">💧 I drank!</button><button class="btn" style="background:#E3F0FC;color:#0F2A44">⏰ 10m</button></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center">${bottle({ fill: 0.38, h: 300, mood: "calling", wave: true })}${shadow(130)}<div style="margin-top:12px">${badge("3/8")}</div></div>
-    </div>`,
+  "1-meet-tumbli": page(
+    "Meet Tumbli",
+    "A tumbler, just like yours",
+    "Tumbli lives on your screen, fills up as you drink, and nudges you when it's time for water.",
+    appWindow(`${DEV}/settings.html?fresh`),
   ),
-  "2-progress": page(
-    "Watch it fill up",
-    "Every glass you log fills Tumbli a little more. Hit your daily goal and keep your streak going.",
-    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-evenly">
-      ${[
-        [0, "0/8", "normal"],
-        [0.5, "4/8", "normal"],
-        [1, "8/8", "happy"],
-      ]
-        .map(
-          ([f, t, m]) =>
-            `<div style="display:flex;flex-direction:column;align-items:center">${bottle({ fill: f, h: 340, mood: m })}${shadow(140)}<div style="margin-top:16px">${badge(t, 30)}</div></div>`,
-        )
-        .join("")}
-    </div>`,
+  "2-reminder": page(
+    "Gentle reminders",
+    "Time for a sip? Tumbli will tell you",
+    "It hops up with a friendly nudge, stays quiet while you're away, and hides during games and videos.",
+    `<div class="desktop">${desktopApps}</div>` +
+      frame(`${DEV}/widget.html?demo&tumbler&nudge`, { w: 350, h: 240, scale: 2, style: "left:300px;top:390px" }),
+    { dark: true },
   ),
-  "3-out-of-the-way": page(
-    "Stays out of your way",
-    "Reminders only during your hours. Quiet when you're away, hidden during fullscreen games and videos, and you can pause anytime.",
-    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:90px">
-      <div style="display:flex;flex-direction:column;align-items:center;position:relative">
-        <div style="position:absolute;top:-10px;right:-40px;font:800 56px 'Segoe UI';color:#7FB8E8">z<span style="font-size:38px">z</span></div>
-        ${bottle({ fill: 0.6, h: 380, mood: "sleeping" })}${shadow(160)}<div style="margin-top:16px">${badge("Paused", 28)}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:22px">
-        ${["Active hours only", "Quiet while you're away", "Hides in fullscreen", "Pause 1 hour or until tomorrow"]
-          .map(
-            (t) =>
-              `<div style="background:#243244;color:#E6F2FF;border-radius:20px;padding:22px 30px;font-size:28px;font-weight:600;width:470px">✓ ${t}</div>`,
-          )
-          .join("")}
-      </div>
-    </div>`,
+  "3-your-plan": page(
+    "Made for you",
+    "A daily goal that fits your body",
+    "A 30-second check-in looks at your age, activity and weather. Track by the glass or by your own tumbler.",
+    appWindow(`${DEV}/settings.html?fresh&tumbler&step=result`),
   ),
-  "4-setup": page(
-    "Set up in seconds",
-    "Pick your daily goal, glass size and how often to be reminded. No account, no ads, nothing leaves your PC.",
-    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-      <div style="width:620px;background:#fff;border-radius:32px;padding:44px 48px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.3)">
-        <div style="display:flex;justify-content:center">${bottle({ fill: 0.35, h: 170, wave: true })}</div>
-        <div style="font-size:42px;font-weight:700;margin:12px 0 6px">Hi, I'm Tumbli!</div>
-        <div style="font-size:22px;color:#4A6480;margin-bottom:18px">I'll remind you to drink water while you work.</div>
-        <div style="text-align:left">
-          <div class="row"><span>Daily goal</span><b>8 glasses</b></div>
-          <div class="row"><span>Glass size</span><b>250 ml</b></div>
-          <div class="row"><span>Remind me every</span><b>45 minutes</b></div>
-          <div class="row"><span>Start with Windows</span><b style="color:#2E8BE6">On</b></div>
-        </div>
-        <button class="btn" style="width:100%;margin-top:22px;background:#2E8BE6;color:#fff;font-size:26px;padding:18px">Let's go 💧</button>
-      </div>
-    </div>`,
+  "4-progress": page(
+    "Your week",
+    "Watch your streak grow",
+    "See today at a glance, your week in a chart, and a recap every Monday.",
+    appWindow(`${DEV}/settings.html?demo&tumbler`),
+  ),
+  "5-outfits": page(
+    "Achievements",
+    "Keep your streak, dress up Tumbli",
+    "Party hats, sunglasses, a crown: every milestone unlocks something new for your water buddy.",
+    outfits
+      .map(
+        (o, i) =>
+          frame(`${DEV}/widget.html?demo&outfit=${o}`, {
+            w: 76,
+            h: 140,
+            scale: 2.3,
+            style: `left:${30 + i * 205}px;top:${i % 2 ? 380 : 300}px`,
+          }) + `<div class="label" style="left:${i * 205}px;top:${i % 2 ? 720 : 640}px">${outfitNames[i]}</div>`,
+      )
+      .join(""),
   ),
 };
 
-// a throwaway profile, so a running Edge window doesn't swallow the headless request
-const profile = mkdtempSync(join(tmpdir(), "tumbli-shots-"));
-
 for (const [name, html] of Object.entries(scenes)) {
-  const src = join(srcDir, `${name}.html`);
-  writeFileSync(src, html);
+  writeFileSync(join(srcDir, `${name}.html`), html);
   const out = join(outDir, `${name}.png`);
+  rmSync(out, { force: true });
+  const profile = mkdtempSync(join(tmpdir(), "tumbli-shots-")); // fresh storage per scene
   execFileSync(EDGE, [
     "--headless=new",
     `--user-data-dir=${profile}`,
     "--no-first-run",
-    "--disable-gpu",
     "--hide-scrollbars",
+    "--blink-settings=preferredColorScheme=1",
     "--force-device-scale-factor=1",
+    "--virtual-time-budget=3500",
     "--window-size=1920,1080",
     `--screenshot=${out}`,
-    pathToFileURL(src).href,
+    `${DEV}/store-assets/screenshots/src/${name}.html`,
   ]);
+  const t0 = Date.now();
+  while (!existsSync(out) && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 200));
   if (!existsSync(out)) throw new Error(`Edge did not write ${out}`);
   console.log("wrote", out);
-}
-try {
-  rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
-} catch {
-  // Edge can hold the profile a moment longer; it's in the temp folder anyway
+  try {
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 400 });
+  } catch {
+    // Edge may still hold it; it's in the temp folder
+  }
 }
