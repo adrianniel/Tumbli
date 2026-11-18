@@ -118,3 +118,37 @@ describe("pause", () => {
     expect(loadPausedUntil()).toBe(0);
   });
 });
+
+describe("midnight reset", () => {
+  it("starts a new day at 12:00 AM and keeps yesterday in history", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 10, 18, 23, 59, 30));
+      addGlasses(5);
+      expect(todayCount()).toBe(5);
+
+      vi.setSystemTime(new Date(2026, 10, 19, 0, 0, 5));
+      expect(todayCount()).toBe(0);
+      expect(addGlasses(1)).toBe(1);
+
+      const h = loadHistory();
+      expect(h["2026-11-18"]).toBe(5);
+      expect(h["2026-11-19"]).toBe(1);
+      expect(lastDays(h, 2).map((d) => d.count)).toEqual([5, 1]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not reset at noon", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 10, 18, 11, 59));
+      addGlasses(3);
+      vi.setSystemTime(new Date(2026, 10, 18, 12, 1));
+      expect(todayCount()).toBe(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

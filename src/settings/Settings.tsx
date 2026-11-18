@@ -8,6 +8,7 @@ import { factOfTheDay, greeting } from "../lib/facts";
 import {
   addGlasses,
   CHANGED_EVENT,
+  dayKey,
   isOnboarded,
   lastDays,
   loadHistory,
@@ -43,6 +44,18 @@ export function Settings() {
     setS(loadSettings());
     setHistory(loadHistory());
   }, []);
+
+  // a new day starts at 12:00 AM: re-read so "today" goes back to 0 even if this window stays open
+  useEffect(() => {
+    let day = dayKey();
+    const id = window.setInterval(() => {
+      if (dayKey() !== day) {
+        day = dayKey();
+        refresh();
+      }
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [refresh]);
 
   useEffect(() => {
     const un = listen(CHANGED_EVENT, refresh);
