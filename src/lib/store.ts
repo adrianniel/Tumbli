@@ -113,3 +113,17 @@ export function lastDays(h: History, days: number) {
   }
   return out;
 }
+
+const ONBOARDED_KEY = "tumbli.onboarded";
+
+export function isOnboarded(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDED_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function markOnboarded() {
+  localStorage.setItem(ONBOARDED_KEY, "1");
+}

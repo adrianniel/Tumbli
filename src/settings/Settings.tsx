@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
+import { Welcome } from "./Welcome";
 import {
   addGlasses,
   CHANGED_EVENT,
+  isOnboarded,
   lastDays,
   loadHistory,
   loadSettings,
@@ -25,6 +28,14 @@ export function Settings() {
   const [s, setS] = useState<SettingsT>(loadSettings);
   const [history, setHistory] = useState<History>(loadHistory);
   const [autostart, setAutostart] = useState<boolean | null>(null);
+  const [onboarded, setOnboarded] = useState(isOnboarded);
+
+  // first run: this window starts hidden, so bring it up for the welcome screen
+  useEffect(() => {
+    if (onboarded) return;
+    const w = getCurrentWindow();
+    void w.show().then(() => w.setFocus());
+  }, [onboarded]);
 
   const refresh = useCallback(() => {
     setS(loadSettings());
@@ -59,6 +70,19 @@ export function Settings() {
       setAutostart(await isEnabled().catch(() => false));
     }
   };
+
+  if (!onboarded) {
+    return (
+      <Welcome
+        initial={s}
+        onDone={(next) => {
+          setS(next);
+          setOnboarded(true);
+          void isEnabled().then(setAutostart).catch(() => {});
+        }}
+      />
+    );
+  }
 
   const today = lastDays(history, 1)[0].count;
   const week = lastDays(history, 7);

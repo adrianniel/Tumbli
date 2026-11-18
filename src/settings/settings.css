@@ -225,3 +225,73 @@ footer {
   padding: 0;
   white-space: nowrap;
 }
+
+/* ---------- first-run welcome ---------- */
+.welcome {
+  padding: 28px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.welcome h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+.welcome > .muted {
+  max-width: 320px;
+  font-size: 14px;
+  margin: 0;
+}
+.welcome .card {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+.welcome .small {
+  font-size: 12.5px;
+}
+.welcome-buddy {
+  animation: welcome-bob 3s ease-in-out infinite;
+}
+.welcome-buddy .arm-r {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: welcome-wave 0.5s ease-in-out infinite alternate;
+}
+@keyframes welcome-bob {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes welcome-wave {
+  from {
+    transform: rotate(-35deg);
+  }
+  to {
+    transform: rotate(20deg);
+  }
+}
+.primary-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary-btn:hover {
+  filter: brightness(1.08);
+}
+.primary-btn:disabled {
+  opacity: 0.6;
+}
+.welcome .card .row:first-child {
+  border-top: none;
+}
