@@ -1294,3 +1294,18 @@ body,
   color: #ff7466;
   font-weight: 800;
 }
+
+.inline-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rating .bubble-kicker {
+  color: #c98400;
+}

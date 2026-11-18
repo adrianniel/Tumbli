@@ -225,3 +225,39 @@ export function RecapBubble({
     </Bubble>
   );
 }
+
+export function RatingBubble({
+  onRate,
+  onLater,
+  onNever,
+  onFeedback,
+}: {
+  onRate: () => void;
+  onLater: () => void;
+  onNever: () => void;
+  onFeedback: () => void;
+}) {
+  return (
+    <Bubble className="rating" label="Rate Tumbli">
+      <div className="bubble-kicker">Enjoying Tumbli?</div>
+      <div className="nudge-title">Would you rate me on the Store?</div>
+      <div className="nudge-sub">
+        It takes a few seconds and helps other people find me.{" "}
+        <button className="inline-link" onClick={onFeedback}>
+          Something off? Tell me
+        </button>
+      </div>
+      <div className="nudge-actions">
+        <button className="btn primary" onClick={onRate}>
+          Rate Tumbli
+        </button>
+        <button className="btn" onClick={onLater}>
+          Later
+        </button>
+        <button className="btn ghost" onClick={onNever}>
+          No thanks
+        </button>
+      </div>
+    </Bubble>
+  );
+}

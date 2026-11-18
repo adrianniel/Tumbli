@@ -31,7 +31,11 @@ import {
   type Settings,
 } from "../lib/store";
 import { Buddy, HoverActions } from "./Buddy";
-import { AwardBubble, FactBubble, RecapBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { AwardBubble, FactBubble, RatingBubble, RecapBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { askLater, neverAsk, rated, shouldAskForRating } from "../lib/rating";
+import { storeReviewUrl } from "../config";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { emit } from "@tauri-apps/api/event";
 import { markRecapShown, pendingRecap, recapFor, type Recap } from "../lib/recap";
 import { ACHIEVEMENTS, checkAchievements, outfitName, type Achievement } from "../lib/achievements";
 import { TOUR } from "./tour";
@@ -77,6 +81,7 @@ export function Widget() {
   const [boing, setBoing] = useState(0);
   const [award, setAward] = useState<Achievement | null>(null);
   const [recap, setRecap] = useState<Recap | null>(null);
+  const [askRating, setAskRating] = useState(false);
   const [hover, setHover] = useState(false);
   const hovering = useRef(false);
   const hoverTimer = useRef<number | undefined>(undefined);
@@ -88,6 +93,7 @@ export function Widget() {
       refresh();
       celebrateAchievements();
       window.setTimeout(showRecap, 5000);
+      window.setTimeout(maybeAskRating, 30_000);
     },
     canNudge: () => !touring.current,
     onNudge: () => {
@@ -98,7 +104,9 @@ export function Widget() {
   });
   const { nudging } = reminders;
 
-  const talking = nudging || fact !== null || tour !== null || award !== null || recap !== null;
+  const talking = nudging || fact !== null || tour !== null || award !== null || recap !== null || askRating;
+  const talkingRef = useRef(talking);
+  talkingRef.current = talking;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
 
   const { side, startDrag } = useDocking(mode, () => {
@@ -198,6 +206,18 @@ export function Widget() {
     const t = window.setTimeout(showRecap, 9000); // after any achievement bubble
     return () => window.clearTimeout(t);
   }, [showRecap]);
+  /** after 3 days of use, ask (once in a while) for a Store rating */
+  const maybeAskRating = useCallback(function check() {
+    if (!shouldAskForRating(loadHistory())) return;
+    // wait until Tumbli isn't busy with something else
+    if (talkingRef.current || touring.current) window.setTimeout(check, 60_000);
+    else setAskRating(true);
+  }, []);
+  useEffect(() => {
+    const t = window.setTimeout(maybeAskRating, 20_000);
+    return () => window.clearTimeout(t);
+  }, [maybeAskRating]);
+
   const closeRecap = () => {
     if (recap) markRecapShown(recap);
     setRecap(null);
@@ -265,6 +285,7 @@ export function Widget() {
     }
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
+    if (q.has("rating")) setAskRating(true);
     if (q.has("award")) setAward(ACHIEVEMENTS[Number(q.get("award")) || 3]);
     if (q.has("recap")) {
       // preview with this week's numbers standing in for last week's
@@ -380,7 +401,31 @@ export function Widget() {
         />
       )}
 
-      {tour === null && !nudging && !award && !recap && fact && (
+      {askRating && !award && !recap && !nudging && tour === null && (
+        <RatingBubble
+          onRate={() => {
+            rated();
+            setAskRating(false);
+            void openUrl(storeReviewUrl()).catch(() => {});
+          }}
+          onLater={() => {
+            askLater();
+            setAskRating(false);
+          }}
+          onNever={() => {
+            neverAsk();
+            setAskRating(false);
+          }}
+          onFeedback={() => {
+            askLater();
+            setAskRating(false);
+            openSettings();
+            void emit("tumbli:feedback");
+          }}
+        />
+      )}
+
+      {tour === null && !nudging && !award && !recap && !askRating && fact && (
         <FactBubble
           fact={fact}
           revealed={revealed}

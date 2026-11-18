@@ -76,6 +76,12 @@ URL: `https://<your-github-username>.github.io/Tumbli/privacy.html` [YOU]
 `SUPPORT_EMAIL` in `src/config.ts`, which the in-app **Send feedback** form opens in the
 user's email app; change both together.
 
+## Store ID (for the in-app rating prompt)
+
+After 3 days of use Tumbli asks for a rating and opens the Store review page. Put the app's
+**Store ID** (Partner Center › Product management › Product identity, e.g. `9NBLGGH4R32N`) in
+`STORE_PRODUCT_ID` in `src/config.ts`. Until then the prompt opens a Store search for "Tumbli". [YOU]
+
 ## Age rating
 
 Fill in the IARC questionnaire: no violence, no user-generated content, no communication between users,
