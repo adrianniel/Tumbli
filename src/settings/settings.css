@@ -1915,3 +1915,155 @@ footer {
   color: var(--coral);
   font-weight: 800;
 }
+
+/* ================= after setup: Tumbli fills up ================= */
+
+.ready {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+.ready-stage {
+  position: relative;
+  width: 220px;
+  height: 230px;
+  display: grid;
+  place-items: center;
+}
+.ready-halo {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: var(--hero);
+  animation: halo-in 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.ready-buddy {
+  position: relative;
+  z-index: 1;
+  transform-origin: 50% 100%;
+}
+/* a happy wobble while the water pours in */
+.ready-buddy.filling {
+  animation:
+    ready-pop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both,
+    ready-wobble 0.6s ease-in-out 0.5s infinite;
+}
+@keyframes ready-pop {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes ready-wobble {
+  0%,
+  100% {
+    transform: rotate(0) scale(1, 1);
+  }
+  25% {
+    transform: rotate(-4deg) scale(1.03, 0.97);
+  }
+  75% {
+    transform: rotate(4deg) scale(0.97, 1.03);
+  }
+}
+/* full: the same jump as when you click Tumbli */
+.ready-buddy.jump {
+  animation: ready-jump 0.9s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+@keyframes ready-jump {
+  0% {
+    transform: none;
+  }
+  15% {
+    transform: scale(1.14, 0.84);
+  }
+  45% {
+    transform: translateY(-34px) rotate(-360deg) scale(0.95, 1.06);
+  }
+  75% {
+    transform: translateY(0) rotate(-360deg) scale(1.08, 0.92);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+.ready-buddy .arm-r {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: welcome-wave 0.45s ease-in-out infinite alternate;
+}
+.ready-shadow {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  width: 90px;
+  height: 13px;
+  margin-left: -45px;
+  border-radius: 50%;
+  background: rgba(14, 47, 74, 0.18);
+  filter: blur(2px);
+}
+.ready-sparkles span {
+  position: absolute;
+  z-index: 2;
+  color: var(--sun);
+  font-size: 22px;
+  animation: ready-twinkle 1s ease-out both;
+}
+.ready-sparkles span:nth-child(1) {
+  top: 30px;
+  left: 30px;
+}
+.ready-sparkles span:nth-child(2) {
+  top: 20px;
+  right: 34px;
+  font-size: 16px;
+  animation-delay: 0.12s;
+}
+.ready-sparkles span:nth-child(3) {
+  bottom: 70px;
+  left: 18px;
+  font-size: 14px;
+  animation-delay: 0.24s;
+}
+.ready-sparkles span:nth-child(4) {
+  bottom: 60px;
+  right: 20px;
+  animation-delay: 0.36s;
+}
+@keyframes ready-twinkle {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(20deg);
+    opacity: 0.9;
+  }
+}
+.ready-title {
+  animation: fade-up 0.35s ease-out both;
+}
+.ready-bar {
+  width: 180px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--water-soft);
+  overflow: hidden;
+}
+.ready-bar div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--water);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ready * {
+    animation: none !important;
+  }
+}

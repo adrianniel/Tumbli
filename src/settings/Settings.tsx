@@ -18,6 +18,7 @@ import {
 } from "../components/Icons";
 import { Welcome } from "./Welcome";
 import { Feedback } from "./Feedback";
+import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
 import { factOfTheDay, greeting } from "../lib/facts";
@@ -68,6 +69,10 @@ export function Settings() {
   const [history, setHistory] = useState<History>(loadHistory);
   const [autostart, setAutostart] = useState<AutostartState | null>(null);
   const [onboarded, setOnboarded] = useState(isOnboarded);
+  // after "Start drinking": Tumbli fills up before the dashboard (or the tour) appears
+  const [readying, setReadying] = useState(
+    () => import.meta.env.DEV && new URLSearchParams(location.search).has("ready"),
+  );
   const [view, setView] = useState<"dashboard" | "feedback">(() =>
     import.meta.env.DEV && new URLSearchParams(location.search).has("feedback") ? "feedback" : "dashboard",
   );
@@ -133,15 +138,27 @@ export function Settings() {
     }
   };
 
+  if (readying) {
+    return (
+      <Ready
+        name={s.name}
+        onDone={() => {
+          setReadying(false);
+          setOnboarded(true);
+          void getAutostart().then(setAutostart).catch(() => {});
+          if (!isTourDone()) void startTour();
+        }}
+      />
+    );
+  }
+
   if (!onboarded) {
     return (
       <Welcome
         initial={s}
         onDone={(next) => {
           setS(next);
-          setOnboarded(true);
-          void getAutostart().then(setAutostart).catch(() => {});
-          if (!isTourDone()) void startTour();
+          setReadying(true);
         }}
       />
     );
