@@ -38,3 +38,20 @@ describe("anchors", () => {
     expect(placeAt(left, 350, 240)).toEqual({ x: 8, y: 300 });
   });
 });
+
+import { keepOnScreen } from "./dock";
+
+describe("keepOnScreen", () => {
+  it("pulls a window that grew past the left edge back in", () => {
+    expect(keepOnScreen({ x: -230, y: 600, w: 350, h: 240 }, [screen])).toEqual({ x: 0, y: 600 });
+  });
+
+  it("respects a taskbar at the top", () => {
+    const topBar = { x: 0, y: 48, w: 1920, h: 1032 };
+    expect(keepOnScreen({ x: 100, y: 10, w: 100, h: 140 }, [topBar])).toEqual({ x: 100, y: 48 });
+  });
+
+  it("leaves a window that already fits alone", () => {
+    expect(keepOnScreen({ x: 500, y: 300, w: 350, h: 240 }, [screen])).toEqual({ x: 500, y: 300 });
+  });
+});

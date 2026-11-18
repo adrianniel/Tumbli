@@ -48,3 +48,12 @@ export function anchorOf(r: Rect, side: Side): Anchor {
 export function placeAt(anchor: Anchor, w: number, h: number) {
   return { x: anchor.side === "left" ? anchor.x : anchor.x - w, y: anchor.bottom - h };
 }
+
+/** Nudge a window back inside the work area it mostly belongs to (taskbar top, bottom or side). */
+export function keepOnScreen(win: Rect, areas: Rect[]): { x: number; y: number } {
+  if (!areas.length) return { x: win.x, y: win.y };
+  const a = pickArea(win, areas);
+  const x = Math.min(Math.max(win.x, a.x), Math.max(a.x, a.x + a.w - win.w));
+  const y = Math.min(Math.max(win.y, a.y), Math.max(a.y, a.y + a.h - win.h));
+  return { x: Math.round(x), y: Math.round(y) };
+}

@@ -14,7 +14,7 @@ import { TOUR } from "./tour";
 import { bloop } from "../lib/sound";
 import { shouldNudge, sipFor } from "../lib/schedule";
 import { cheerFor, FACTS, nudgeMessage, randomFact, type Fact } from "../lib/facts";
-import { anchorOf, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
+import { anchorOf, keepOnScreen, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 import {
   drink as logDrink,
   finishTumbler,
@@ -53,8 +53,6 @@ type SystemStatus = { idle_secs: number; busy: boolean };
 
 const win = getCurrentWindow();
 
-let anchor: Anchor | null = null;
-
 const workAreas = async () =>
   (await availableMonitors()).map((m) => ({
     x: m.workArea.position.x,
@@ -69,15 +67,20 @@ async function windowRect() {
   return { x: pos.x, y: pos.y, w: size.width, h: size.height };
 }
 
-/** Resize while keeping the docked edge and the bottom where they are. */
-async function resizeAnchored(w: number, h: number) {
+/**
+ * Resize while keeping the docked edge and the bottom where they are:
+ * docked right it grows to the left, docked left it grows to the right.
+ * `side` comes from the same state the layout uses, so the two always agree,
+ * and the result is kept inside the screen no matter what.
+ */
+async function resizeAnchored(w: number, h: number, side: Side) {
   const sf = await win.scaleFactor();
   const pw = Math.round(w * sf);
   const ph = Math.round(h * sf);
-  const a = anchor ?? anchorOf(await windowRect(), "right");
-  const at = placeAt(a, pw, ph);
+  const at = placeAt(anchorOf(await windowRect(), side), pw, ph);
+  const fit = keepOnScreen({ ...at, w: pw, h: ph }, await workAreas());
   await win.setSize(new LogicalSize(w, h));
-  await win.setPosition(new PhysicalPosition(at.x, at.y));
+  await win.setPosition(new PhysicalPosition(fit.x, fit.y));
 }
 
 /** Slide to the nearest side edge after a drag, with a little gap. Returns the side. */
@@ -93,8 +96,7 @@ async function snapAfterDrag(): Promise<Side> {
     );
     await new Promise((r) => setTimeout(r, 16));
   }
-  anchor = anchorOf(to, to.side);
-  localStorage.setItem(POS_KEY, JSON.stringify(anchor));
+  localStorage.setItem(POS_KEY, JSON.stringify(anchorOf(to, to.side)));
   return to.side;
 }
 
@@ -123,7 +125,6 @@ async function placeInitially(reset = false): Promise<Side> {
   const to = areas.length
     ? snapToEdge(start, areas, Math.round(EDGE_MARGIN * sf))
     : { ...start, side: "right" as Side };
-  anchor = anchorOf(to, to.side);
   await win.setPosition(new PhysicalPosition(to.x, to.y));
   return to.side;
 }
@@ -235,8 +236,8 @@ export function Widget() {
   useEffect(() => {
     if (!placed) return;
     const target = mode === "talk" ? EXPANDED : mode === "cheer" ? CHEERING : COMPACT;
-    void resizeAnchored(target.w, target.h);
-  }, [mode, placed]);
+    void resizeAnchored(target.w, target.h, side);
+  }, [mode, placed, side]);
 
   // reminder loop
   useEffect(() => {
