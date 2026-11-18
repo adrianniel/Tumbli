@@ -37,4 +37,5 @@ Prerequisites: [Node.js](https://nodejs.org), [Rust](https://rustup.rs), and the
 npm install
 npm run tauri dev     # run with hot reload (first reminder pops after 15 s)
 npm run tauri build   # build installers into src-tauri/target/release/bundle
+npm test              # unit tests (Vitest)
 ```

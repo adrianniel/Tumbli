@@ -10,6 +10,7 @@ import {
 } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
 import { bloop } from "../lib/sound";
+import { shouldNudge } from "../lib/schedule";
 import {
   addGlasses,
   CHANGED_EVENT,
@@ -94,13 +95,6 @@ async function placeInitially(reset = false) {
     }
   }
   await win.setPosition(new PhysicalPosition(anchor.x - w, anchor.y - h));
-}
-
-function withinActiveHours(s: Settings, d = new Date()) {
-  const h = d.getHours();
-  if (s.startHour === s.endHour) return true; // all day
-  if (s.startHour < s.endHour) return h >= s.startHour && h < s.endHour;
-  return h >= s.startHour || h < s.endHour; // overnight range, e.g. 20 -> 4
 }
 
 export function Widget() {
@@ -210,11 +204,13 @@ export function Widget() {
         return;
       }
 
-      const due =
-        Date.now() >= nextAt.current &&
-        withinActiveHours(settings, now) &&
-        todayCount() < settings.goal &&
-        !status.busy;
+      const due = shouldNudge({
+        now,
+        nextAt: nextAt.current,
+        settings,
+        count: todayCount(),
+        busy: status.busy,
+      });
 
       if (due && !nudging) {
         setMessage(NUDGES[Math.floor(Math.random() * NUDGES.length)]);
