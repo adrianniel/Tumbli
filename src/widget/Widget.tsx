@@ -35,6 +35,7 @@ import { TOUR } from "./tour";
 import { useDocking } from "./useDocking";
 import { useGestures } from "./useGestures";
 import { useReminders } from "./useReminders";
+import { useShortcut } from "./useShortcut";
 import type { WindowMode } from "./windowing";
 
 const CHEER_MS = 2800;
@@ -201,6 +202,12 @@ export function Widget() {
   };
 
   const openSettings = () => void invoke("open_settings");
+
+  // Ctrl+Alt+W (or the chosen combo) logs a drink from any app
+  useShortcut(settings, () => {
+    setBoing((n) => n + 1);
+    drink();
+  });
 
   const gestures = useGestures({ onClick: tellFact, onDoubleClick: openSettings, onDragStart: startDrag });
 

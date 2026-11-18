@@ -18,6 +18,9 @@ export type Settings = {
   hideOnFullscreen: boolean;
   /** what Tumbli calls the user; empty if they skipped it */
   name: string;
+  /** global keyboard shortcut that logs a drink from anywhere */
+  shortcutOn: boolean;
+  shortcut: string;
 };
 
 /** date (YYYY-MM-DD) -> ml drunk that day */
@@ -43,7 +46,25 @@ export const defaultSettings: Settings = {
   sound: true,
   hideOnFullscreen: true,
   name: "",
+  shortcutOn: true,
+  shortcut: "CommandOrControl+Alt+W",
 };
+
+/** Shortcuts to choose from (the first is the default). */
+export const SHORTCUTS = ["CommandOrControl+Alt+W", "CommandOrControl+Shift+W", "CommandOrControl+Alt+D"];
+/** "Ctrl + Alt + W" */
+export const shortcutLabel = (s: string) => s.replace("CommandOrControl", "Ctrl").split("+").join(" + ");
+
+const SHORTCUT_STATUS_KEY = "tumbli.shortcutStatus";
+/** Whether the widget managed to register the shortcut ("ok" / "taken" / "off"). */
+export function loadShortcutStatus(): string {
+  return localStorage.getItem(SHORTCUT_STATUS_KEY) ?? "ok";
+}
+export function saveShortcutStatus(v: "ok" | "taken" | "off") {
+  if (localStorage.getItem(SHORTCUT_STATUS_KEY) === v) return;
+  localStorage.setItem(SHORTCUT_STATUS_KEY, v);
+  void emit(CHANGED_EVENT);
+}
 
 export const TUMBLER_SIZES = [350, 500, 650, 750, 1000, 1200];
 export const GLASS_SIZES = [150, 200, 250, 300, 350, 500];

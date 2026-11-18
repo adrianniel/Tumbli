@@ -27,6 +27,9 @@ import {
   finishTumbler,
   fmtMl,
   GLASS_SIZES,
+  loadShortcutStatus,
+  SHORTCUTS,
+  shortcutLabel,
   goalGlasses,
   liters,
   loadLevel,
@@ -400,6 +403,36 @@ export function Settings() {
             onChange={(e) => update({ hideOnFullscreen: e.target.checked })}
           />
         </label>
+        <div className="row stack">
+          <div className="row-inline">
+            <span className="row-label">
+              Quick log shortcut
+              <small>Log a drink from any app, without touching the mouse</small>
+            </span>
+            <input
+              className="switch"
+              type="checkbox"
+              checked={s.shortcutOn}
+              onChange={(e) => update({ shortcutOn: e.target.checked })}
+              aria-label="Quick log shortcut"
+            />
+          </div>
+          {s.shortcutOn && (
+            <>
+              <Chips
+                label="Shortcut"
+                options={SHORTCUTS.map((v) => ({ value: v, label: shortcutLabel(v) }))}
+                value={s.shortcut}
+                onChange={(v) => update({ shortcut: v })}
+              />
+              {loadShortcutStatus() === "taken" && (
+                <small className="warn-text" title={localStorage.getItem("tumbli.shortcutError") ?? ""}>
+                  Another app is using {shortcutLabel(s.shortcut)}. Pick a different one.
+                </small>
+              )}
+            </>
+          )}
+        </div>
         <label className="row">
           <span>
             Start with Windows
