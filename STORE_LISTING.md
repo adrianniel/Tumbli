@@ -72,9 +72,9 @@ URL: `https://<your-github-username>.github.io/Tumbli/privacy.html` [YOU]
 
 ## Support contact
 
-[YOU] A support email or website (shown on the Store page). Use the same address as
+**adrianniel.garig@gmail.com** (shown on the Store page). It's the same address as
 `SUPPORT_EMAIL` in `src/config.ts`, which the in-app **Send feedback** form opens in the
-user's email app.
+user's email app; change both together.
 
 ## Age rating
 
