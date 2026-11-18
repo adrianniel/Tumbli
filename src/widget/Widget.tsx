@@ -1,317 +1,135 @@
+/**
+ * The floating widget. This file wires things together; the pieces live next to it:
+ *  - windowing.ts / useDocking.ts  the window: size per mode, docking to a screen edge
+ *  - useReminders.ts               the reminder loop (idle, fullscreen, pause)
+ *  - useGestures.ts                click vs drag vs double-click on Tumbli
+ *  - Buddy.tsx, bubbles.tsx        what's drawn: Tumbli, its badge, buttons and bubbles
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import {
-  availableMonitors,
-  getCurrentWindow,
-  LogicalSize,
-  PhysicalPosition,
-
-} from "@tauri-apps/api/window";
-import { Tumbler } from "../components/Tumbler";
-import { IconBell, IconBulb, IconCheck, IconClose, IconGear, IconPlus, IconQuestion, IconRefill } from "../components/Icons";
-import { TOUR } from "./tour";
 import { bloop } from "../lib/sound";
-import { shouldNudge, sipFor } from "../lib/schedule";
+import { sipFor } from "../lib/schedule";
 import { cheerFor, FACTS, nudgeMessage, randomFact, type Fact } from "../lib/facts";
-import { anchorOf, keepOnScreen, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 import {
+  CHANGED_EVENT,
   drink as logDrink,
   finishTumbler,
   fmtMl,
   goalGlasses,
   liters,
-  loadLevel,
-  refill,
-  CHANGED_EVENT,
-  markTourDone,
-  TOUR_EVENT,
   loadHistory,
-  loadPausedUntil,
+  loadLevel,
   loadSettings,
-  pauseEnd,
-  savePausedUntil,
+  markTourDone,
+  refill,
   streak,
   todayMl,
+  TOUR_EVENT,
   type DrinkResult,
   type Settings,
 } from "../lib/store";
+import { Buddy, HoverActions } from "./Buddy";
+import { FactBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import { TOUR } from "./tour";
+import { useDocking } from "./useDocking";
+import { useGestures } from "./useGestures";
+import { useReminders } from "./useReminders";
+import type { WindowMode } from "./windowing";
 
-const COMPACT = { w: 76, h: 140 }; // just Tumbli, hugging the screen edge
-const HOVER = { w: 140, h: 140 }; // room for the 2x2 quick buttons, opened on hover
-const EXPANDED = { w: 350, h: 240 };
-const CHEERING = { w: 300, h: 170 }; // room for the floating cheer text
 const CHEER_MS = 2800;
-const SNOOZE_MIN = 10;
-const IDLE_SECS = 5 * 60; // user counts as "away" after 5 min without input
-const TICK_MS = 5000;
 const FACT_MS = 12_000; // a fact bubble closes by itself after this, unless hovered
-const DRAG_PX = 4; // a press that moves less than this is a click
-const POS_KEY = "tumbli.widget.anchor.v3"; // docked side + edge + bottom, physical px
-const EDGE_MARGIN = 2; // logical px between the window and the screen edge: Tumbli sits right at the side
-
-type SystemStatus = { idle_secs: number; busy: boolean };
-
-const win = getCurrentWindow();
-
-const workAreas = async () =>
-  (await availableMonitors()).map((m) => ({
-    x: m.workArea.position.x,
-    y: m.workArea.position.y,
-    w: m.workArea.size.width,
-    h: m.workArea.size.height,
-  }));
-
-async function windowRect() {
-  const pos = await win.outerPosition();
-  const size = await win.outerSize();
-  return { x: pos.x, y: pos.y, w: size.width, h: size.height };
-}
-
-/**
- * Resize while keeping the docked edge and the bottom where they are:
- * docked right it grows to the left, docked left it grows to the right.
- * `side` comes from the same state the layout uses, so the two always agree,
- * and the result is kept inside the screen no matter what.
- */
-async function resizeAnchored(w: number, h: number, side: Side) {
-  const sf = await win.scaleFactor();
-  const pw = Math.round(w * sf);
-  const ph = Math.round(h * sf);
-  const at = placeAt(anchorOf(await windowRect(), side), pw, ph);
-  const fit = keepOnScreen({ ...at, w: pw, h: ph }, await workAreas());
-  await setBounds(fit.x, fit.y, pw, ph);
-}
-
-/** Move + resize in one native step so there's no in-between frame (no flicker). */
-async function setBounds(x: number, y: number, w: number, h: number) {
-  try {
-    await invoke("set_widget_bounds", { x, y, w, h });
-  } catch {
-    // not available (e.g. the browser preview): fall back to two steps
-    const sf = await win.scaleFactor();
-    await win.setSize(new LogicalSize(w / sf, h / sf));
-    await win.setPosition(new PhysicalPosition(x, y));
-  }
-}
-
-/** Slide to the nearest side edge after a drag, with a little gap. Returns the side. */
-async function snapAfterDrag(): Promise<Side> {
-  const sf = await win.scaleFactor();
-  const from = await windowRect();
-  const to = snapToEdge(from, await workAreas(), Math.round(EDGE_MARGIN * sf));
-  const steps = 9;
-  for (let i = 1; i <= steps; i++) {
-    const t = 1 - Math.pow(1 - i / steps, 3); // ease-out
-    await win.setPosition(
-      new PhysicalPosition(Math.round(from.x + (to.x - from.x) * t), Math.round(from.y + (to.y - from.y) * t)),
-    );
-    await new Promise((r) => setTimeout(r, 16));
-  }
-  localStorage.setItem(POS_KEY, JSON.stringify(anchorOf(to, to.side)));
-  return to.side;
-}
-
-async function placeInitially(reset = false): Promise<Side> {
-  const sf = await win.scaleFactor();
-  const w = Math.round(COMPACT.w * sf);
-  const h = Math.round(COMPACT.h * sf);
-
-  let saved: Anchor | null = null;
-  if (!reset) {
-    try {
-      saved = JSON.parse(localStorage.getItem(POS_KEY) ?? "null");
-    } catch {
-      saved = null;
-    }
-  }
-  const areas = await workAreas();
-  const start = saved
-    ? { ...placeAt(saved, w, h), w, h }
-    : (() => {
-        const a = areas[0] ?? { x: 0, y: 0, w: 1280, h: 720 };
-        return { x: a.x + a.w - w, y: a.y + a.h - h, w, h };
-      })();
-  // snapping also pulls back a spot that is no longer on any monitor
-  const to = areas.length
-    ? snapToEdge(start, areas, Math.round(EDGE_MARGIN * sf))
-    : { ...start, side: "right" as Side };
-  await setBounds(to.x, to.y, w, h);
-  return to.side;
-}
-
+const HOVER_GRACE_MS = 350; // keep the buttons a moment after the mouse leaves
 
 export function Widget() {
+  // ---------- data ----------
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [doneMl, setDoneMl] = useState(() => todayMl());
   const [level, setLevel] = useState(() => loadLevel()); // ml left in the tumbler (tumbler mode)
-  const [lastDrank, setLastDrank] = useState(0);
-  const [nudging, setNudging] = useState(false);
-  const [message, setMessage] = useState("");
-  const [celebrate, setCelebrate] = useState(false);
-  const [gulping, setGulping] = useState(false);
-  const [boing, setBoing] = useState(0); // bumps on every click to replay the animation
-  const [fact, setFact] = useState<Fact | null>(null);
-  const [cheer, setCheer] = useState<{ text: string; id: number } | null>(null);
-  const [tour, setTour] = useState<number | null>(null); // step of the quick tour, if running
-  const touring = useRef(false);
-  const [revealed, setRevealed] = useState(false);
-  const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
-  const [nowTick, setNowTick] = useState(() => Date.now());
-  const [side, setSide] = useState<Side>("right");
-
-  // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
-  const nextAt = useRef(Date.now() + (import.meta.env.DEV ? 15_000 : loadSettings().intervalMin * 60_000));
-  const hidden = useRef(false);
-  const lastDay = useRef(new Date().toDateString());
-  const factTimer = useRef<number | undefined>(undefined);
-  const hovering = useRef(false);
-  const [hover, setHover] = useState(false);
-  const hoverTimer = useRef<number | undefined>(undefined);
 
   const refresh = useCallback(() => {
     const s = loadSettings();
     setSettings(s);
     setDoneMl(todayMl());
     setLevel(loadLevel(s));
-    setPausedUntil(loadPausedUntil());
   }, []);
-
-  // first placement + show (resizing waits for this, or the two race)
-  const [placed, setPlaced] = useState(false);
   useEffect(() => {
-    (async () => {
-      setSide(await placeInitially());
-      await win.show();
-      setPlaced(true);
-    })();
-  }, []);
-
-  // after a drag, dock to the nearest side edge and remember it
-  const userDragging = useRef(false);
-  useEffect(() => {
-    let t: number | undefined;
-    const un = win.onMoved(() => {
-      if (!userDragging.current) return; // ignore our own setPosition calls
-      window.clearTimeout(t);
-      // snap only once the button is released, even if the user pauses mid-drag
-      t = window.setTimeout(async function settle() {
-        const held = await invoke<boolean>("primary_button_down").catch(() => false);
-        if (held) {
-          t = window.setTimeout(settle, 120);
-          return;
-        }
-        userDragging.current = false;
-        setSide(await snapAfterDrag());
-      }, 150);
-    });
+    const un = listen(CHANGED_EVENT, refresh);
     return () => {
       void un.then((f) => f());
     };
-  }, []);
+  }, [refresh]);
 
-  // sync with the settings window and the tray menu
+  // ---------- what Tumbli is doing ----------
+  const [message, setMessage] = useState("");
+  const [fact, setFact] = useState<Fact | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [tour, setTour] = useState<number | null>(null); // step of the quick tour, if running
+  const touring = useRef(false);
+  const [cheer, setCheer] = useState<{ text: string; id: number } | null>(null);
+  const [plusOne, setPlusOne] = useState<string | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const [gulping, setGulping] = useState(false);
+  const [boing, setBoing] = useState(0);
+  const [hover, setHover] = useState(false);
+  const hovering = useRef(false);
+  const hoverTimer = useRef<number | undefined>(undefined);
+  const factTimer = useRef<number | undefined>(undefined);
+
+  const reminders = useReminders({
+    settings,
+    onNewDay: refresh,
+    canNudge: () => !touring.current,
+    onNudge: () => {
+      setFact(null); // a reminder wins over a fun fact
+      setMessage(nudgeMessage(settings.name));
+      if (settings.sound) bloop();
+    },
+  });
+  const { nudging } = reminders;
+
+  const talking = nudging || fact !== null || tour !== null;
+  const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
+
+  const { side, startDrag } = useDocking(mode, () => {
+    reminders.dismiss(settings.intervalMin);
+    setFact(null);
+  });
+
+  // ---------- quick tour (started from the settings window) ----------
+  const remindersRef = useRef(reminders);
+  remindersRef.current = reminders;
   useEffect(() => {
-    const a = listen(CHANGED_EVENT, refresh);
-    const c = listen<string>("tumbli:pause", (e) => {
-      const until = e.payload === "resume" ? 0 : pauseEnd(e.payload === "day" ? "day" : "hour");
-      savePausedUntil(until);
-      setPausedUntil(until);
-      setNudging(false);
-      if (until === 0) nextAt.current = Date.now() + 60_000; // check in soon after resuming
-    });
-    const d = listen(TOUR_EVENT, () => {
-      setNudging(false);
+    const un = listen(TOUR_EVENT, () => {
+      remindersRef.current.dismiss(loadSettings().intervalMin);
       setFact(null);
       setCheer(null);
       touring.current = true;
       setTour(0);
       setBoing((n) => n + 1);
     });
-    const b = listen("tumbli:reset-position", async () => {
-      localStorage.removeItem(POS_KEY);
-      setNudging(false);
-      setFact(null);
-      setSide(await placeInitially(true));
-      await win.show();
-    });
     return () => {
-      void a.then((f) => f());
-      void b.then((f) => f());
-      void c.then((f) => f());
-      void d.then((f) => f());
+      void un.then((f) => f());
     };
-  }, [refresh]);
-
-  // expand / collapse the window for the speech bubble or the cheer text
-  const talking = nudging || fact !== null || tour !== null;
-  const mode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
-  useEffect(() => {
-    if (!placed) return;
-    const target = mode === "talk" ? EXPANDED : mode === "cheer" ? CHEERING : mode === "hover" ? HOVER : COMPACT;
-    void resizeAnchored(target.w, target.h, side);
-  }, [mode, placed, side]);
-
-  // reminder loop
-  useEffect(() => {
-    const id = window.setInterval(async () => {
-      const now = new Date();
-
-      // new day: counts come from history keyed by date, so just re-read
-      if (now.toDateString() !== lastDay.current) {
-        lastDay.current = now.toDateString();
-        refresh();
-      }
-
-      setNowTick(Date.now());
-
-      let status: SystemStatus = { idle_secs: 0, busy: false };
-      try {
-        status = await invoke<SystemStatus>("system_status");
-      } catch {
-        /* not fatal */
-      }
-
-      // step out of the way of fullscreen apps (games, videos, presentations)
-      const shouldHide = settings.hideOnFullscreen && status.busy;
-      if (shouldHide !== hidden.current) {
-        hidden.current = shouldHide;
-        if (shouldHide) await win.hide();
-        else await win.show();
-      }
-
-      // away from the computer: don't nag; remind shortly after they return
-      if (status.idle_secs >= IDLE_SECS) {
-        nextAt.current = Math.max(nextAt.current, Date.now() + 60_000);
-        return;
-      }
-
-      const due = shouldNudge({
-        now,
-        nextAt: nextAt.current,
-        settings,
-        doneMl: todayMl(),
-        busy: status.busy,
-        pausedUntil: loadPausedUntil(),
-      });
-
-      if (due && !nudging && !touring.current) {
-        setFact(null); // a reminder wins over a fun fact
-        setMessage(nudgeMessage(settings.name));
-        setNudging(true);
-        if (settings.sound) bloop();
-      }
-    }, TICK_MS);
-    return () => window.clearInterval(id);
-  }, [settings, nudging, refresh]);
-
-  // ---------- fun facts ----------
-
-  const closeFact = useCallback(() => {
-    window.clearTimeout(factTimer.current);
-    setFact(null);
   }, []);
 
+  const endTour = () => {
+    markTourDone();
+    touring.current = false;
+    setTour(null);
+    // the first reminder comes one interval after the tour (15 s in dev)
+    reminders.scheduleIn(import.meta.env.DEV ? 15_000 : settings.intervalMin * 60_000);
+  };
+  const nextTour = () => {
+    if (tour === null) return;
+    if (tour >= TOUR.length - 1) endTour();
+    else {
+      setTour(tour + 1);
+      setBoing((n) => n + 1);
+    }
+  };
+
+  // ---------- fun facts ----------
   const armFactTimer = useCallback(() => {
     window.clearTimeout(factTimer.current);
     factTimer.current = window.setTimeout(function tick() {
@@ -319,34 +137,22 @@ export function Widget() {
       else setFact(null);
     }, FACT_MS);
   }, []);
-
-  const tellFact = useCallback(() => {
+  const tellFact = () => {
     setBoing((n) => n + 1);
     if (nudging || touring.current) return; // during a reminder or the tour a click just makes Tumbli jump
     setFact(randomFact());
     setRevealed(false);
     armFactTimer();
-  }, [nudging, armFactTimer]);
-
+  };
+  const closeFact = () => {
+    window.clearTimeout(factTimer.current);
+    setFact(null);
+  };
   useEffect(() => () => window.clearTimeout(factTimer.current), []);
 
-  // dev preview in a browser: widget.html?demo&nudge | &fact | &tour=0
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const q = new URLSearchParams(location.search);
-    if (q.has("nudge")) {
-      setMessage(nudgeMessage(loadSettings().name));
-      setNudging(true);
-    }
-    if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
-    if (q.has("hover")) setHover(true);
-    if (q.has("tour")) {
-      touring.current = true;
-      setTour(Number(q.get("tour")) || 0);
-    }
-  }, []);
-
-  // ---------- actions ----------
+  // ---------- drinking ----------
+  const tumblerMode = settings.mode === "tumbler";
+  const sipMl = sipFor(settings);
 
   const cheerUp = (text: string) => {
     const id = Date.now();
@@ -358,23 +164,20 @@ export function Widget() {
   const afterDrink = (before: number, r: DrinkResult) => {
     setDoneMl(r.total);
     if (r.level >= 0) setLevel(r.level);
-    setNudging(false);
-    setLastDrank(r.drank);
+    reminders.dismiss(settings.intervalMin);
+    setPlusOne(tumblerMode ? `+${r.drank} ml` : "+1");
     setGulping(true);
-    window.setTimeout(() => setGulping(false), 1100);
-    cheerUp(
-      cheerFor({ before, after: r.total, goalMl: settings.goalMl, name: settings.name, empty: r.level === 0 }),
-    );
-    nextAt.current = Date.now() + settings.intervalMin * 60_000;
+    window.setTimeout(() => {
+      setGulping(false);
+      setPlusOne(null);
+    }, 1100);
+    cheerUp(cheerFor({ before, after: r.total, goalMl: settings.goalMl, name: settings.name, empty: r.level === 0 }));
     if (before < settings.goalMl && r.total >= settings.goalMl) {
       setCelebrate(true);
       if (settings.sound) bloop();
       window.setTimeout(() => setCelebrate(false), 3500);
     }
   };
-
-  const tumblerMode = settings.mode === "tumbler";
-  const sipMl = sipFor(settings);
 
   /** a glass (glass mode) or a few sips (tumbler mode) */
   const drink = () => {
@@ -385,13 +188,11 @@ export function Widget() {
     const before = todayMl();
     afterDrink(before, logDrink(tumblerMode ? sipMl : settings.glassMl, settings));
   };
-
   const finishIt = () => {
     const before = todayMl();
     const r = finishTumbler(settings);
     if (r.drank > 0) afterDrink(before, r);
   };
-
   const doRefill = () => {
     refill(settings);
     setLevel(settings.tumblerMl);
@@ -399,64 +200,28 @@ export function Widget() {
     cheerUp("All full! Let's go");
   };
 
-  const snooze = () => {
-    setNudging(false);
-    nextAt.current = Date.now() + SNOOZE_MIN * 60_000;
-  };
-
-  const skip = () => {
-    setNudging(false);
-    nextAt.current = Date.now() + settings.intervalMin * 60_000;
-  };
-
-  const endTour = () => {
-    markTourDone();
-    touring.current = false;
-    setTour(null);
-    // the first reminder comes one interval after the tour (15 s in dev)
-    nextAt.current = Date.now() + (import.meta.env.DEV ? 15_000 : settings.intervalMin * 60_000);
-  };
-  const nextTour = () => {
-    if (tour === null) return;
-    if (tour >= TOUR.length - 1) endTour();
-    else {
-      setTour(tour + 1);
-      setBoing((n) => n + 1);
-    }
-  };
-
   const openSettings = () => void invoke("open_settings");
 
-  // ---------- click vs drag vs double-click on Tumbli ----------
+  const gestures = useGestures({ onClick: tellFact, onDoubleClick: openSettings, onDragStart: startDrag });
 
-  const press = useRef<{ x: number; y: number } | null>(null);
-  const clickTimer = useRef<number | undefined>(undefined);
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    press.current = { x: e.screenX, y: e.screenY };
-  };
-  const onMouseMove = (e: React.MouseEvent) => {
-    const p = press.current;
-    if (!p) return;
-    if (Math.abs(e.screenX - p.x) + Math.abs(e.screenY - p.y) > DRAG_PX) {
-      press.current = null;
-      userDragging.current = true;
-      void win.startDragging();
+  // ---------- dev preview in a browser: widget.html?demo&nudge | &fact= | &tour= | &hover ----------
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const q = new URLSearchParams(location.search);
+    if (q.has("nudge")) {
+      setMessage(nudgeMessage(loadSettings().name));
+      reminders.forceNudge();
     }
-  };
-  const onMouseUp = () => {
-    if (!press.current) return;
-    press.current = null;
-    // wait a moment so a double-click can open settings instead
-    window.clearTimeout(clickTimer.current);
-    clickTimer.current = window.setTimeout(tellFact, 240);
-  };
-  const onDoubleClick = () => {
-    window.clearTimeout(clickTimer.current);
-    openSettings();
-  };
+    if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
+    if (q.has("hover")) setHover(true);
+    if (q.has("tour")) {
+      touring.current = true;
+      setTour(Number(q.get("tour")) || 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // ---------- what to draw ----------
   const glasses = Math.floor(doneMl / settings.glassMl);
   const goalG = goalGlasses(settings);
   const empty = tumblerMode && level <= 0;
@@ -465,7 +230,26 @@ export function Widget() {
   const done = doneMl >= settings.goalMl;
   const days = streak(loadHistory(), settings.goalMl);
   const badge = tumblerMode ? `${liters(doneMl)}/${liters(settings.goalMl)} L` : `${glasses}/${goalG}`;
-  const sleeping = pausedUntil > nowTick && !talking;
+  const sleeping = reminders.paused && !talking;
+
+  const reminderSub = (
+    <>
+      {tumblerMode ? (
+        empty ? (
+          <>Your tumbler is empty. Refill it first!</>
+        ) : (
+          <>
+            Drink about {sipMl} ml · {fmtMl(doneMl)} of {fmtMl(settings.goalMl)}
+          </>
+        )
+      ) : (
+        <>
+          {glasses} of {goalG} glasses today
+        </>
+      )}
+      {days > 1 && <> · {days}-day streak</>}
+    </>
+  );
 
   return (
     <div
@@ -492,120 +276,35 @@ export function Widget() {
         hovering.current = false;
         // a short grace period so moving onto the buttons doesn't flicker
         window.clearTimeout(hoverTimer.current);
-        hoverTimer.current = window.setTimeout(() => setHover(false), 350);
+        hoverTimer.current = window.setTimeout(() => setHover(false), HOVER_GRACE_MS);
       }}
     >
       {nudging && (
-        <div className="bubble-card" role="dialog" aria-label="Water reminder">
-          <div className="bubble-kicker">
-            <IconBell size={13} strokeWidth={2.4} /> Water break
-          </div>
-          <div className="nudge-title">{message}</div>
-          <div className="nudge-sub">
-            {tumblerMode ? (
-              empty ? (
-                <>Your tumbler is empty. Refill it first!</>
-              ) : (
-                <>
-                  Drink about {sipMl} ml · {fmtMl(doneMl)} of {fmtMl(settings.goalMl)}
-                </>
-              )
-            ) : (
-              <>
-                {glasses} of {goalG} glasses today
-              </>
-            )}
-            {days > 1 && <> · {days}-day streak</>}
-          </div>
-          <div className="nudge-actions">
-            {empty ? (
-              <button className="btn primary" onClick={doRefill}>
-                <IconRefill size={14} /> Refilled
-              </button>
-            ) : (
-              <button className="btn primary" onClick={drink}>
-                {tumblerMode ? "Drank some" : "I drank!"}
-              </button>
-            )}
-            <button className="btn" onClick={snooze}>
-              {SNOOZE_MIN} min
-            </button>
-            <button className="btn ghost" onClick={skip} title="Skip this reminder" aria-label="Skip">
-              <IconClose size={15} />
-            </button>
-          </div>
-        </div>
+        <ReminderBubble
+          message={message}
+          sub={reminderSub}
+          empty={empty}
+          drinkLabel={tumblerMode ? "Drank some" : "I drank!"}
+          onDrink={drink}
+          onRefill={doRefill}
+          onSnooze={() => reminders.dismiss(SNOOZE_MIN)}
+          onSkip={() => reminders.dismiss(settings.intervalMin)}
+        />
       )}
 
-      {tour !== null && (
-        <div className="bubble-card tour-card" role="dialog" aria-label="Quick tour">
-          <div className="bubble-head">
-            <div className="bubble-kicker">
-              Quick tour · {tour + 1}/{TOUR.length}
-            </div>
-            <button className="close" onClick={endTour} aria-label="Skip tour">
-              Skip
-            </button>
-          </div>
-          <div className="tour-title">{TOUR[tour].title}</div>
-          <div className="tour-body">{TOUR[tour].body}</div>
-          <div className="tour-foot">
-            <div className="tour-dots" aria-hidden>
-              {TOUR.map((_, i) => (
-                <span key={i} className={i === tour ? "on" : ""} />
-              ))}
-            </div>
-            <button className="btn primary" onClick={nextTour}>
-              {tour === TOUR.length - 1 ? "Got it!" : "Next"}
-            </button>
-          </div>
-        </div>
-      )}
+      {tour !== null && <TourBubble step={tour} onNext={nextTour} onSkip={endTour} />}
 
       {tour === null && !nudging && fact && (
-        <div className="bubble-card fact" role="dialog" aria-label={fact.kind === "trivia" ? "Trivia" : "Fun fact"}>
-          <div className="bubble-head">
-            <div className="bubble-kicker">
-              {fact.kind === "trivia" ? (
-                <>
-                  <IconQuestion size={13} strokeWidth={2.4} /> Trivia time
-                </>
-              ) : (
-                <>
-                  <IconBulb size={13} strokeWidth={2.4} /> Did you know?
-                </>
-              )}
-            </div>
-            <button className="close" onClick={closeFact} aria-label="Close">
-              <IconClose size={14} />
-            </button>
-          </div>
-          {fact.kind === "fact" ? (
-            <div className="fact-text">{fact.text}</div>
-          ) : (
-            <>
-              <div className="fact-text">{fact.q}</div>
-              {revealed && <div className="fact-answer">{fact.a}</div>}
-            </>
-          )}
-          <div className="nudge-actions">
-            {fact.kind === "trivia" && !revealed ? (
-              <button
-                className="btn primary"
-                onClick={() => {
-                  setRevealed(true);
-                  armFactTimer();
-                }}
-              >
-                Show answer
-              </button>
-            ) : (
-              <button className="btn primary" onClick={tellFact}>
-                Tell me another
-              </button>
-            )}
-          </div>
-        </div>
+        <FactBubble
+          fact={fact}
+          revealed={revealed}
+          onReveal={() => {
+            setRevealed(true);
+            armFactTimer();
+          }}
+          onAnother={tellFact}
+          onClose={closeFact}
+        />
       )}
 
       {cheer && !talking && (
@@ -614,103 +313,30 @@ export function Widget() {
         </div>
       )}
 
-      <div
-        className="buddy"
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={() => (press.current = null)}
-        onDoubleClick={onDoubleClick}
-      >
-        <div className="hop">
-          <div className={boing ? `boing boing-${boing % 2}` : "boing"}>
-            <div className="bob">
-              <div className="squish">
-                <Tumbler
-                  fill={fill}
-                  size={84}
-                  happy={done && !talking}
-                  arms
-                  calling={talking}
-                  sleeping={sleeping}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="ground" />
-        {empty && !nudging ? (
-          // empty tumbler: the badge itself becomes the Refill button, right under Tumbli
-          <button
-            className="count refill-badge"
-            onMouseDown={(e) => e.stopPropagation()}
-            onMouseUp={(e) => e.stopPropagation()}
-            onClick={doRefill}
-            title="I refilled my tumbler"
-          >
-            <IconRefill size={11} strokeWidth={2.8} /> Refill
-          </button>
-        ) : (
-          <div className="count">{badge}</div>
-        )}
-        {sleeping && (
-          <div className="zzz" aria-hidden>
-            <span>z</span>
-            <span>z</span>
-          </div>
-        )}
-        {gulping && <div className="plus-one">{tumblerMode ? `+${lastDrank} ml` : "+1"}</div>}
-        {nudging && (
-          <>
-            <div className="ripples" aria-hidden>
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="alert-mark" aria-hidden>
-              !
-            </div>
-            <div className="splash" aria-hidden>
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-          </>
-        )}
-        {celebrate && (
-          <div className="sparkles" aria-hidden>
-            <span>✦</span>
-            <span>✦</span>
-            <span>✦</span>
-          </div>
-        )}
-      </div>
+      <Buddy
+        gestures={gestures}
+        boing={boing}
+        fill={fill}
+        happy={done && !talking}
+        calling={talking}
+        sleeping={sleeping}
+        badge={badge}
+        empty={empty}
+        onRefill={doRefill}
+        plusOne={plusOne}
+        nudging={nudging}
+        celebrate={celebrate}
+      />
 
       {mode === "hover" && (
-        <div className="hover-actions">
-          <button
-            className="mini plus"
-            onClick={drink}
-            title={tumblerMode ? `I drank ~${sipMl} ml` : "I drank a glass"}
-            aria-label={tumblerMode ? "I drank some" : "I drank a glass"}
-          >
-            <IconPlus size={14} strokeWidth={3} />
-          </button>
-          {tumblerMode && (
-            <>
-              <button className="mini" onClick={finishIt} title="I finished my tumbler" aria-label="Finished my tumbler">
-                <IconCheck size={13} strokeWidth={2.8} />
-              </button>
-              <button className="mini" onClick={doRefill} title="I refilled my tumbler" aria-label="Refilled my tumbler">
-                <IconRefill size={13} strokeWidth={2.4} />
-              </button>
-            </>
-          )}
-          <button className="mini" onClick={openSettings} title="Settings" aria-label="Settings">
-            <IconGear size={14} strokeWidth={2.2} />
-          </button>
-        </div>
+        <HoverActions
+          tumblerMode={tumblerMode}
+          sipMl={sipMl}
+          onDrink={drink}
+          onFinish={finishIt}
+          onRefill={doRefill}
+          onSettings={openSettings}
+        />
       )}
     </div>
   );

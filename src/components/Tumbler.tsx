@@ -13,6 +13,8 @@ type Props = {
   sleeping?: boolean;
   /** where Tumbli looks, each axis -1..1 (eyes follow the mouse on the intro) */
   look?: { x: number; y: number };
+  /** an accessory unlocked through achievements (see lib/achievements.ts) */
+  outfit?: string | null;
 };
 
 // A wide insulated sport bottle: straight body, rounded shoulders.
