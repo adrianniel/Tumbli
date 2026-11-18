@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { Glass } from "../components/Glass";
+import { Tumbler } from "../components/Tumbler";
 import {
   addGlasses,
   CHANGED_EVENT,
@@ -68,9 +68,9 @@ export function Settings() {
   return (
     <main className="settings">
       <header className="hero">
-        <Glass fill={today / s.goal} size={72} />
+        <Tumbler fill={today / s.goal} size={76} happy={today >= s.goal} />
         <div>
-          <h1>SipUp</h1>
+          <h1>Tumbli</h1>
           <div className="big">
             {today} <span>/ {s.goal} glasses</span>
           </div>
@@ -204,7 +204,7 @@ export function Settings() {
         >
           Reset today
         </button>
-        <span className="muted">Closing this window keeps SipUp running. Quit from the tray icon.</span>
+        <span className="muted">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
       </footer>
     </main>
   );

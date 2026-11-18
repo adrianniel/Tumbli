@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
+  availableMonitors,
   getCurrentWindow,
   LogicalSize,
   PhysicalPosition,
   primaryMonitor,
 } from "@tauri-apps/api/window";
-import { Glass } from "../components/Glass";
+import { Tumbler } from "../components/Tumbler";
 import { bloop } from "../lib/sound";
 import {
   addGlasses,
@@ -19,19 +20,19 @@ import {
   type Settings,
 } from "../lib/store";
 
-const COMPACT = { w: 92, h: 118 };
+const COMPACT = { w: 92, h: 120 };
 const EXPANDED = { w: 320, h: 132 };
 const SNOOZE_MIN = 10;
 const IDLE_SECS = 5 * 60; // user counts as "away" after 5 min without input
 const TICK_MS = 5000;
-const POS_KEY = "sipup.widget.anchor"; // bottom-right corner, physical px
+const POS_KEY = "tumbli.widget.anchor.v2"; // bottom-right corner, physical px
 
 type SystemStatus = { idle_secs: number; busy: boolean };
 
 const win = getCurrentWindow();
 
 const NUDGES = [
-  "Time to SipUp! 💧",
+  "Tumbli says: sip time! 💧",
   "Water break! 💧",
   "Your brain is ~75% water. Top it up!",
   "Sip, sip, hooray! 🥤",
@@ -64,6 +65,21 @@ async function placeInitially(reset = false) {
     } catch {
       anchor = null;
     }
+    // ignore a saved spot that is no longer on any monitor
+    if (anchor) {
+      const a = anchor;
+      const monitors = await availableMonitors();
+      const onScreen = monitors.some((m) => {
+        const wa = m.workArea;
+        return (
+          a.x - w >= wa.position.x - 8 &&
+          a.y - h >= wa.position.y - 8 &&
+          a.x <= wa.position.x + wa.size.width + 8 &&
+          a.y <= wa.position.y + wa.size.height + 8
+        );
+      });
+      if (!onScreen) anchor = null;
+    }
   }
   if (!anchor) {
     const m = await primaryMonitor();
@@ -94,7 +110,10 @@ export function Widget() {
   const [message, setMessage] = useState(NUDGES[0]);
   const [celebrate, setCelebrate] = useState(false);
 
-  const nextAt = useRef(Date.now() + loadSettings().intervalMin * 60_000);
+  // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
+  const nextAt = useRef(
+    Date.now() + (import.meta.env.DEV ? 15_000 : loadSettings().intervalMin * 60_000),
+  );
   const hidden = useRef(false);
   const lastDay = useRef(new Date().toDateString());
 
@@ -104,20 +123,25 @@ export function Widget() {
     setCount(todayCount());
   }, []);
 
-  // first placement + show
+  // first placement + show (resizing waits for this, or the two race)
+  const [placed, setPlaced] = useState(false);
   useEffect(() => {
     (async () => {
       await placeInitially();
       await win.show();
+      setPlaced(true);
     })();
   }, []);
 
   // remember where the user dragged the widget (bottom-right anchor)
+  const userDragging = useRef(false);
   useEffect(() => {
     let t: number | undefined;
     const un = win.onMoved(() => {
+      if (!userDragging.current) return; // ignore our own setPosition calls
       window.clearTimeout(t);
       t = window.setTimeout(async () => {
+        userDragging.current = false;
         const pos = await win.outerPosition();
         const size = await win.outerSize();
         localStorage.setItem(
@@ -134,7 +158,7 @@ export function Widget() {
   // sync with the settings window and the tray menu
   useEffect(() => {
     const a = listen(CHANGED_EVENT, refresh);
-    const b = listen("sipup:reset-position", async () => {
+    const b = listen("tumbli:reset-position", async () => {
       localStorage.removeItem(POS_KEY);
       setNudging(false);
       await placeInitially(true);
@@ -148,9 +172,10 @@ export function Widget() {
 
   // expand / collapse the window with the nudge
   useEffect(() => {
+    if (!placed) return;
     const target = nudging ? EXPANDED : COMPACT;
     void resizeAnchored(target.w, target.h);
-  }, [nudging]);
+  }, [nudging, placed]);
 
   // reminder loop
   useEffect(() => {
@@ -224,7 +249,9 @@ export function Widget() {
   const openSettings = () => void invoke("open_settings");
 
   const startDrag = (e: React.MouseEvent) => {
-    if (e.button === 0) void win.startDragging();
+    if (e.button !== 0) return;
+    userDragging.current = true;
+    void win.startDragging();
   };
 
   const fill = count / settings.goal;
@@ -239,7 +266,7 @@ export function Widget() {
         onDoubleClick={openSettings}
         title="Drag to move · double-click for settings"
       >
-        <Glass fill={fill} size={nudging ? 84 : 60} />
+        <Tumbler fill={fill} size={nudging ? 86 : 64} happy={done} />
         <div className="count">
           {count}/{settings.goal}
         </div>

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "SipUp",
+  "productName": "Tumbli",
   "version": "0.1.0",
-  "identifier": "com.adrianniel.sipup",
+  "identifier": "com.adrianniel.tumbli",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -14,9 +14,9 @@
       {
         "label": "widget",
         "url": "index.html",
-        "title": "SipUp",
+        "title": "Tumbli",
         "width": 92,
-        "height": 118,
+        "height": 120,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
@@ -32,7 +32,7 @@
       {
         "label": "settings",
         "url": "settings.html",
-        "title": "SipUp",
+        "title": "Tumbli",
         "width": 440,
         "height": 720,
         "minWidth": 380,
@@ -57,7 +57,7 @@
       "icons/icon.ico"
     ],
     "shortDescription": "Floating water reminder",
-    "longDescription": "SipUp floats on your screen and reminds you to drink water while you work or study, so you reach your daily goal of glasses.",
+    "longDescription": "Tumbli floats on your screen and reminds you to drink water while you work or study, so you reach your daily goal of glasses.",
     "category": "HealthcareAndFitness"
   }
 }

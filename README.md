@@ -1,8 +1,8 @@
-# 💧 SipUp
+# 🥤 Tumbli
 
 A floating water reminder for Windows, for people who spend most of the day at their computer.
 
-SipUp lives as a small glass on your screen that fills up as you drink. Every so often it pops out
+Tumbli is a little digital tumbler that floats on your screen and fills up as you drink. Every so often it pops out
 with a friendly nudge to take a water break, until you hit your daily goal (8 glasses by default).
 
 ## Features
@@ -15,7 +15,7 @@ with a friendly nudge to take a water break, until you hit your daily goal (8 gl
 - **Start with Windows**, single instance, light/dark theme
 - **No account, no server**: everything stays on your PC
 
-The widget stays on screen until you choose **Quit SipUp** from the system tray icon.
+The widget stays on screen until you choose **Quit Tumbli** from the system tray icon.
 
 ## Tech
 
@@ -35,6 +35,6 @@ Prerequisites: [Node.js](https://nodejs.org), [Rust](https://rustup.rs), and the
 
 ```bash
 npm install
-npm run tauri dev     # run with hot reload
+npm run tauri dev     # run with hot reload (first reminder pops after 15 s)
 npm run tauri build   # build installers into src-tauri/target/release/bundle
 ```

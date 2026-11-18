@@ -13,10 +13,10 @@ export type Settings = {
 /** date (YYYY-MM-DD) -> glasses drunk that day */
 export type History = Record<string, number>;
 
-export const CHANGED_EVENT = "sipup:changed";
+export const CHANGED_EVENT = "tumbli:changed";
 
-const SETTINGS_KEY = "sipup.settings";
-const HISTORY_KEY = "sipup.history";
+const SETTINGS_KEY = "tumbli.settings";
+const HISTORY_KEY = "tumbli.history";
 const KEEP_DAYS = 90;
 
 export const defaultSettings: Settings = {

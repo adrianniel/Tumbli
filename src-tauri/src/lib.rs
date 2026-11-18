@@ -90,19 +90,19 @@ pub fn run() {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =
                 MenuItem::with_id(app, "reset_pos", "Reset widget position", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit SipUp", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quit Tumbli", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(app, &[&settings_i, &reset_i, &sep, &quit_i])?;
 
-            TrayIconBuilder::with_id("sipup-tray")
+            TrayIconBuilder::with_id("tumbli-tray")
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("SipUp")
+                .tooltip("Tumbli")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "settings" => show_settings(app),
                     "reset_pos" => {
-                        let _ = app.emit("sipup:reset-position", ());
+                        let _ = app.emit("tumbli:reset-position", ());
                     }
                     "quit" => app.exit(0),
                     _ => {}
@@ -122,7 +122,7 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             // Closing never quits: settings hides, the widget stays on screen.
-            // The only way out is "Quit SipUp" in the tray menu.
+            // The only way out is "Quit Tumbli" in the tray menu.
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 if window.label() == "settings" {
@@ -131,5 +131,5 @@ pub fn run() {
             }
         })
         .run(tauri::generate_context!())
-        .expect("error while running SipUp");
+        .expect("error while running Tumbli");
 }
