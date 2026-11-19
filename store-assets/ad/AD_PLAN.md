@@ -13,7 +13,7 @@ Export: 1080×1920, 30 fps. Upbeat, light music (lo-fi or ukulele), around 110�
 
 | # | Time | Footage | What we see | On-screen text |
 |---|---|---|---|---|
-| 1 | 0.0–2.5 | FLOW | Close-up: Ana, a tired young Filipina at her laptop late afternoon, rubs her eyes, an empty glass beside her | **Forgot to drink water again?** |
+| 1 | 0.0–2.5 | FLOW | Close-up: Ana, tired at her laptop late afternoon, rubs her temple, an empty glass beside her | **Forgot to drink water again?** |
 | 2 | 2.5–5.0 | REAL `01-idle` | Tumbli floats at the edge of a desktop, bobbing and blinking | **Meet Tumbli** |
 | 3 | 5.0–8.5 | REAL `04-reminder` | Tumbli hops, waves and pops up "Time to sip!" | **It reminds you, gently** |
 | 4 | 8.5–10.5 | FLOW | She smiles and takes a big sip from her sport bottle | (none) |
@@ -43,7 +43,7 @@ To keep her even more consistent: generate shot 1 first, pick the best take, and
 
 **Shot 1: thirsty and tired**
 ```
-Vertical 9:16 cinematic close-up, live-action, photorealistic. A Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, sits at a home desk in a Manila condo in the late afternoon. Warm golden window light, soft blue glow from a laptop screen on her face. She leans back, rubs her tired eyes and sighs. Beside the laptop is an empty drinking glass. Shallow depth of field, gentle handheld movement, natural skin texture, natural colors. She does not speak: no dialogue, no talking, lips closed; only soft ambient room sound. No music. No text, no logos.
+Vertical 9:16 cinematic close-up, live-action, photorealistic. A Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, sits at a home desk in a Manila condo in the late afternoon. Warm golden window light, soft blue glow from a laptop screen on her face. She looks tired: shoulders a little slumped, eyes heavy but open, still looking at the screen. She slowly rubs her temple with one hand, then rests her cheek on that hand. Small, calm movements, mouth closed. She does not yawn, does not close her eyes and does not tilt her head back. Beside the laptop is an empty drinking glass. Shallow depth of field, gentle handheld movement, natural skin texture, natural colors. She does not speak: no dialogue, no talking, lips closed; only soft ambient room sound. No music. No text, no logos.
 ```
 
 **Shot 4: the sip**
