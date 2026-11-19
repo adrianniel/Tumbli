@@ -18,6 +18,8 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import ffmpeg from "ffmpeg-static";
 import { music, sfx } from "./ad/synth.mjs";
+import { taskbarHtml } from "./ad/taskbar.mjs";
+import { wordmark } from "./ad/wordmark.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AD = join(root, "store-assets", "ad");
@@ -187,6 +189,8 @@ const thirstCard = `<!doctype html><html><head><meta charset="utf-8">${FONTS}<st
   </div>
 </body></html>`;
 
+const END_WM = wordmark({ size: 168, animate: true, delay: 0.2 });
+
 /** the end card: the laptop screen shows Tumbli's logo and the offer, timed to the voice */
 const endcard = `<!doctype html><html><head><meta charset="utf-8">${FONTS}<style>
   html,body{margin:0;width:${SCREEN.w}px;height:${SCREEN.h}px;overflow:hidden}
@@ -199,10 +203,8 @@ const endcard = `<!doctype html><html><head><meta charset="utf-8">${FONTS}<style
   .go .icon{animation:pop .8s cubic-bezier(.2,1.6,.4,1) .1s forwards, float 2.6s ease-in-out 1s infinite}
   @keyframes pop{to{opacity:1;transform:scale(1) rotate(0)}}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-  .name{margin-top:36px;font-weight:700;font-size:168px;letter-spacing:-3px;line-height:1;display:flex}
-  .name span{display:inline-block;opacity:0;transform:translateY(60px)}
-  .go .name span{animation:rise .5s cubic-bezier(.2,1.4,.4,1) forwards}
-  @keyframes rise{to{opacity:1;transform:none}}
+  .name{margin-top:30px}
+  ${END_WM.css}
   .tag{margin-top:22px;font:600 46px "Nunito Variable",sans-serif;color:#a9c3d8;opacity:0}
   .go .tag{animation:fade .5s ease-out .55s forwards}
   @keyframes fade{to{opacity:1}}
@@ -234,11 +236,11 @@ const endcard = `<!doctype html><html><head><meta charset="utf-8">${FONTS}<style
     .join("")}
   <div class="stack">
     <img class="icon" src="/app-icon.svg">
-    <div class="name">${[..."Tumbli"].map((c, i) => `<span style="animation-delay:${0.2 + i * 0.05}s">${c}</span>`).join("")}</div>
+    <div class="name">${END_WM.html}</div>
     <div class="tag">Your water buddy for Windows</div>
     <div class="pill"><small>Get it free on the</small>Microsoft Store</div>
   </div>
-  <div class="bar">${["#F5A623", "#1B8FD8", "#3A5BD9", "#7D4BD6", "#E5534B"].map((c) => `<span style="background:${c}"></span>`).join("")}<img src="/app-icon.svg" width="62" height="62"></div>
+  ${taskbarHtml({ s: 2, dev: "" })}
 </body></html>`;
 
 // ------------------------------------------------------------------ helpers

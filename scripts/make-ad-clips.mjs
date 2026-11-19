@@ -17,6 +17,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import ffmpeg from "ffmpeg-static";
+import { taskbarHtml } from "./ad/taskbar.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "store-assets", "ad", "clips");
@@ -26,7 +27,7 @@ const NAME = "Ana"; // what Tumbli calls the user in the clips: Ana, the woman i
 const OUT = { w: 1080, h: 1920 };
 const SCALE = 3; // the widget's 350x240 window, drawn 3x
 const WIN = { w: 350, h: 240 }; // the real widget window (see src/widget/windowing.ts)
-const TASKBAR = 48 * SCALE;
+const TASKBAR = 48 * 2; // the taskbar is drawn at 2x (see scripts/ad/taskbar.mjs)
 // where the widget window sits in the video: docked right, above the taskbar
 const AT = { x: OUT.w - WIN.w * SCALE - 6, y: OUT.h - TASKBAR - WIN.h * SCALE - 150 };
 
@@ -113,11 +114,7 @@ const desk = `<!doctype html><html><body style="margin:0;width:${OUT.w}px;height
       ${[90, 100, 70, 85, 60].map((w) => `<div style="height:22px;width:${w}%;border-radius:11px;background:rgba(255,255,255,.1);margin:26px 0"></div>`).join("")}
     </div>
   </div>
-  <div style="position:absolute;left:0;right:0;bottom:0;height:${TASKBAR}px;background:rgba(28,32,38,.95);border-top:2px solid rgba(255,255,255,.08);
-    display:flex;align-items:center;justify-content:center;gap:30px">
-    ${["#F5A623", "#1B8FD8", "#3A5BD9", "#7D4BD6", "#E5534B"].map((c) => `<span style="width:72px;height:72px;border-radius:18px;background:${c}"></span>`).join("")}
-    <img src="${DEV}/app-icon.svg" width="72" height="72">
-  </div>
+  ${taskbarHtml({ s: 2, dev: DEV })}
 </body></html>`;
 // the same desktop without the Notes window: room for captions above Tumbli (used by make-ad.mjs)
 const clean = desk.replace(/<div style="position:absolute;left:60px;top:220px[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/, "");
