@@ -117,8 +117,9 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 ## What's new (for updates)
 
-Version 0.1.1 (paste into "What's new in this version"):
+Version 0.1.2 (paste into "What's new in this version"):
 
-> A fresh new look for the Tumbli name on the welcome screen: the "i" is a little tumbler, and its cap drops in as the dot.
+> - Fixed a white title bar that could show above Tumbli's speech bubbles after you clicked them.
+> - "Reset today" now asks in a friendly Tumbli dialog that shows how much will be cleared.
 
-Version 0.1.0: first release.
+Version 0.1.1: first release on the Store (0.1.0 was withdrawn before it was published).

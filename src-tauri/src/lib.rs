@@ -166,6 +166,41 @@ mod platform {
         (unsafe { GetAsyncKeyState(vk) } as u16 & 0x8000) != 0
     }
 
+    /// Never draw a title bar or frame on the widget window.
+    ///
+    /// The window is undecorated, but it keeps the WS_CAPTION style (tao keeps it so
+    /// Windows treats it as a normal app window). Once a window region is set, Windows
+    /// stops letting DWM draw the frame and paints the classic one itself whenever the
+    /// window is activated (a click on Tumbli or a bubble): a white "Tumbli [X]" bar
+    /// on top of the widget. This hook skips all of that frame painting.
+    pub fn hide_frame(hwnd: windows_sys::Win32::Foundation::HWND) {
+        use windows_sys::Win32::UI::Shell::SetWindowSubclass;
+        unsafe {
+            SetWindowSubclass(hwnd, Some(no_frame_proc), 1, 0);
+        }
+    }
+
+    unsafe extern "system" fn no_frame_proc(
+        hwnd: windows_sys::Win32::Foundation::HWND,
+        msg: u32,
+        wparam: windows_sys::Win32::Foundation::WPARAM,
+        lparam: windows_sys::Win32::Foundation::LPARAM,
+        _id: usize,
+        _data: usize,
+    ) -> windows_sys::Win32::Foundation::LRESULT {
+        use windows_sys::Win32::UI::Shell::DefSubclassProc;
+        use windows_sys::Win32::UI::WindowsAndMessaging::{WM_NCACTIVATE, WM_NCPAINT};
+        const WM_NCUAHDRAWCAPTION: u32 = 0x00AE;
+        const WM_NCUAHDRAWFRAME: u32 = 0x00AF;
+        match msg {
+            WM_NCPAINT | WM_NCUAHDRAWCAPTION | WM_NCUAHDRAWFRAME => 0,
+            // still let the app see focus changes, but lParam -1 tells
+            // DefWindowProc not to repaint the title bar for the new state
+            WM_NCACTIVATE => unsafe { DefSubclassProc(hwnd, msg, wparam, -1) },
+            _ => unsafe { DefSubclassProc(hwnd, msg, wparam, lparam) },
+        }
+    }
+
     pub fn fullscreen_busy() -> bool {
         // QUNS_BUSY = 2, QUNS_RUNNING_D3D_FULL_SCREEN = 3, QUNS_PRESENTATION_MODE = 4
         unsafe {
@@ -256,6 +291,13 @@ pub fn run() {
         ))
         .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down, set_widget_bounds, set_widget_region])
         .setup(|app| {
+            #[cfg(windows)]
+            if let Some(widget) = app.get_webview_window("widget") {
+                if let Ok(hwnd) = widget.hwnd() {
+                    platform::hide_frame(hwnd.0 as _);
+                }
+            }
+
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_i =
                 MenuItem::with_id(app, "reset_pos", "Reset widget position", true, None::<&str>)?;

@@ -18,6 +18,7 @@ import {
 } from "../components/Icons";
 import { Welcome } from "./Welcome";
 import { Feedback } from "./Feedback";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
@@ -78,6 +79,7 @@ export function Settings() {
   );
   // re-render after actions that only touch the tumbler level
   const [, bump] = useState(0);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // first run: this window starts hidden, so bring it up for the welcome screen
   useEffect(() => {
@@ -496,12 +498,7 @@ export function Settings() {
       </section>
 
       <footer>
-        <button
-          className="link"
-          onClick={() => {
-            if (confirm("Reset today's total to 0?")) resetToday();
-          }}
-        >
+        <button className="link" onClick={() => setConfirmReset(true)}>
           Reset today
         </button>
         <button className="link" onClick={() => void startTour()}>
@@ -512,6 +509,30 @@ export function Settings() {
         </button>
         <span className="muted small">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
       </footer>
+
+      {confirmReset && (
+        <ConfirmDialog
+          title="Start today over?"
+          confirmLabel="Reset to 0"
+          cancelLabel="Keep it"
+          fill={0}
+          onCancel={() => setConfirmReset(false)}
+          onConfirm={() => {
+            resetToday();
+            setConfirmReset(false);
+            refresh();
+          }}
+        >
+          {doneMl > 0 ? (
+            <>
+              Today's <b>{fmtMl(doneMl)}</b> goes back to 0.
+            </>
+          ) : (
+            <>Today's total goes back to 0.</>
+          )}{" "}
+          Your streak and earlier days stay as they are.
+        </ConfirmDialog>
+      )}
     </main>
   );
 }
