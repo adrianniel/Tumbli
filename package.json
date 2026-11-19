@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "vitest run",
-    "screenshots": "node scripts/make-screenshots.mjs"
+    "screenshots": "node scripts/make-screenshots.mjs",
+    "ad-clips": "node scripts/make-ad-clips.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fredoka": "^5.3.0",
@@ -26,7 +27,9 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^6.0.2",
+    "ffmpeg-static": "^5.3.0",
     "jsdom": "^29.1.1",
+    "puppeteer-core": "^25.18.1",
     "typescript": "~6.0.3",
     "vite": "^8.0.16",
     "vitest": "^5.1.1"

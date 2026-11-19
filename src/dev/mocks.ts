@@ -6,8 +6,12 @@
  *   ?fresh   start from an empty state (first-run setup)
  *   ?demo    fill in a sample week of history
  *   ?tumbler use tumbler mode for the sample data
+ *   ?today=N ml drunk so far today (with ?demo)
+ *   ?ad      for recorded ad clips: every achievement already earned, no recap or rating prompt
  */
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+import { ACHIEVEMENTS } from "../lib/achievements";
+import { recapFor } from "../lib/recap";
 
 export function inBrowser() {
   return !("__TAURI_INTERNALS__" in window);
@@ -67,6 +71,7 @@ export function setupBrowserMocks(label: string) {
     );
     // three weeks of history, so the week chart, "last week" and the recap all have data
     const ml = [1250, 2000, 2250, 1500, 2000, 750, 2000, 1750, 2250, 2000, 1500, 2000, 2250, 1500, 1750, 2000, 1250, 1750, 2000, 1500];
+    if (q.get("today")) ml[0] = Number(q.get("today")); // ?today=1750: ml drunk so far today
     localStorage.setItem("tumbli.historyMl", JSON.stringify(Object.fromEntries(ml.map((v, n) => [day(n), v]))));
     localStorage.setItem("tumbli.level", q.has("empty") ? "0" : "300");
     localStorage.setItem("tumbli.onboarded", "1");
@@ -77,6 +82,13 @@ export function setupBrowserMocks(label: string) {
       localStorage.setItem("tumbli.settings", JSON.stringify({ ...st, outfit: q.get("outfit") }));
     }
     localStorage.setItem("tumbli.tourDone", "1");
+  }
+  if (q.has("ad")) {
+    // nothing pops up on its own during a recorded clip
+    localStorage.setItem("tumbli.achievements", JSON.stringify(Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, "2026-01-01"]))));
+    const recap = recapFor(JSON.parse(localStorage.getItem("tumbli.historyMl") ?? "{}"), 2000);
+    if (recap) localStorage.setItem("tumbli.recapShown", recap.week);
+    localStorage.setItem("tumbli.rating", JSON.stringify({ status: "never" }));
   }
   if (q.get("theme")) {
     const st = JSON.parse(localStorage.getItem("tumbli.settings") ?? "{}");
