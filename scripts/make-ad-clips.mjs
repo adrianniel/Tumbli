@@ -22,6 +22,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "store-assets", "ad", "clips");
 const DEV = "http://localhost:1420";
 const FPS = 30;
+const NAME = "Niel"; // what Tumbli calls the user in the clips
 const OUT = { w: 1080, h: 1920 };
 const SCALE = 3; // the widget's 350x240 window, drawn 3x
 const WIN = { w: 350, h: 240 }; // the real widget window (see src/widget/windowing.ts)
@@ -59,7 +60,7 @@ const CLIPS = [
   },
   {
     name: "03-drink",
-    query: "demo&tumbler",
+    query: "demo", // glass mode: Tumbli fills up as you drink (in tumbler mode it empties, like your tumbler)
     seconds: 5,
     steps: [
       { t: 0.2, from: { x: 120, y: 60 } },
@@ -133,7 +134,7 @@ async function recordPart(browser, query, seconds, steps, framesDir, startIndex)
   await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
   const cdp = await page.createCDPSession();
   await cdp.send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
-  await page.goto(`${DEV}/widget.html?ad&${query}`, { waitUntil: "load" });
+  await page.goto(`${DEV}/widget.html?ad&name=${NAME}&${query}`, { waitUntil: "load" });
   await page.evaluate(() => document.fonts.ready);
   await new Promise((r) => setTimeout(r, 1500)); // let the entrance settle
 
