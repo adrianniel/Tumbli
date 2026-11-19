@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Tumbler } from "../components/Tumbler";
+import { Wordmark } from "../components/Wordmark";
 import { IconBell, IconLock, IconTarget } from "../components/Icons";
 
 /** What Tumbli says on the intro, typed out one after another. */
@@ -108,12 +109,8 @@ export function Intro({ onStart }: { onStart: () => void }) {
         </div>
       </div>
 
-      <h1 className="wordmark" aria-label="Tumbli">
-        {[..."Tumbli"].map((c, i) => (
-          <span key={i} aria-hidden style={{ "--i": i } as CSSProperties}>
-            {c}
-          </span>
-        ))}
+      <h1 className="wordmark">
+        <Wordmark size={62} animate />
       </h1>
       <p className="tagline">
         Your tumbler buddy. I live on your screen, fill up as you drink, and nudge you when it's time for water.

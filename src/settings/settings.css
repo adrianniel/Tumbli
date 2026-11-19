@@ -1545,40 +1545,10 @@ footer {
   }
 }
 
-/* the name, letter by letter */
+/* the name: the Tumbli wordmark (src/components/Wordmark.tsx) */
 .wordmark {
   margin: 0;
-  font-family: var(--display);
-  font-size: 56px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  letter-spacing: -1px;
-  color: var(--ink);
-}
-.wordmark span {
-  display: inline-block;
-  animation:
-    letter-in 0.55s cubic-bezier(0.2, 1.6, 0.4, 1) calc(0.75s + var(--i) * 0.07s) both,
-    letter-wave 3.2s ease-in-out calc(2s + var(--i) * 0.12s) infinite;
-}
-.wordmark span:nth-child(odd) {
-  color: var(--water-deep);
-}
-@keyframes letter-in {
-  from {
-    opacity: 0;
-    transform: translateY(26px) rotate(-14deg) scale(0.6);
-  }
-}
-@keyframes letter-wave {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-  }
-  30% {
-    transform: translateY(-5px);
-  }
+  line-height: 1;
 }
 .tagline {
   margin: 0;
