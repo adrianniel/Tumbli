@@ -3,7 +3,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { getAutostart, setAutostart as applyAutostart, type AutostartState } from "../lib/autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
-import { Chips, HourRange, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
+import { Chips, HourRange, hourLabel, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
 import {
   IconBottle,
   IconBulb,
@@ -23,7 +23,7 @@ import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
 import { factOfTheDay, greeting } from "../lib/facts";
-import { sipFor } from "../lib/schedule";
+import { reminderStatus, sipFor, type ReminderStatus } from "../lib/schedule";
 import {
   canUndo,
   CHANGED_EVENT,
@@ -46,6 +46,8 @@ import {
   TOUR_EVENT,
   lastDays,
   loadHistory,
+  loadNextReminder,
+  loadPausedUntil,
   loadSettings,
   resetOnboarding,
   resetToday,
@@ -63,6 +65,24 @@ const TUMBLER_HINTS: Record<number, string> = {
   1000: "Big bottle",
   1200: "40 oz tumbler",
 };
+/** The line under "Remind me every": when Tumbli will remind next, or why it won't. */
+function statusText(r: ReminderStatus): string {
+  switch (r.kind) {
+    case "paused":
+      return `Reminders are paused until ${new Date(r.until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+    case "goal":
+      return "Goal reached, no more reminders today 🎉";
+    case "off-hours":
+      return `Outside your active hours. Reminders start again at ${hourLabel(r.startHour)}`;
+    case "soon":
+      return "Next reminder: any moment now";
+    case "in":
+      return r.minutes >= 60
+        ? `Next reminder in ${Math.floor(r.minutes / 60)} h ${r.minutes % 60} min`
+        : `Next reminder in ${r.minutes} min`;
+  }
+}
+
 const GLASS_HINTS: Record<number, string> = { 150: "Small cup", 250: "A glass", 350: "Mug", 500: "Big glass" };
 
 export function Settings() {
@@ -80,6 +100,12 @@ export function Settings() {
   // re-render after actions that only touch the tumbler level
   const [, bump] = useState(0);
   const [confirmReset, setConfirmReset] = useState(false);
+  // the widget re-times the reminder when settings change: re-read it every few seconds
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // first run: this window starts hidden, so bring it up for the welcome screen
   useEffect(() => {
@@ -407,8 +433,24 @@ export function Settings() {
             label="Remind me every"
             options={INTERVAL_CHIPS}
             value={s.intervalMin}
-            onChange={(v) => update({ intervalMin: v })}
+            onChange={(v) => {
+              update({ intervalMin: v });
+              window.setTimeout(() => setNow(Date.now()), 400); // after the widget re-times it
+            }}
           />
+          {loadNextReminder() > 0 && (
+            <small className="reminder-status" aria-live="polite">
+              {statusText(
+                reminderStatus({
+                  now: new Date(now),
+                  nextAt: loadNextReminder(),
+                  settings: s,
+                  doneMl,
+                  pausedUntil: loadPausedUntil(),
+                }),
+              )}
+            </small>
+          )}
         </div>
 
         <div className="row stack">

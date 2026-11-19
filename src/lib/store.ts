@@ -307,6 +307,26 @@ export function savePausedUntil(t: number) {
   void emit(CHANGED_EVENT);
 }
 
+const NEXT_KEY = "tumbli.nextReminderAt";
+
+/** When the widget plans the next reminder (ms since epoch), so settings can show it; 0 = unknown. */
+export function loadNextReminder(): number {
+  try {
+    return Number(localStorage.getItem(NEXT_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** No change event: settings polls this, and the widget would only hear itself. */
+export function saveNextReminder(t: number) {
+  try {
+    localStorage.setItem(NEXT_KEY, String(Math.round(t)));
+  } catch {
+    /* storage full or blocked: the status line just stays hidden */
+  }
+}
+
 /** When a pause of the given kind would end, counted from `now`. */
 export function pauseEnd(kind: "hour" | "day", now = new Date()): number {
   if (kind === "hour") return now.getTime() + 60 * 60_000;

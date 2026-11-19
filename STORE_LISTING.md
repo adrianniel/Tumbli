@@ -117,9 +117,11 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 ## What's new (for updates)
 
-Version 0.1.2 (paste into "What's new in this version"):
+Version 0.1.3 (paste into "What's new in this version"):
 
-> - Fixed a white title bar that could show above Tumbli's speech bubbles after you clicked them.
-> - "Reset today" now asks in a friendly Tumbli dialog that shows how much will be cleared.
+> Bug fixes and improvements.
+
+(0.1.3: a new "Remind me every" now takes effect right away, and settings show when the next
+reminder comes. 0.1.2: no title bar above the speech bubbles, a Tumbli dialog for Reset today.)
 
 Version 0.1.1: first release on the Store (0.1.0 was withdrawn before it was published).

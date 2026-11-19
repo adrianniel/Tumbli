@@ -2120,3 +2120,10 @@ footer {
     animation: none;
   }
 }
+
+/* under "Remind me every": when the next reminder comes, or why it won't */
+.row .reminder-status {
+  margin-top: -2px;
+  color: var(--water-deep);
+  font-weight: 600;
+}

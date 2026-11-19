@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { shouldNudge } from "../lib/schedule";
-import { loadPausedUntil, pauseEnd, savePausedUntil, todayMl, type Settings } from "../lib/store";
+import { rescheduled, shouldNudge } from "../lib/schedule";
+import { loadPausedUntil, pauseEnd, saveNextReminder, savePausedUntil, todayMl, type Settings } from "../lib/store";
 import { win } from "./windowing";
 
 const IDLE_SECS = 5 * 60; // the user counts as "away" after 5 min without input
@@ -34,10 +34,31 @@ export function useReminders({
 
   // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
   const nextAt = useRef(Date.now() + (import.meta.env.DEV ? 15_000 : settings.intervalMin * 60_000));
+  /** when the current countdown started, to re-time it if the interval changes */
+  const startedAt = useRef(Date.now());
+  const interval = useRef(settings.intervalMin);
   const hidden = useRef(false);
   const lastDay = useRef(new Date().toDateString());
   const cb = useRef({ onNewDay, canNudge, onNudge });
   cb.current = { onNewDay, canNudge, onNudge };
+
+  /** move the next reminder; `restart` starts a new countdown from now */
+  const setNext = (at: number, restart = true) => {
+    nextAt.current = at;
+    if (restart) startedAt.current = Date.now();
+    saveNextReminder(at);
+  };
+
+  useEffect(() => saveNextReminder(nextAt.current), []);
+
+  // "Remind me every" changed in settings: re-time the running countdown right away,
+  // instead of waiting out the old interval first
+  useEffect(() => {
+    if (settings.intervalMin === interval.current) return;
+    interval.current = settings.intervalMin;
+    if (nudging) return; // closing the reminder schedules with the new interval
+    setNext(rescheduled(startedAt.current, settings.intervalMin, Date.now()), false);
+  }, [settings.intervalMin, nudging]);
 
   // tray: pause / resume
   useEffect(() => {
@@ -46,7 +67,7 @@ export function useReminders({
       savePausedUntil(until);
       setPausedUntil(until);
       setNudging(false);
-      if (until === 0) nextAt.current = Date.now() + 60_000; // check in soon after resuming
+      if (until === 0) setNext(Date.now() + 60_000); // check in soon after resuming
     });
     return () => {
       void un.then((f) => f());
@@ -80,7 +101,7 @@ export function useReminders({
 
       // away from the computer: don't nag; remind shortly after they return
       if (status.idle_secs >= IDLE_SECS) {
-        nextAt.current = Math.max(nextAt.current, Date.now() + 60_000);
+        if (nextAt.current < Date.now() + 60_000) setNext(Date.now() + 60_000, false);
         return;
       }
 
@@ -106,13 +127,13 @@ export function useReminders({
     /** close the reminder and ask again in `minutes` */
     dismiss: (minutes: number) => {
       setNudging(false);
-      nextAt.current = Date.now() + minutes * 60_000;
+      setNext(Date.now() + minutes * 60_000);
     },
     /** open a reminder right now (dev preview) */
     forceNudge: () => setNudging(true),
     /** ask again after `ms` without closing anything */
     scheduleIn: (ms: number) => {
-      nextAt.current = Date.now() + ms;
+      setNext(Date.now() + ms);
     },
   };
 }
