@@ -174,12 +174,11 @@ const hat = () => noiseHit(0.06, 8000, 70, "high", 0.5);
 // ------------------------------------------------------------------ music
 
 /**
- * About 25 s of cozy, upbeat music at 112 BPM: C - Am - F - G.
- * Bars 1-2 are soft (the tired shot); drums come in at bar 3 ("Meet Tumbli"),
+ * About 25 s of cozy, upbeat music (112 BPM unless told otherwise): C - Am - F - G.
+ * Bars 1-2 are soft (the tired shot); drums come in at bar 3,
  * and it ends on a ringing C chord for the end card, fading out at `length`.
  */
-export function music(file, length) {
-  const bpm = 112;
+export function music(file, length, bpm = 112) {
   const beat = 60 / bpm;
   const bar = beat * 4;
   const n = Math.round(length * SR);
@@ -311,6 +310,19 @@ export function sfx(dir) {
       for (let i = 0; i < b.length && i + off < s.length; i++) s[i + off] += b[i] * Math.exp((-i / SR) * 5) * 0.6;
     });
     out("sparkle", s);
+  }
+  // thud: a soft camera-punch impact
+  {
+    const dur = 0.6;
+    const s = len(dur);
+    let ph = 0;
+    const f = svf();
+    for (let i = 0; i < s.length; i++) {
+      const t = i / SR;
+      ph += (2 * Math.PI * (38 + 80 * Math.exp(-t * 18))) / SR;
+      s[i] = Math.tanh(2 * Math.sin(ph) * Math.exp(-t * 6)) + 0.35 * f(rnd() * 2, 900, 0.8).low * Math.exp(-t * 14);
+    }
+    out("thud", s);
   }
   // boing: the logo popping in on the end card
   {
