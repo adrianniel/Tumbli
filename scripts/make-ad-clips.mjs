@@ -11,7 +11,7 @@
 //         npm run ad-clips           -> store-assets/ad/clips/*.mp4
 //         npm run ad-clips -- drink  (only the clips whose name contains "drink")
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -119,6 +119,8 @@ const desk = `<!doctype html><html><body style="margin:0;width:${OUT.w}px;height
     <img src="${DEV}/app-icon.svg" width="72" height="72">
   </div>
 </body></html>`;
+// the same desktop without the Notes window: room for captions above Tumbli (used by make-ad.mjs)
+const clean = desk.replace(/<div style="position:absolute;left:60px;top:220px[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/, "");
 const green = `<!doctype html><html><body style="margin:0;width:${OUT.w}px;height:${OUT.h}px;background:#00ff00"></body></html>`;
 
 // ---------------------------------------------------------------------- record
@@ -218,16 +220,21 @@ async function backgroundPng(browser, html, file) {
   await page.close();
 }
 
-const only = process.argv[2];
-mkdirSync(outDir, { recursive: true });
+// npm run ad-clips -- [name filter] [--bg=desk,green,clean] [--out=folder]
+const flags = Object.fromEntries(process.argv.slice(2).filter((a) => a.startsWith("--")).map((a) => a.slice(2).split("=")));
+const only = process.argv.slice(2).find((a) => !a.startsWith("--"));
+const kinds = (flags.bg ?? "desk,green").split(",");
+const target = flags.out ? resolve(flags.out) : outDir;
+mkdirSync(target, { recursive: true });
 const work = mkdtempSync(join(tmpdir(), "tumbli-ad-"));
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: true, args: ["--hide-scrollbars"] });
 try {
-  const bgDesk = join(work, "desk.png");
-  const bgGreen = join(work, "green.png");
-  await backgroundPng(browser, desk, bgDesk);
-  await backgroundPng(browser, green, bgGreen);
-  writeFileSync(join(outDir, ".gitkeep"), "");
+  const bgs = {};
+  for (const [kind, html] of Object.entries({ desk, green, clean })) {
+    if (!kinds.includes(kind)) continue;
+    bgs[kind] = join(work, `${kind}.png`);
+    await backgroundPng(browser, html, bgs[kind]);
+  }
 
   for (const clip of CLIPS) {
     if (only && !clip.name.includes(only)) continue;
@@ -236,8 +243,8 @@ try {
     let n = 0;
     for (const q of clip.parts ?? [clip.query]) n += await recordPart(browser, q, clip.seconds, clip.steps, framesDir, n);
 
-    for (const [kind, bg] of [["desk", bgDesk], ["green", bgGreen]]) {
-      const out = join(outDir, `${clip.name}-${kind}.mp4`);
+    for (const [kind, bg] of Object.entries(bgs)) {
+      const out = join(target, `${clip.name}-${kind}.mp4`);
       execFileSync(ffmpeg, [
         "-y", "-loglevel", "error",
         "-loop", "1", "-framerate", String(FPS), "-i", bg,

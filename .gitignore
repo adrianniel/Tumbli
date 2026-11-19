@@ -26,3 +26,7 @@ dist-ssr
 # MSIX output
 dist-msix
 store-assets/screenshots/src
+
+# ad build output
+store-assets/ad/.build/
+store-assets/ad/source/

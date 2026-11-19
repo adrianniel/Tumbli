@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "screenshots": "node scripts/make-screenshots.mjs",
-    "ad-clips": "node scripts/make-ad-clips.mjs"
+    "ad-clips": "node scripts/make-ad-clips.mjs",
+    "ad": "node scripts/make-ad.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fredoka": "^5.3.0",
