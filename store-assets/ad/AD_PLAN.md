@@ -34,7 +34,7 @@ The person is **Niel**, a real-looking Filipino man (live action, not animated),
 Tumbli calls him Niel in the real clips too ("Water break, Niel!"). Every prompt repeats his full
 description word for word, so Veo keeps him looking the same:
 
-> a Filipino man in his mid-20s with warm morena skin, short black hair with a clean side part,
+> a Filipino man in his mid-20s with fair skin, short black hair with a clean side part,
 > light stubble, wearing a light blue oversized button-up shirt
 
 To keep him even more consistent: generate shot 1 first, pick the best take, and make shots 4 and 8 with
@@ -43,17 +43,17 @@ To keep him even more consistent: generate shot 1 first, pick the best take, and
 
 **Shot 1: thirsty and tired**
 ```
-Vertical 9:16 cinematic close-up, live-action, photorealistic. A Filipino man in his mid-20s with warm morena skin, short black hair with a clean side part, light stubble, wearing a light blue oversized button-up shirt, sits at a home desk in a Manila condo in the late afternoon. Warm golden window light, soft blue glow from a laptop screen on his face. He leans back, rubs his tired eyes and sighs. Beside the laptop is an empty drinking glass. Shallow depth of field, gentle handheld movement, natural skin texture, natural colors. No text, no logos.
+Vertical 9:16 cinematic close-up, live-action, photorealistic. A Filipino man in his mid-20s with fair skin, short black hair with a clean side part, light stubble, wearing a light blue oversized button-up shirt, sits at a home desk in a Manila condo in the late afternoon. Warm golden window light, soft blue glow from a laptop screen on his face. He leans back, rubs his tired eyes and sighs. Beside the laptop is an empty drinking glass. Shallow depth of field, gentle handheld movement, natural skin texture, natural colors. No text, no logos.
 ```
 
 **Shot 4: the sip**
 ```
-Vertical 9:16 medium close-up, live-action, photorealistic. The same Filipino man in his mid-20s with warm morena skin, short black hair with a clean side part, light stubble, wearing a light blue oversized button-up shirt, at the same home desk. He smiles, picks up a blue insulated sport bottle with a dark navy cap and carry loop, takes a big refreshing sip of water, and sets it down with a satisfied look. Warm afternoon light, shallow depth of field, slow smooth camera push-in, natural skin texture. No text, no logos.
+Vertical 9:16 medium close-up, live-action, photorealistic. The same Filipino man in his mid-20s with fair skin, short black hair with a clean side part, light stubble, wearing a light blue oversized button-up shirt, at the same home desk. He smiles, picks up a blue insulated sport bottle with a dark navy cap and carry loop, takes a big refreshing sip of water, and sets it down with a satisfied look. Warm afternoon light, shallow depth of field, slow smooth camera push-in, natural skin texture. No text, no logos.
 ```
 
 **Shot 8: happy and focused**
 ```
-Vertical 9:16 wide shot, live-action, photorealistic. A bright, tidy home office corner in a Manila condo with a small plant and soft sunlight through the window. The same Filipino man in his mid-20s with warm morena skin, short black hair with a clean side part, light stubble, wearing a light blue oversized button-up shirt, types happily on his laptop. A blue sport bottle with a navy cap, half full of water, stands next to the keyboard. Slow dolly-in, calm and positive mood, natural colors. No text, no logos.
+Vertical 9:16 wide shot, live-action, photorealistic. A bright, tidy home office corner in a Manila condo with a small plant and soft sunlight through the window. The same Filipino man in his mid-20s with fair skin, short black hair with a clean side part, light stubble, wearing a light blue oversized button-up shirt, types happily on his laptop. A blue sport bottle with a navy cap, half full of water, stands next to the keyboard. Slow dolly-in, calm and positive mood, natural colors. No text, no logos.
 ```
 
 Tips:
