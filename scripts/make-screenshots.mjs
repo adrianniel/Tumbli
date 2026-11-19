@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { wordmark } from "./ad/wordmark.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "store-assets", "screenshots");
@@ -175,20 +176,21 @@ function settingsWindow(query, { x, y, dark = false, z = 10 }) {
 const SCREEN = { x: 790, y: 92, w: W - 790, h: H - 92 };
 
 function page({ kicker, title, sub, bullets = [], extra = "", dark = false, scale, desktop, callouts = [] }) {
+  const wm = wordmark({ size: 44, ink: dark ? "#ffffff" : "#0e2f4a" }); // the brand name, with the tumbler "i"
   const deskW = Math.round(SCREEN.w / scale);
   const deskH = Math.round(SCREEN.h / scale);
   const ctx = { deskW, deskH };
   return `<!doctype html><html><head><meta charset="utf-8">
   <link rel="stylesheet" href="/node_modules/@fontsource-variable/fredoka/index.css">
   <link rel="stylesheet" href="/node_modules/@fontsource-variable/nunito/index.css">
-  <style>${CSS}</style></head>
+  <style>${CSS}${wm.css}</style></head>
   <body class="${dark ? "dark" : ""}">
     <div class="deco d1"></div><div class="deco d2"></div>
     <svg class="waves" viewBox="0 0 1920 240" preserveAspectRatio="none" aria-hidden="true">
       <path d="M0 120 C240 60 480 180 720 120 S1200 60 1440 120 S1800 170 1920 130 V240 H0Z" opacity=".55"/>
       <path d="M0 170 C260 120 520 220 780 170 S1260 120 1500 170 S1800 210 1920 180 V240 H0Z"/>
     </svg>
-    <div class="brand"><img src="${ICON}" width="46" height="46" alt=""><span>Tumbli</span></div>
+    <div class="brand"><img src="${ICON}" width="50" height="50" alt="">${wm.html}</div>
     <div class="copy">
       <div class="kicker">${kicker}</div>
       <h1>${title}</h1>

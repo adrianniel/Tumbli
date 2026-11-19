@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="app-icon.svg" width="112" height="112" alt="Tumbli app icon">
+  <img src="store-assets/brand/tumbli-cover-2400x1260.png" alt="Tumbli: your water buddy for Windows">
 </p>
-
-<h1 align="center">Tumbli</h1>
 
 <p align="center">
   <b>A water buddy for your desktop.</b><br>

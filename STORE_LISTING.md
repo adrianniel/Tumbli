@@ -117,4 +117,8 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 ## What's new (for updates)
 
+Version 0.1.1 (paste into "What's new in this version"):
+
+> A fresh new look for the Tumbli name on the welcome screen: the "i" is a little tumbler, and its cap drops in as the dot.
+
 Version 0.1.0: first release.
