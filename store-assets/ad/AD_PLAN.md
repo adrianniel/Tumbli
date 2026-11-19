@@ -43,20 +43,22 @@ To keep her even more consistent: generate shot 1 first, pick the best take, and
 
 **Shot 1: thirsty and tired**
 ```
-Vertical 9:16 cinematic close-up, live-action, photorealistic. A Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, sits at a home desk in a Manila condo in the late afternoon. Warm golden window light, soft blue glow from a laptop screen on her face. She leans back, rubs her tired eyes and sighs. Beside the laptop is an empty drinking glass. Shallow depth of field, gentle handheld movement, natural skin texture, natural colors. No text, no logos.
+Vertical 9:16 cinematic close-up, live-action, photorealistic. A Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, sits at a home desk in a Manila condo in the late afternoon. Warm golden window light, soft blue glow from a laptop screen on her face. She leans back, rubs her tired eyes and sighs. Beside the laptop is an empty drinking glass. Shallow depth of field, gentle handheld movement, natural skin texture, natural colors. She does not speak: no dialogue, no talking, lips closed; only soft ambient room sound. No music. No text, no logos.
 ```
 
 **Shot 4: the sip**
 ```
-Vertical 9:16 medium close-up, live-action, photorealistic. The same Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, at the same home desk. She smiles, picks up a blue insulated sport bottle with a dark navy cap and carry loop, takes a big refreshing sip of water, and sets it down with a satisfied look. Warm afternoon light, shallow depth of field, slow smooth camera push-in, natural skin texture. No text, no logos.
+Vertical 9:16 medium close-up, live-action, photorealistic. The same Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, at the same home desk. She smiles, picks up a blue insulated sport bottle with a dark navy cap and carry loop, takes a big refreshing sip of water, and sets it down with a satisfied look. Warm afternoon light, shallow depth of field, slow smooth camera push-in, natural skin texture. She does not speak: no dialogue, no talking, lips closed; only soft ambient room sound. No music. No text, no logos.
 ```
 
 **Shot 8: happy and focused**
 ```
-Vertical 9:16 wide shot, live-action, photorealistic. A bright, tidy home office corner in a Manila condo with a small plant and soft sunlight through the window. The same Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, types happily on her laptop. A blue sport bottle with a navy cap, half full of water, stands next to the keyboard. Slow dolly-in, calm and positive mood, natural colors. No text, no logos.
+Vertical 9:16 wide shot, live-action, photorealistic. A bright, tidy home office corner in a Manila condo with a small plant and soft sunlight through the window. The same Filipina woman in her mid-20s with fair skin, long straight black hair in a low ponytail, small gold stud earrings, wearing an oversized navy blue zip-up hooded jacket with the hood down, resting on her shoulders, over a plain white t-shirt, types happily on her laptop. A blue sport bottle with a navy cap, half full of water, stands next to the keyboard. Slow dolly-in, calm and positive mood, natural colors. She does not speak: no dialogue, no talking, lips closed; only soft ambient room sound. No music. No text, no logos.
 ```
 
 Tips:
+- Veo makes sound too, and may make her talk: every prompt says she doesn't speak. If she still
+  moves her lips, regenerate; mute the clip's own audio in the editor either way (music and voice-over go on top).
 - If her face changes between shots, or faces or hands look off, regenerate; keep each shot short (2–3 s used).
 - Platforms ask you to label realistic AI video: turn on the "AI-generated" label when you post on
   TikTok, Facebook/Instagram or YouTube.
