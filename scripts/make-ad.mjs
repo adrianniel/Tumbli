@@ -419,7 +419,8 @@ SFX.forEach(([, time, gain], k) => {
 });
 a +=
   `[vo][mus]${SFX.map((_, k) => `[s${k}]`).join("")}amix=inputs=${SFX.length + 2}:normalize=0:duration=first,` +
-  `alimiter=limit=0.9,atrim=0:${LENGTH}[aout]`;
+  // no make-up gain, and headroom for the AAC encoder
+  `volume=1.0,alimiter=limit=0.75:level=0,atrim=0:${LENGTH}[aout]`;
 const audio = join(BUILD, "mix.wav");
 run([...aIn, "-filter_complex", a, "-map", "[aout]", audio]);
 
