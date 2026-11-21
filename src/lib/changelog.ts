@@ -10,6 +10,20 @@ export type Release = { version: string; date: string; changes: Change[] };
 
 export const CHANGELOG: Release[] = [
   {
+    version: "0.1.5",
+    date: "November 2026",
+    changes: [
+      {
+        title: "Lighter on your PC",
+        text: "Tumbli now rests its animations while it waits, so it uses far less CPU and battery through the day.",
+      },
+      {
+        title: "Quieter in the background",
+        text: "The Settings window stops animating while it's closed or behind other windows, and a speech bubble you haven't answered keeps still after a few seconds.",
+      },
+    ],
+  },
+  {
     version: "0.1.4",
     date: "November 2026",
     changes: [
@@ -36,10 +50,6 @@ export const CHANGELOG: Release[] = [
       {
         title: "A cleaner Settings",
         text: "Achievements fold into a neat shelf, with new time and date pickers that match Tumbli's look.",
-      },
-      {
-        title: "Lighter on your PC",
-        text: "Tumbli now rests its animations while it waits, so it uses far less CPU and battery through the day.",
       },
       {
         title: "What's new",

@@ -123,9 +123,16 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 ## What's new (for updates)
 
-Version 0.1.4 (paste into "What's new in this version"):
+Version 0.1.5 (paste into "What's new in this version"; submit after 0.1.4 is live):
 
-> New: Auto reminders that pace themselves to your goal, medicine reminders with a 2-week log, a peek mode at the screen edge, a smarter hydration check, and a welcome back after time away. Tumbli is also much lighter on your PC: far less CPU and battery.
+> Tumbli is now much lighter on your PC: it rests its animations while it waits, so it uses far less CPU and battery through the day.
+
+(0.1.5: idle loops pause between short moments of life, an unanswered bubble keeps still after
+12 s, the Settings window and a hidden widget stop drawing. Real app: idle 25% -> 5% of a core.)
+
+Version 0.1.4 (submitted Nov 21 with the 5:11 PM build, releasing Nov 23):
+
+> New: Auto reminders that pace themselves to your goal, medicine reminders with a 2-week log, a peek mode at the screen edge, a smarter hydration check, and a welcome back after time away.
 
 (0.1.4: an "Auto" choice in "Remind me every" (the default for new users), and a Medicines card in
 Settings: add a medicine with its times, Tumbli asks at each one, today's doses can be ticked off.
