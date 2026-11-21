@@ -3136,3 +3136,10 @@ footer {
   color: var(--coral);
   font-weight: 700;
 }
+
+/* the window is hidden or in the background: no animation draws (see main.tsx) */
+.window-idle *,
+.window-idle *::before,
+.window-idle *::after {
+  animation-play-state: paused !important;
+}

@@ -126,6 +126,8 @@ export function useReminders({
       const shouldHide = settings.hideOnFullscreen && status.busy;
       if (shouldHide !== hidden.current) {
         hidden.current = shouldHide;
+        // a hidden WebView still draws its animations: keep them still while hidden
+        document.documentElement.classList.toggle("window-idle", shouldHide);
         if (shouldHide) await win.hide();
         else await win.show();
       }

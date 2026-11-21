@@ -65,6 +65,11 @@ const CHEER_MS = 2800;
 const FACT_MS = 12_000; // a fact bubble closes by itself after this, unless hovered
 const HOVER_GRACE_MS = 350; // keep the buttons a moment after the mouse leaves
 const PIN_HOVER = import.meta.env.DEV && new URLSearchParams(location.search).has("hover");
+// Tumbli's idle loops (bob, blink, water, arms) cost GPU time on every frame of the
+// transparent window: while idle they run in short moments of life and pause in between
+const ALIVE_MS = 3200; // one bob
+const REST_MS = 10_000;
+const CALM_MS = 12_000; // a speech bubble left open stops its attention loops after this
 
 export function Widget() {
   // ---------- data ----------
@@ -163,6 +168,30 @@ export function Widget() {
   const talkingRef = useRef(talking);
   talkingRef.current = talking;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
+
+  // moments of life while idle, rest in between (see ALIVE_MS)
+  const [lively, setLively] = useState(true);
+  useEffect(() => {
+    let t: number | undefined;
+    const live = () => {
+      setLively(true);
+      t = window.setTimeout(rest, ALIVE_MS);
+    };
+    const rest = () => {
+      setLively(false);
+      t = window.setTimeout(live, REST_MS);
+    };
+    t = window.setTimeout(rest, 6000); // lively for a few seconds after starting
+    return () => window.clearTimeout(t);
+  }, []);
+  // a bubble nobody has answered for a while keeps still until the mouse comes by
+  const [calm, setCalm] = useState(false);
+  useEffect(() => {
+    setCalm(false);
+    if (!talking) return;
+    const t = window.setTimeout(() => setCalm(true), CALM_MS);
+    return () => window.clearTimeout(t);
+  }, [talking, nudging, medDue, welcome, fact, tour, award, recap, askRating, update]);
 
   const { side, startDrag, peek } = useDocking(
     mode,
@@ -442,6 +471,8 @@ export function Widget() {
         celebrate ? "celebrate" : "",
         sleeping ? "sleeping" : "",
         peek && mode === "idle" ? "peeking" : "",
+        mode === "idle" && !lively && !celebrate && !gulping && !plusOne ? "resting" : "",
+        talking && calm && !hover ? "calm" : "",
         done ? "done" : "",
         empty ? "empty" : "",
       ].join(" ")}
