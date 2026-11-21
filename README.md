@@ -58,6 +58,10 @@ Dark mode by default, light mode with one switch in Settings.
 - Medicine reminders: add your medicines or vitamins with their times, and Tumbli asks at each one
   (Taken, 10 min, or skip) and ticks off today's doses
 - Docks to the left or right edge of the screen; drag it anywhere and it snaps back
+- Peek: drag Tumbli past the screen edge and it tucks half of itself in, coming out for reminders,
+  facts and hover buttons; drag it back out to undock it
+- Welcome back: after time away (lid closed, asleep, or the PC off) Tumbli says how long you were gone,
+  how many water breaks went by, and lets you log a drink
 - Pause reminders for an hour or until tomorrow from the tray icon
 - Starts with Windows (optional)
 - No account, no ads, no tracking: everything stays on your PC
