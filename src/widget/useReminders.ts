@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { awaySummary, AWAY_MIN, currentInterval, rescheduled, shouldNudge, withinActiveHours } from "../lib/schedule";
+import { dosesBetween, loadMedLog, loadMeds } from "../lib/meds";
 import {
   loadLastActive,
   loadPausedUntil,
@@ -18,8 +19,11 @@ const IDLE_SECS = 5 * 60; // the user counts as "away" after 5 min without input
 const TICK_MS = 5000;
 
 type SystemStatus = { idle_secs: number; busy: boolean };
-/** Back after a while away: how long, and how many reminders went by */
-export type Welcome = { awayMin: number; missed: number };
+/**
+ * Back after a while away: how long, how many water reminders went by (`water` false when
+ * there is nothing to ask about water), and the time away, to find the medicine doses in it.
+ */
+export type Welcome = { awayMin: number; missed: number; water: boolean; from: number; to: number };
 
 /**
  * The reminder loop: every few seconds it checks the time, idle and fullscreen state
@@ -126,35 +130,41 @@ export function useReminders({
         else await win.show();
       }
 
-      // back after a while away (lid closed, asleep, idle, or the PC was off): say hi,
-      // tell them how many reminders went by, and offer to log a drink
+      // back after a while away (lid closed, asleep, idle, or the PC was off): say hi, tell
+      // them how many reminders went by, and let them log the water and medicine they took
       const t = Date.now();
       if (status.idle_secs < IDLE_SECS) {
         const inputAt = t - status.idle_secs * 1000;
         const prev = lastInput.current;
         lastInput.current = inputAt;
-        if (inputAt - lastSaved.current > 30_000) {
-          lastSaved.current = inputAt;
-          saveLastActive(inputAt);
-        }
-        if (inputAt - prev >= AWAY_MIN * 60_000 && !nudging && !welcomeRef.current) {
+        // (the saved time stays old while the welcome back is up: medicine reminders wait for it)
+        const save = () => {
+          if (inputAt - lastSaved.current > 30_000) {
+            lastSaved.current = inputAt;
+            saveLastActive(inputAt);
+          }
+        };
+        if (welcomeRef.current) {
+          /* answered or closed first */
+        } else if (inputAt - prev >= AWAY_MIN * 60_000 && !nudging) {
           const every = intervalNow();
           const away = awaySummary(prev, inputAt, settings, every);
-          const greet =
+          const water =
             away.sameDay &&
             away.missed >= 1 &&
             withinActiveHours(settings, today) &&
             todayMl() < settings.goalMl &&
-            loadPausedUntil() <= t &&
-            !status.busy &&
-            cb.current.canNudge();
-          if (greet) {
-            setNext(t + every * 60_000);
-            setWelcome({ awayMin: away.awayMin, missed: away.missed });
+            loadPausedUntil() <= t;
+          const doses = dosesBetween(loadMeds(), loadMedLog(), prev, t).length;
+          if ((water || doses > 0) && !status.busy && cb.current.canNudge()) {
+            if (water) setNext(t + every * 60_000);
+            setWelcome({ awayMin: away.awayMin, missed: away.missed, water, from: prev, to: t });
+            welcomeRef.current = { awayMin: 0, missed: 0, water, from: prev, to: t };
             cb.current.onWelcome();
             return;
           }
-        }
+          save();
+        } else save();
       }
 
       // away from the computer: don't nag; remind shortly after they return

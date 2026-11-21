@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@tauri-apps/api/event", () => ({ emit: vi.fn(() => Promise.resolve()) }));
 
 import {
+  closePastDays,
+  medHistory,
   cleanTimes,
   doseKey,
+  dosesBetween,
   dosesToday,
   dueDoses,
   fmtTime,
@@ -104,5 +107,47 @@ describe("nextDose / labels", () => {
     expect(fmtTime("12:30")).toBe("12:30 pm");
     expect(joinNames(["A"])).toBe("A");
     expect(joinNames(["A", "B", "C"])).toBe("A, B and C");
+  });
+});
+
+describe("dosesBetween", () => {
+  it("lists the unanswered doses from the time away", () => {
+    const meds = [med(), med({ id: "m2", name: "Vitamin D", times: ["09:00", "15:00"] })];
+    const log = { "2026-11-18": { [doseKey("m2", "09:00")]: "taken" as const } };
+    // away 7:30 - 13:00: Metformin 8:00 (Vitamin D 9:00 already taken, 15:00 not yet)
+    const away = dosesBetween(meds, log, at(7, 30).getTime(), at(13).getTime());
+    expect(away.map((d) => `${d.med.name} ${d.time}`)).toEqual(["Metformin 08:00"]);
+  });
+  it("counts a dose marked missed as answered", () => {
+    setDose("m1", "08:00", "missed", at(9));
+    expect(dosesBetween([med()], loadMedLog(), at(7).getTime(), at(13).getTime())).toEqual([]);
+  });
+});
+
+describe("closePastDays", () => {
+  it("marks yesterday's unanswered doses missed at midnight", () => {
+    saveMeds([med({ since: "2026-11-10" })]);
+    closePastDays(at(23, 0, 17)); // first run: remembers where it starts
+    setDose("m1", "08:00", "taken", at(8, 5, 18));
+    expect(closePastDays(at(0, 1, 19))).toBe(true);
+    expect(loadMedLog()["2026-11-18"]).toEqual({ "m1@08:00": "taken", "m1@20:00": "missed" });
+    expect(closePastDays(at(9, 0, 19))).toBe(false); // once a day
+  });
+  it("counts the days the PC was off, but not before a medicine was added", () => {
+    saveMeds([med({ since: "2026-11-17" })]);
+    closePastDays(at(12, 0, 15));
+    closePastDays(at(12, 0, 19));
+    expect(Object.keys(loadMedLog()).sort()).toEqual(["2026-11-17", "2026-11-18"]);
+  });
+});
+
+describe("medHistory", () => {
+  it("counts taken doses per day", () => {
+    const log = { "2026-11-17": { "m1@08:00": "taken" as const, "m1@20:00": "missed" as const } };
+    const h = medHistory(med(), log, at(9, 0, 18), 2);
+    expect(h.map((d) => [d.day, d.taken, d.total])).toEqual([
+      ["2026-11-16", 0, 0],
+      ["2026-11-17", 1, 2],
+    ]);
   });
 });

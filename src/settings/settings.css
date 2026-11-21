@@ -2283,3 +2283,31 @@ footer {
   margin: 8px 0 0;
   line-height: 1.45;
 }
+.med-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+.med-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.med-dot.all {
+  background: var(--mint);
+  color: #fff;
+}
+.med-dot.some {
+  background: var(--sun);
+  color: #3a2a00;
+}
+.med-dot.missed {
+  background: var(--coral);
+  color: #fff;
+}

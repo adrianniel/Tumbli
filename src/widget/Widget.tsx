@@ -44,7 +44,7 @@ import {
   WelcomeBackBubble,
 } from "./bubbles";
 import { awayLabel } from "../lib/schedule";
-import { fmtTime, joinNames } from "../lib/meds";
+import { closePastDays, doseKey, dosesBetween, fmtTime, joinNames, loadMedLog, loadMeds, setDose } from "../lib/meds";
 import { useMedReminders } from "./useMedReminders";
 import { askLater, neverAsk, rated, shouldAskForRating } from "../lib/rating";
 import { storeReviewUrl } from "../config";
@@ -69,6 +69,7 @@ export function Widget() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [doneMl, setDoneMl] = useState(() => todayMl());
   const [level, setLevel] = useState(() => loadLevel()); // ml left in the tumbler (tumbler mode)
+  useEffect(() => void closePastDays(), []); // days since the last run (the PC was off)
 
   const refresh = useCallback(() => {
     const s = loadSettings();
@@ -110,6 +111,7 @@ export function Widget() {
   const reminders = useReminders({
     settings,
     onNewDay: () => {
+      closePastDays(); // yesterday's unmarked medicine doses count as missed
       refresh();
       celebrateAchievements();
       window.setTimeout(showRecap, 5000);
@@ -127,9 +129,11 @@ export function Widget() {
     },
   });
   const { nudging, welcome } = reminders;
+  const welcomeRef = useRef(welcome);
+  welcomeRef.current = welcome;
 
   const meds = useMedReminders({
-    canShow: () => !touring.current,
+    canShow: () => !touring.current && !welcomeRef.current, // the welcome back asks about meds itself
     onShow: () => {
       setFact(null);
       if (loadSettings().sound) bloop();
@@ -137,6 +141,17 @@ export function Widget() {
     snoozeMin: SNOOZE_MIN,
   });
   const medDue = meds.due.length > 0;
+  // medicine doses from the time away that are still unanswered (re-read on every render, so
+  // a dose answered in its own reminder or in Settings drops out); null: nothing left to ask
+  const awayDoses = (() => {
+    if (!welcome) return null;
+    const d = dosesBetween(loadMeds(), loadMedLog(), welcome.from, welcome.to);
+    return welcome.water || d.length ? d : null;
+  })();
+  useEffect(() => {
+    if (welcome && !awayDoses) reminders.closeWelcome();
+  });
+
   /** Tumbli is asking for something: water or medicine, or saying welcome back */
   const asking = nudging || medDue || welcome !== null;
 
@@ -332,7 +347,11 @@ export function Widget() {
       const med = { id: "demo", name: q.get("med") || "Vitamin D", times: ["08:00"], note: "After breakfast", on: true };
       meds.force([{ med, time: "08:00", at: Date.now(), status: "due" }]);
     }
-    if (q.has("away")) reminders.forceWelcome({ awayMin: Number(q.get("away")) || 110, missed: 2 });
+    if (q.has("away")) {
+      const to = Date.now();
+      const from = to - (Number(q.get("away")) || 110) * 60_000;
+      reminders.forceWelcome({ awayMin: (to - from) / 60_000, missed: 2, water: true, from, to });
+    }
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
     if (q.has("rating")) setAskRating(true);
@@ -422,19 +441,38 @@ export function Widget() {
         />
       )}
 
-      {welcome && !medDue && tour === null && (
+      {welcome && awayDoses && !medDue && tour === null && (
         <WelcomeBackBubble
           name={settings.name}
           away={awayLabel(welcome.awayMin)}
           missed={welcome.missed}
-          drinkLabel={tumblerMode ? "Drank some" : "I drank!"}
-          onDrank={() => {
+          water={
+            welcome.water
+              ? [
+                  { label: "None", ml: 0 },
+                  ...[1, 2, 3].map((n) =>
+                    tumblerMode
+                      ? { label: `${n * 250} ml`, ml: n * 250 }
+                      : { label: String(n), ml: n * settings.glassMl },
+                  ),
+                ]
+              : null
+          }
+          doses={awayDoses.map((d) => ({ key: doseKey(d.med.id, d.time), name: d.med.name, time: fmtTime(d.time) }))}
+          onDone={(ml, picked) => {
+            for (const d of awayDoses) {
+              const state = picked[doseKey(d.med.id, d.time)];
+              if (state) setDose(d.med.id, d.time, state);
+            }
             reminders.closeWelcome();
-            drink();
-          }}
-          onNotYet={() => {
-            reminders.closeWelcome(5);
-            cheerUp("Okay! Let's grab some soon 💧");
+            if (ml > 0) {
+              // water had away from the desk: counts toward today, the tumbler level stays as it is
+              const before = todayMl();
+              afterDrink(before, logDrink(ml, { ...settings, mode: "glass" }));
+            } else if (welcome.water) {
+              reminders.closeWelcome(5);
+              cheerUp("Okay! Let's grab some soon 💧");
+            }
           }}
           onClose={() => reminders.closeWelcome()}
         />

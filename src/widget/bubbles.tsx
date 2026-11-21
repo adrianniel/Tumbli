@@ -1,5 +1,5 @@
 /** The speech bubbles Tumbli shows next to itself. */
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { IconBell, IconBulb, IconClose, IconDrop, IconPill, IconQuestion, IconRefill } from "../components/Icons";
 import type { Fact } from "../lib/facts";
 import { TOUR } from "./tour";
@@ -102,40 +102,95 @@ export function MedBubble({
   );
 }
 
+export type AwayDose = { key: string; name: string; time: string };
+
+/**
+ * Back after time away: how long, and a quick check-in to log the water and the medicine
+ * doses the user had while away (or say they missed them).
+ */
 export function WelcomeBackBubble({
   name,
   away,
   missed,
-  drinkLabel,
-  onDrank,
-  onNotYet,
+  water,
+  doses,
+  onDone,
   onClose,
 }: {
   name: string;
   /** "almost 2 hours" */
   away: string;
+  /** water reminders that went by */
   missed: number;
-  drinkLabel: string;
-  onDrank: () => void;
-  onNotYet: () => void;
+  /** what to offer for water ("1", "2", "3" glasses or "250 ml"...), null: don't ask about water */
+  water: { label: string; ml: number }[] | null;
+  /** medicine doses from the time away nobody has answered yet */
+  doses: AwayDose[];
+  onDone: (waterMl: number, doses: Record<string, "taken" | "missed">) => void;
   onClose: () => void;
 }) {
+  const [ml, setMl] = useState<number | null>(null);
+  const [picked, setPicked] = useState<Record<string, "taken" | "missed">>({});
+  const shown = doses.slice(0, water ? 2 : 3);
+  const glasses = water && water[1]?.label === "1";
   return (
     <Bubble className="welcome-card" label="Welcome back">
       <div className="bubble-kicker">
         <IconDrop size={13} strokeWidth={2.4} /> Welcome back{name ? `, ${name}` : ""}!
       </div>
-      <div className="nudge-title">You were away for {away}</div>
-      <div className="nudge-sub">
-        That's {missed === 1 ? "1 water break" : `${missed} water breaks`} with nothing logged. Had a drink?
-        You can log it now.
-      </div>
+      <div className="nudge-title">Away for {away}</div>
+      {/* (room is tight with medicine rows: the question goes then) */}
+      {doses.length === 0 ? (
+        <div className="nudge-sub">
+          {missed === 1 ? "1 water break" : `${missed} water breaks`} went by. How much did you drink?
+        </div>
+      ) : (
+        <div className="nudge-sub">{water ? "What did you have while away?" : "Did you take your medicine?"}</div>
+      )}
+      {water && (
+        <div className="checkin-row">
+          <span>{glasses ? "Glasses" : "Water"}</span>
+          <div className="seg" role="radiogroup" aria-label="Water while away">
+            {water.map((o) => (
+              <button
+                key={o.ml}
+                role="radio"
+                aria-checked={ml === o.ml}
+                className={ml === o.ml ? "on" : ""}
+                onClick={() => setMl(o.ml)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {shown.map((d) => (
+        <div className="checkin-row" key={d.key}>
+          <span className="checkin-med" title={`${d.name} at ${d.time}`}>
+            <IconPill size={12} strokeWidth={2.4} /> {d.name} <small>{d.time}</small>
+          </span>
+          <div className="seg" role="radiogroup" aria-label={`${d.name} at ${d.time}`}>
+            {(["taken", "missed"] as const).map((s) => (
+              <button
+                key={s}
+                role="radio"
+                aria-checked={picked[d.key] === s}
+                className={picked[d.key] === s ? `on ${s}` : ""}
+                onClick={() => setPicked({ ...picked, [d.key]: s })}
+              >
+                {s === "taken" ? "Taken" : "Missed"}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {doses.length > shown.length && (
+        <div className="checkin-more">+{doses.length - shown.length} more in Settings</div>
+      )}
       <div className="nudge-actions">
-        <button className="btn primary" onClick={onDrank}>
-          {drinkLabel}
-        </button>
-        <button className="btn" onClick={onNotYet}>
-          Not yet
+        <button className="btn primary" onClick={() => onDone(ml ?? 0, picked)}>
+          Done
         </button>
         <button className="btn ghost" onClick={onClose} title="Close" aria-label="Close">
           <IconClose size={15} />

@@ -3,19 +3,21 @@ import { listen } from "@tauri-apps/api/event";
 import { IconCheck, IconClose, IconPill, IconPlus, IconTrash } from "../components/Icons";
 import {
   cleanTimes,
+  closePastDays,
   dosesToday,
   fmtTime,
   loadMedLog,
   loadMeds,
   MAX_MEDS,
   MAX_TIMES,
+  medHistory,
   newMedId,
   saveMeds,
   setDose,
   type Dose,
   type Med,
 } from "../lib/meds";
-import { CHANGED_EVENT } from "../lib/store";
+import { CHANGED_EVENT, dayKey } from "../lib/store";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type Draft = { id: string | null; name: string; times: string[]; note: string };
@@ -38,6 +40,12 @@ export function MedsCard({ now }: { now: number }) {
   const [log, setLog] = useState(loadMedLog);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [removing, setRemoving] = useState<Med | null>(null);
+
+  // a new day (or the first look today): yesterday's unmarked doses count as missed
+  const today = dayKey(new Date(now));
+  useEffect(() => {
+    if (closePastDays()) setLog(loadMedLog());
+  }, [today]);
 
   useEffect(() => {
     const reload = () => {
@@ -68,7 +76,7 @@ export function MedsCard({ now }: { now: number }) {
     store(
       draft.id
         ? meds.map((m) => (m.id === draft.id ? { ...m, name, times, note } : m))
-        : [...meds, { id: newMedId(), name, times, note, on: true }],
+        : [...meds, { id: newMedId(), name, times, note, on: true, since: dayKey() }],
     );
     setDraft(null);
   };
@@ -126,6 +134,7 @@ export function MedsCard({ now }: { now: number }) {
                 {m.times.map(fmtTime).join(" · ")}
                 {m.note && ` · ${m.note}`}
               </small>
+              <MedDots med={m} log={log} now={now} />
             </span>
             <span className="med-actions">
               <button className="link" onClick={() => setDraft({ id: m.id, name: m.name, times: m.times, note: m.note })}>
@@ -254,6 +263,25 @@ export function MedsCard({ now }: { now: number }) {
         </ConfirmDialog>
       )}
     </section>
+  );
+}
+
+/** The last 7 days of one medicine: green all taken, coral something missed, faint no doses. */
+function MedDots({ med, log, now }: { med: Med; log: ReturnType<typeof loadMedLog>; now: number }) {
+  const days = medHistory(med, log, new Date(now));
+  if (days.every((d) => d.total === 0)) return null;
+  return (
+    <span className="med-dots" aria-label="Last 7 days">
+      {days.map((d) => {
+        const kind = d.total === 0 ? "none" : d.taken === d.total ? "all" : d.taken > 0 ? "some" : "missed";
+        const text = d.total === 0 ? "no doses" : `${d.taken} of ${d.total} taken`;
+        return (
+          <span key={d.day} className={`med-dot ${kind}`} title={`${d.label}: ${text}`}>
+            {d.label.slice(0, 1)}
+          </span>
+        );
+      })}
+    </span>
   );
 }
 

@@ -16,17 +16,22 @@ export type Med = {
   note: string;
   /** false: kept in the list but no reminders */
   on: boolean;
+  /** day it was added (YYYY-MM-DD): earlier days don't count as missed */
+  since?: string;
 };
 
-export type DoseState = "taken" | "skipped";
+/** "missed": the user said they didn't take it (e.g. while away); "skipped": closed the reminder */
+export type DoseState = "taken" | "skipped" | "missed";
 /** day (YYYY-MM-DD) -> "medId@HH:MM" -> what happened */
 export type MedLog = Record<string, Record<string, DoseState>>;
 
-export type DoseStatus = DoseState | "due" | "missed" | "later";
+export type DoseStatus = DoseState | "due" | "later";
 export type Dose = { med: Med; time: string; at: number; status: DoseStatus };
 
 const MEDS_KEY = "tumbli.meds";
 const LOG_KEY = "tumbli.medLog";
+/** the last day whose unanswered doses have been marked missed */
+const CLOSED_KEY = "tumbli.medLogClosed";
 const KEEP_DAYS = 30;
 export const MAX_MEDS = 12;
 export const MAX_TIMES = 6;
@@ -58,6 +63,7 @@ export function loadMeds(): Med[] {
       times: cleanTimes(Array.isArray(m.times) ? m.times : []),
       note: typeof m.note === "string" ? m.note : "",
       on: m.on !== false,
+      ...(typeof m.since === "string" ? { since: m.since } : {}),
     }));
 }
 
@@ -85,6 +91,67 @@ export function setDose(medId: string, time: string, state: DoseState | null, no
   for (const d of Object.keys(log)) if (d < cutoff) delete log[d];
   localStorage.setItem(LOG_KEY, JSON.stringify(log));
   void emit(CHANGED_EVENT);
+}
+
+const addDays = (d: Date, n: number) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
+/**
+ * A new day: every dose of the days before today that nobody marked becomes "missed"
+ * (for medicines that were on and already added that day). Runs at midnight and at start,
+ * so days the PC was off count too.
+ */
+export function closePastDays(now = new Date()) {
+  const yesterday = dayKey(addDays(now, -1));
+  const last = localStorage.getItem(CLOSED_KEY);
+  if (last === null || last >= yesterday) {
+    if (last === null) localStorage.setItem(CLOSED_KEY, yesterday); // first run: nothing before it
+    return false;
+  }
+  const meds = loadMeds().filter((m) => m.on);
+  const log = loadMedLog();
+  let changed = false;
+  for (let i = KEEP_DAYS; i >= 1; i--) {
+    const day = dayKey(addDays(now, -i));
+    if (day <= last) continue;
+    for (const m of meds) {
+      if (m.since && m.since > day) continue;
+      for (const time of m.times) {
+        const k = doseKey(m.id, time);
+        if (!log[day]?.[k]) {
+          log[day] = { ...(log[day] ?? {}), [k]: "missed" };
+          changed = true;
+        }
+      }
+    }
+  }
+  if (changed) localStorage.setItem(LOG_KEY, JSON.stringify(log));
+  localStorage.setItem(CLOSED_KEY, yesterday);
+  if (changed) void emit(CHANGED_EVENT);
+  return changed;
+}
+
+export type DayDots = { day: string; label: string; taken: number; total: number };
+
+/** One medicine's last `days` days before today: how many of its doses were taken each day. */
+export function medHistory(med: Med, log: MedLog, now = new Date(), days = 7): DayDots[] {
+  const out: DayDots[] = [];
+  for (let i = days; i >= 1; i--) {
+    const d = addDays(now, -i);
+    const day = dayKey(d);
+    const entries = med.times.map((t) => log[day]?.[doseKey(med.id, t)]);
+    const counted = entries.filter(Boolean).length;
+    out.push({
+      day,
+      label: d.toLocaleDateString(undefined, { weekday: "short" }),
+      taken: entries.filter((e) => e === "taken").length,
+      total: med.since && med.since > day ? 0 : counted,
+    });
+  }
+  return out;
 }
 
 /** "HH:MM" today, as ms since epoch */
@@ -130,6 +197,14 @@ export function dueDoses(meds: Med[], log: MedLog, now = new Date(), snoozedUnti
   const t = now.getTime();
   return dosesToday(meds, log, now).filter(
     (d) => d.status === "due" && (snoozedUntil[doseKey(d.med.id, d.time)] ?? 0) <= t,
+  );
+}
+
+/** Today's doses from `from` to `to` (ms) nobody has answered yet: what came up while the user was away. */
+export function dosesBetween(meds: Med[], log: MedLog, from: number, to: number) {
+  const today = log[dayKey(new Date(to))] ?? {};
+  return dosesToday(meds, log, new Date(to)).filter(
+    (d) => d.at >= from && d.at <= to && !today[doseKey(d.med.id, d.time)],
   );
 }
 

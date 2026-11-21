@@ -1332,3 +1332,79 @@ body,
     transition: none;
   }
 }
+
+/* ---------- welcome back: a quick check-in ---------- */
+.welcome-card {
+  margin-bottom: 4px;
+  padding-top: 9px;
+  padding-bottom: 10px;
+}
+.welcome-card .nudge-sub {
+  margin: 0 0 5px;
+}
+.welcome-card .nudge-title {
+  margin-top: 1px;
+  font-size: 15px;
+}
+.checkin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.checkin-med {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.checkin-med svg {
+  flex: none;
+  color: var(--med, #9b7bff);
+}
+.checkin-med small {
+  color: var(--muted);
+  font-weight: 600;
+}
+.seg {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--btn);
+}
+.seg button {
+  border: none;
+  border-radius: 8px;
+  padding: 3px 7px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.seg button.on {
+  background: var(--primary, var(--accent));
+  color: var(--on-primary, #fff);
+}
+.seg button.on.taken {
+  background: #20a47f;
+  color: #fff;
+}
+.seg button.on.missed {
+  background: var(--coral, #ff7466);
+  color: #fff;
+}
+.checkin-more {
+  margin: -1px 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+}

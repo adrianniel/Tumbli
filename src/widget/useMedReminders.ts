@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { doseKey, dueDoses, loadMedLog, loadMeds, setDose, type Dose } from "../lib/meds";
-import { CHANGED_EVENT } from "../lib/store";
+import { CHANGED_EVENT, loadLastActive } from "../lib/store";
+import { AWAY_MIN } from "../lib/schedule";
 
 const TICK_MS = 5000;
 
@@ -38,7 +39,9 @@ export function useMedReminders({
       });
       return;
     }
-    if (doses.length && cb.current.canShow()) {
+    // the user hasn't been around for a while: the welcome back asks about these when they return
+    const away = Date.now() - loadLastActive() >= AWAY_MIN * 60_000;
+    if (doses.length && !away && cb.current.canShow()) {
       setDue(doses);
       cb.current.onShow();
     }
