@@ -9,28 +9,30 @@ Export: 1080×1920, 30 fps, the first ad's music style (upbeat, ~118 BPM) with a
 Tumbli moment and a whoosh on each feature title. The voice-over is cut into its phrases at the
 pauses and each one is placed on its shot.
 
-## Voice-over (ElevenLabs)
+## Voice-over (ElevenLabs v3)
 
-Same voice as the first ad, upbeat and warm, like announcing something you're excited about.
-Generate it as **one take**, with a short pause between the lines (a blank line, or
-`<break time="0.6s" />` if the model supports it). Save it as
-`store-assets/teaser/source/voice over.mp3`.
+Same voice as the first ad. The [tags] are ElevenLabs v3 audio tags for the delivery. Generate it
+as **one take**, with the blank lines as short pauses. Save it as
+`store-assets/teaser/source/voice over.mp3`. The version number is never said: it is on screen
+(the "v0.1.4" badge and the update bubble).
 
-> Introducing... the new Tumbli. Version zero point one point four!
->
-> So, what's new?
->
-> First up: Auto reminders. Tumbli paces your water breaks, so you always hit your goal before the day ends.
->
-> Next: medicine reminders. Add your meds or vitamins, and Tumbli reminds you right on time.
->
-> Then there's Peek. Tuck Tumbli into the edge of your screen... and it pops out when it's time to drink.
->
-> And when you're back from a break, Tumbli welcomes you back, so you can log what you had.
->
-> Get the new Tumbli on November twenty-third. Stay hydrated!
+```
+[excited, warm] Introducing... the new Tumbli!
 
-About 28 s at a natural pace. The version and the date are spelled out so they're read right.
+[curious, playful] So, what's new?
+
+[upbeat] First up: Auto reminders. Tumbli paces your water breaks, so you always hit your goal before the day ends.
+
+[warm, caring] Next: medicine reminders. Add your meds or vitamins, and Tumbli reminds you right on time.
+
+[playful] Then there's Peek. Tuck Tumbli into the edge of your screen... [softly] and it pops out when it's time to drink.
+
+[friendly] And when you're back from a break, Tumbli welcomes you back, so you can log what you had.
+
+[excited, smiling] Get the new Tumbli on November twenty-third. [warm] Stay hydrated!
+```
+
+About 27 s at a natural pace. The date is spelled out so it's read as a date.
 
 ## Shot list
 
