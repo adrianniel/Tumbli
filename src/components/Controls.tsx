@@ -149,6 +149,10 @@ export const INTERVAL_CHIPS = [15, 20, 30, 45, 60, 90, 120].map((m) => ({
   label: m < 60 ? `${m}m` : m === 90 ? "1½h" : `${m / 60}h`,
 }));
 
+/** "Remind me every" chip value for Auto (Tumbli paces the reminders to the goal) */
+export const AUTO_CHIP = 0;
+export const REMIND_CHIPS = [{ value: AUTO_CHIP, label: "Auto" }, ...INTERVAL_CHIPS];
+
 /** A glass or bottle drawn at a height that matches its size. */
 export function Vessel({ kind, ml, max }: { kind: "glass" | "tumbler"; ml: number; max: number }) {
   const h = Math.round(24 + (ml / max) * 34);

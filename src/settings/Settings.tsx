@@ -3,7 +3,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { getAutostart, setAutostart as applyAutostart, type AutostartState } from "../lib/autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Tumbler } from "../components/Tumbler";
-import { Chips, HourRange, hourLabel, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
+import { AUTO_CHIP, Chips, HourRange, hourLabel, REMIND_CHIPS, SizePicker } from "../components/Controls";
 import {
   IconBottle,
   IconBulb,
@@ -23,7 +23,7 @@ import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
 import { factOfTheDay, greeting } from "../lib/facts";
-import { reminderStatus, sipFor, type ReminderStatus } from "../lib/schedule";
+import { autoPace, reminderStatus, sipFor, type ReminderStatus } from "../lib/schedule";
 import {
   canUndo,
   CHANGED_EVENT,
@@ -205,7 +205,7 @@ export function Settings() {
   const glasses = Math.floor(doneMl / s.glassMl);
   const goalG = goalGlasses(s);
   const level = loadLevel(s);
-  const sip = sipFor(s);
+  const sip = sipFor(s, doneMl, new Date(now));
   const fact = factOfTheDay();
   const lastWeek = recapFor(history, s.goalMl);
   const act = (f: () => unknown) => {
@@ -431,13 +431,20 @@ export function Settings() {
           <span className="row-label">Remind me every</span>
           <Chips
             label="Remind me every"
-            options={INTERVAL_CHIPS}
-            value={s.intervalMin}
+            options={REMIND_CHIPS}
+            value={s.autoInterval ? AUTO_CHIP : s.intervalMin}
             onChange={(v) => {
-              update({ intervalMin: v });
+              update(v === AUTO_CHIP ? { autoInterval: true } : { autoInterval: false, intervalMin: v });
               window.setTimeout(() => setNow(Date.now()), 400); // after the widget re-times it
             }}
           />
+          {s.autoInterval && (
+            <small>
+              Tumbli spaces your reminders so you reach your goal before {hourLabel(s.endHour)}
+              {doneMl < s.goalMl && <>, about every {autoPace(s, doneMl, new Date(now)).intervalMin} min right now</>}.
+              Skip one and the next come a bit sooner.
+            </small>
+          )}
           {loadNextReminder() > 0 && (
             <small className="reminder-status" aria-live="polite">
               {statusText(

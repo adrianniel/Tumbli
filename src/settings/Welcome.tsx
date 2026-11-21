@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Tumbler } from "../components/Tumbler";
 import { Intro } from "./Intro";
-import { Chips, HourRange, INTERVAL_CHIPS, SizePicker } from "../components/Controls";
+import { AUTO_CHIP, Chips, HourRange, REMIND_CHIPS, SizePicker } from "../components/Controls";
 import {
   IconBottle,
   IconChair,
@@ -155,7 +155,7 @@ export function Welcome({ initial, onDone }: Props) {
 
   const plan = useMemo(() => planFor(p), [p]);
   // the result screen can fine-tune what the check suggested
-  const [tweak, setTweak] = useState<{ goalMl?: number; intervalMin?: number }>({});
+  const [tweak, setTweak] = useState<{ goalMl?: number; intervalMin?: number; auto?: boolean }>({});
   const tumblerMode = p.mode === "tumbler";
   // glass mode: whole glasses; tumbler mode: liters in 100 ml steps
   const suggestedMl = tumblerMode
@@ -163,7 +163,9 @@ export function Welcome({ initial, onDone }: Props) {
     : Math.max(1, Math.round(plan.totalMl / p.glassMl)) * p.glassMl;
   const goalMl = tweak.goalMl ?? suggestedMl;
   const glasses = Math.round(goalMl / p.glassMl);
+  // new users start on Auto: Tumbli paces the reminders so the goal is reached in time
   const intervalMin = tweak.intervalMin ?? plan.intervalMin;
+  const auto = tweak.auto ?? true;
 
   const stepName: StepName = STEPS[step];
   const total = STEPS.length - 1; // the intro doesn't count
@@ -199,6 +201,7 @@ export function Welcome({ initial, onDone }: Props) {
       tumblerMl: p.tumblerMl,
       goalMl,
       intervalMin,
+      autoInterval: auto,
       startHour: plan.startHour,
       endHour: plan.endHour,
     };
@@ -475,9 +478,11 @@ export function Welcome({ initial, onDone }: Props) {
               <span className="row-label">Remind me every</span>
               <Chips
                 label="Remind me every"
-                options={INTERVAL_CHIPS}
-                value={intervalMin}
-                onChange={(v) => setTweak({ ...tweak, intervalMin: v })}
+                options={REMIND_CHIPS}
+                value={auto ? AUTO_CHIP : intervalMin}
+                onChange={(v) =>
+                  setTweak(v === AUTO_CHIP ? { ...tweak, auto: true } : { ...tweak, auto: false, intervalMin: v })
+                }
               />
             </div>
             <div className="row">

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { reminderStatus, rescheduled, shouldNudge, sipFor, withinActiveHours } from "./schedule";
+import {
+  autoPace,
+  currentInterval,
+  minutesLeft,
+  reminderStatus,
+  rescheduled,
+  shouldNudge,
+  sipFor,
+  withinActiveHours,
+} from "./schedule";
 
 const at = (h: number, m = 0) => new Date(2026, 10, 18, h, m);
 
@@ -98,5 +107,70 @@ describe("reminderStatus", () => {
     expect(reminderStatus({ ...base, pausedUntil: at(11).getTime() })).toEqual({ kind: "paused", until: at(11).getTime() });
     expect(reminderStatus({ ...base, doneMl: 2000 })).toEqual({ kind: "goal" });
     expect(reminderStatus({ ...base, now: at(23) })).toEqual({ kind: "off-hours", startHour: 8 });
+  });
+});
+
+describe("minutesLeft", () => {
+  const day = { startHour: 8, endHour: 20 };
+  it("counts down to the end of the active hours", () => {
+    expect(minutesLeft(day, at(18, 30))).toBe(90);
+  });
+  it("is the whole next window outside the active hours", () => {
+    expect(minutesLeft(day, at(22))).toBe(12 * 60);
+  });
+  it("crosses midnight for overnight hours", () => {
+    expect(minutesLeft({ startHour: 20, endHour: 4 }, at(23))).toBe(5 * 60);
+  });
+  it("runs to midnight when reminders are on all day", () => {
+    expect(minutesLeft({ startHour: 0, endHour: 0 }, at(21))).toBe(3 * 60);
+  });
+});
+
+describe("autoPace", () => {
+  const glass = {
+    mode: "glass" as const,
+    goalMl: 2000,
+    glassMl: 250,
+    tumblerMl: 750,
+    intervalMin: 120,
+    startHour: 8,
+    endHour: 20,
+    autoInterval: true,
+  };
+  it("spaces a glass per reminder over the day", () => {
+    // 8 glasses over 11.5 h (done 30 min early): every 85 min
+    expect(autoPace(glass, 0, at(8)).intervalMin).toBe(85);
+  });
+  it("brings reminders closer when the user falls behind", () => {
+    // 6 glasses left with 3.5 h to go: every 35 min
+    expect(autoPace(glass, 500, at(16)).intervalMin).toBe(35);
+  });
+  it("spaces them out after drinking ahead", () => {
+    expect(autoPace(glass, 1750, at(12)).intervalMin).toBe(120);
+  });
+  it("never goes below 15 min; tumbler sips get bigger instead", () => {
+    const tumbler = { ...glass, mode: "tumbler" as const };
+    const p = autoPace(tumbler, 0, at(18)); // 2 L in 2 h
+    expect(p.intervalMin).toBe(15);
+    expect(p.sipMl).toBe(330); // 6 reminders fit before the 30 min buffer: 2 L / 6
+    const late = autoPace(tumbler, 0, at(19, 30)); // 2 L in 30 min
+    expect(late.intervalMin).toBe(15);
+    expect(late.sipMl).toBe(750); // capped at the tumbler
+  });
+  it("beats a 2 h interval that would miss the goal", () => {
+    // the user's case: 2 h reminders fit only 6 glasses into 8 am - 8 pm
+    const reminders = (iv: number) => Math.floor((12 * 60) / iv);
+    expect(reminders(120) * 250).toBeLessThan(2000);
+    expect(reminders(autoPace(glass, 0, at(8)).intervalMin) * 250).toBeGreaterThanOrEqual(2000);
+  });
+});
+
+describe("currentInterval", () => {
+  const s = { goalMl: 2000, tumblerMl: 750, intervalMin: 120, startHour: 8, endHour: 20 };
+  it("uses the chosen interval when Auto is off", () => {
+    expect(currentInterval(s, 0, at(8))).toBe(120);
+  });
+  it("uses Auto's pace when it is on", () => {
+    expect(currentInterval({ ...s, autoInterval: true }, 0, at(8))).toBe(85);
   });
 });

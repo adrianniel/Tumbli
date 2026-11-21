@@ -115,7 +115,7 @@ export function Widget() {
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
 
   const { side, startDrag } = useDocking(mode, () => {
-    reminders.dismiss(settings.intervalMin);
+    reminders.dismiss();
     setFact(null);
   });
 
@@ -124,7 +124,7 @@ export function Widget() {
   remindersRef.current = reminders;
   useEffect(() => {
     const un = listen(TOUR_EVENT, () => {
-      remindersRef.current.dismiss(loadSettings().intervalMin);
+      remindersRef.current.dismiss();
       setFact(null);
       setCheer(null);
       touring.current = true;
@@ -141,7 +141,7 @@ export function Widget() {
     touring.current = false;
     setTour(null);
     // the first reminder comes one interval after the tour (15 s in dev)
-    reminders.scheduleIn(import.meta.env.DEV ? 15_000 : settings.intervalMin * 60_000);
+    reminders.scheduleIn(import.meta.env.DEV ? 15_000 : reminders.intervalNow() * 60_000);
   };
   const nextTour = () => {
     if (tour === null) return;
@@ -175,7 +175,7 @@ export function Widget() {
 
   // ---------- drinking ----------
   const tumblerMode = settings.mode === "tumbler";
-  const sipMl = sipFor(settings);
+  const sipMl = sipFor(settings, doneMl);
 
   const cheerUp = (text: string) => {
     const id = Date.now();
@@ -232,7 +232,7 @@ export function Widget() {
   const afterDrink = (before: number, r: DrinkResult) => {
     setDoneMl(r.total);
     if (r.level >= 0) setLevel(r.level);
-    reminders.dismiss(settings.intervalMin);
+    reminders.dismiss();
     setPlusOne(tumblerMode ? `+${r.drank} ml` : "+1");
     setGulping(true);
     window.setTimeout(() => {
@@ -369,7 +369,7 @@ export function Widget() {
           onDrink={drink}
           onRefill={doRefill}
           onSnooze={() => reminders.dismiss(SNOOZE_MIN)}
-          onSkip={() => reminders.dismiss(settings.intervalMin)}
+          onSkip={() => reminders.dismiss()}
         />
       )}
 

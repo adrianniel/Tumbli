@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { rescheduled, shouldNudge } from "../lib/schedule";
+import { currentInterval, rescheduled, shouldNudge } from "../lib/schedule";
 import { loadPausedUntil, pauseEnd, saveNextReminder, savePausedUntil, todayMl, type Settings } from "../lib/store";
 import { win } from "./windowing";
 
@@ -32,11 +32,18 @@ export function useReminders({
   const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
   const [now, setNow] = useState(() => Date.now());
 
+  /** minutes until the next reminder: the chosen interval, or Auto's pace for what is left today */
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const intervalNow = () => currentInterval(settingsRef.current, todayMl(), new Date());
+
   // in `tauri dev` the first reminder comes after 15 s so the pop-up is easy to test
-  const nextAt = useRef(Date.now() + (import.meta.env.DEV ? 15_000 : settings.intervalMin * 60_000));
+  const nextAt = useRef(Date.now() + (import.meta.env.DEV ? 15_000 : intervalNow() * 60_000));
   /** when the current countdown started, to re-time it if the interval changes */
   const startedAt = useRef(Date.now());
-  const interval = useRef(settings.intervalMin);
+  const { autoInterval, intervalMin, goalMl, startHour, endHour, mode, glassMl, tumblerMl } = settings;
+  const pace = [autoInterval, intervalMin, goalMl, startHour, endHour, mode, glassMl, tumblerMl].join();
+  const paceRef = useRef(pace);
   const hidden = useRef(false);
   const lastDay = useRef(new Date().toDateString());
   const cb = useRef({ onNewDay, canNudge, onNudge });
@@ -51,14 +58,14 @@ export function useReminders({
 
   useEffect(() => saveNextReminder(nextAt.current), []);
 
-  // "Remind me every" changed in settings: re-time the running countdown right away,
-  // instead of waiting out the old interval first
+  // "Remind me every" (or something Auto paces by: goal, hours, glass) changed in settings:
+  // re-time the running countdown right away, instead of waiting out the old interval first
   useEffect(() => {
-    if (settings.intervalMin === interval.current) return;
-    interval.current = settings.intervalMin;
+    if (pace === paceRef.current) return;
+    paceRef.current = pace;
     if (nudging) return; // closing the reminder schedules with the new interval
-    setNext(rescheduled(startedAt.current, settings.intervalMin, Date.now()), false);
-  }, [settings.intervalMin, nudging]);
+    setNext(rescheduled(startedAt.current, intervalNow(), Date.now()), false);
+  }, [pace, nudging]);
 
   // tray: pause / resume
   useEffect(() => {
@@ -124,11 +131,13 @@ export function useReminders({
   return {
     nudging,
     paused: pausedUntil > now,
-    /** close the reminder and ask again in `minutes` */
-    dismiss: (minutes: number) => {
+    /** close the reminder and ask again in `minutes` (default: the next interval) */
+    dismiss: (minutes = intervalNow()) => {
       setNudging(false);
       setNext(Date.now() + minutes * 60_000);
     },
+    /** minutes until the next reminder if one were answered now */
+    intervalNow,
     /** open a reminder right now (dev preview) */
     forceNudge: () => setNudging(true),
     /** ask again after `ms` without closing anything */

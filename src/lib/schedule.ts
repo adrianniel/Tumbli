@@ -34,14 +34,63 @@ export function shouldNudge({ now, nextAt, settings, doneMl, busy, pausedUntil =
   );
 }
 
+type PaceSettings = Pick<Settings, "goalMl" | "tumblerMl" | "intervalMin" | "startHour" | "endHour"> &
+  Partial<Pick<Settings, "autoInterval" | "mode" | "glassMl">>;
+
+const clampSip = (ml: number, tumblerMl: number) => Math.max(50, Math.min(tumblerMl, Math.round(ml / 10) * 10));
+
 /**
  * How much to drink at each reminder: the daily goal spread over the reminders
  * that fit into the active hours, rounded to 10 ml and never more than the tumbler.
+ * With Auto on, what is still left today spread over the reminders that are left.
  */
-export function sipFor(s: Pick<Settings, "goalMl" | "tumblerMl" | "intervalMin" | "startHour" | "endHour">) {
+export function sipFor(s: PaceSettings, doneMl = 0, now = new Date()) {
+  if (s.autoInterval) return autoPace(s, doneMl, now).sipMl;
   const reminders = Math.max(1, Math.floor(activeMinutes(s.startHour, s.endHour) / s.intervalMin));
-  const ml = Math.round(s.goalMl / reminders / 10) * 10;
-  return Math.max(50, Math.min(s.tumblerMl, ml));
+  return clampSip(s.goalMl / reminders, s.tumblerMl);
+}
+
+/** Auto never reminds more often than this, or less often than AUTO_MAX_MIN. */
+export const AUTO_MIN_MIN = 15;
+export const AUTO_MAX_MIN = 120;
+/** Auto aims to be done this long before the active hours end, so a late skip can still be made up. */
+const AUTO_BUFFER_MIN = 30;
+
+/**
+ * Minutes from `now` until today's active hours end. Outside the active hours it is the
+ * whole next window. All-day hours (start === end) run until midnight, when the day resets.
+ */
+export function minutesLeft(s: Pick<Settings, "startHour" | "endHour">, now = new Date()) {
+  if (!withinActiveHours(s, now)) return activeMinutes(s.startHour, s.endHour);
+  const end = new Date(now);
+  end.setHours(s.startHour === s.endHour ? 24 : s.endHour, 0, 0, 0);
+  if (end.getTime() <= now.getTime()) end.setDate(end.getDate() + 1); // overnight range
+  return Math.max(1, Math.round((end.getTime() - now.getTime()) / 60_000));
+}
+
+/**
+ * Auto mode: how often to remind and how much to drink each time so the rest of
+ * today's goal fits into the time that is left. A glass (or about 250 ml from a
+ * tumbler) per reminder; if that would mean reminders closer than 15 min, the
+ * sips get bigger instead. Worked out again after every reminder, so skipping one
+ * brings the next ones a little closer, and drinking ahead spaces them out.
+ */
+export function autoPace(s: PaceSettings, doneMl: number, now = new Date()) {
+  const comfy = s.mode === "glass" && s.glassMl ? s.glassMl : Math.min(s.tumblerMl, 250);
+  const leftMl = s.goalMl - doneMl;
+  if (leftMl <= 0) return { intervalMin: AUTO_MAX_MIN, sipMl: clampSip(comfy, s.tumblerMl) };
+  const total = minutesLeft(s, now);
+  const time = total > AUTO_BUFFER_MIN * 2 ? total - AUTO_BUFFER_MIN : total;
+  const wanted = Math.max(1, Math.ceil(leftMl / comfy));
+  const raw = time / wanted;
+  const intervalMin = Math.min(AUTO_MAX_MIN, Math.max(AUTO_MIN_MIN, Math.floor(raw / 5) * 5));
+  const fits = Math.max(1, Math.min(wanted, Math.floor(time / intervalMin)));
+  return { intervalMin, sipMl: clampSip(leftMl / fits, s.tumblerMl) };
+}
+
+/** Minutes until the next reminder after one is answered: the chosen interval, or Auto's pace. */
+export function currentInterval(s: PaceSettings, doneMl: number, now = new Date()) {
+  return s.autoInterval ? autoPace(s, doneMl, now).intervalMin : s.intervalMin;
 }
 
 /**

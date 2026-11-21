@@ -14,7 +14,9 @@ export type Settings = {
   glassMl: number;
   /** size of the user's real tumbler / bottle, ml; Tumbli mirrors it */
   tumblerMl: number;
-  intervalMin: number; // minutes between reminders
+  intervalMin: number; // minutes between reminders (when autoInterval is off)
+  /** Tumbli spaces the reminders itself so the goal is reached before the active hours end */
+  autoInterval: boolean;
   startHour: number; // reminders only between startHour..endHour (local time)
   endHour: number;
   sound: boolean;
@@ -47,6 +49,7 @@ export const defaultSettings: Settings = {
   glassMl: 250,
   tumblerMl: 750,
   intervalMin: 45,
+  autoInterval: false,
   startHour: 8,
   endHour: 20,
   sound: true,
