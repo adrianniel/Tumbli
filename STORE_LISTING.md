@@ -125,7 +125,7 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 Version 0.1.4 (paste into "What's new in this version"):
 
-> New: Auto reminders that pace themselves to your goal, medicine reminders with a 2-week log, a peek mode at the screen edge, a smarter hydration check, and a welcome back after time away.
+> New: Auto reminders that pace themselves to your goal, medicine reminders with a 2-week log, a peek mode at the screen edge, a smarter hydration check, and a welcome back after time away. Tumbli is also much lighter on your PC: far less CPU and battery.
 
 (0.1.4: an "Auto" choice in "Remind me every" (the default for new users), and a Medicines card in
 Settings: add a medicine with its times, Tumbli asks at each one, today's doses can be ticked off.

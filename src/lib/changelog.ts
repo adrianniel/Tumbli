@@ -38,6 +38,10 @@ export const CHANGELOG: Release[] = [
         text: "Achievements fold into a neat shelf, with new time and date pickers that match Tumbli's look.",
       },
       {
+        title: "Lighter on your PC",
+        text: "Tumbli now rests its animations while it waits, so it uses far less CPU and battery through the day.",
+      },
+      {
         title: "What's new",
         text: "Settings now show Tumbli's version and what changed in each update.",
       },
