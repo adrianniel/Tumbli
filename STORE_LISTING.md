@@ -44,25 +44,22 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 ## Features (up to 20, each max 200 characters)
 
 1. A cute animated water bottle that floats on your desktop and docks to the left or right edge of your screen
-2. A personal daily goal from a 30-second check-in (age, weight, activity and weather)
-3. Track by the glass, or by your own tumbler or bottle that Tumbli mirrors
-4. Fills up as you drink toward your daily goal
-5. Gentle reminders every 15 minutes to 2 hours, or on Auto: paced so you reach your goal before your day ends
-6. Log a drink, snooze or skip with one click
-7. Log a drink from any app with a keyboard shortcut (Ctrl+Alt+W)
-8. Stays quiet while you're away and hides during fullscreen games, videos and slides
-9. Pause reminders for an hour or until tomorrow from the tray icon
-10. Daily streaks, today at a glance and a 7-day history chart
-11. A recap of your week every Monday
+2. A 30-second hydration check (age, weight, activity, weather) recommends your goal: glasses a day, or liters and tumbler refills
+3. Track by the glass, or by your own tumbler or bottle: Tumbli fills up or empties along with yours
+4. Gentle reminders every 15 minutes to 2 hours, or on Auto: paced so you reach your goal before your day ends
+5. Log a drink, snooze or skip with one click, or from any app with a keyboard shortcut (Ctrl+Alt+W)
+6. Medicine and vitamin reminders on the days and times you choose, until a date if you like, with a two-week log
+7. Drag Tumbli past the screen edge and it peeks out from the side, coming out only when it has something to say
+8. Back from a break or a closed lid? Log the water and medicine you had while you were away
+9. Stays quiet while you're away and hides during fullscreen games, videos and slides
+10. Pause reminders for an hour or until tomorrow from the tray icon
+11. Daily streaks, today at a glance, a 7-day chart and a recap of your week every Monday
 12. Achievements that unlock outfits for Tumbli
 13. Water facts and trivia: just click Tumbli
 14. Dark mode by default, light mode with one switch
 15. Starts with Windows (optional)
-16. Send feedback right from the app
+16. See what's new after every update, and send feedback right from the app
 17. No account, no ads, no data collection
-18. Medicine and vitamin reminders on the days and times you set, with a two-week log
-19. Drag Tumbli past the screen edge and it peeks out from the side until it has something to say
-20. Back after time away, Tumbli tells you how long you were gone and how many water breaks you missed
 
 ## Search terms (max 7)
 
