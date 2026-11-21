@@ -9,7 +9,7 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { availableMonitors, getCurrentWindow, LogicalSize, PhysicalPosition } from "@tauri-apps/api/window";
-import { anchorOf, dockTo, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
+import { anchorOf, dockTo, pastEdge, placeAt, snapToEdge, type Anchor, type Side } from "../lib/dock";
 
 /** The part of the window (logical px) each thing the widget can be doing needs. */
 export const SIZES = {
@@ -25,6 +25,41 @@ const FRAME = { w: 350, h: 240 };
 
 const POS_KEY = "tumbli.widget.anchor.v3"; // docked side + edge + bottom, physical px
 const EDGE_MARGIN = 2; // logical px between the window and the screen edge
+const PEEK_KEY = "tumbli.widget.peek";
+/** dropped this far (logical px) past the screen edge, Tumbli tucks into it */
+const PEEK_DROP = 16;
+/** share of Tumbli's width hidden past the edge while it peeks */
+const PEEK_HIDE = 0.45;
+
+/** Where the window sits when docked (physical px, top-left). */
+export type Home = { x: number; y: number };
+
+/** Is Tumbli tucked into the screen edge, peeking out? */
+export const loadPeek = () => localStorage.getItem(PEEK_KEY) === "1";
+const savePeek = (on: boolean) => localStorage.setItem(PEEK_KEY, on ? "1" : "0");
+
+let slideGen = 0;
+/** Glide the window to (x, y). A newer slide cancels one still running. */
+export async function slideTo(x: number, y: number, steps = 7) {
+  const gen = ++slideGen;
+  const from = await win.outerPosition().catch(() => null);
+  if (!from || (from.x === x && from.y === y)) return;
+  for (let i = 1; i <= steps; i++) {
+    if (gen !== slideGen) return;
+    const t = 1 - Math.pow(1 - i / steps, 3); // ease-out
+    await win
+      .setPosition(new PhysicalPosition(Math.round(from.x + (x - from.x) * t), Math.round(from.y + (y - from.y) * t)))
+      .catch(() => {});
+    await new Promise((r) => setTimeout(r, 16));
+  }
+}
+
+/** The window position that hides part of Tumbli past the edge it is docked to. */
+export async function peekPos(home: Home, side: Side): Promise<Home> {
+  const sf = await win.scaleFactor();
+  const shift = Math.round(SIZES.idle.w * PEEK_HIDE * sf) + Math.round(EDGE_MARGIN * sf);
+  return { x: home.x + (side === "right" ? shift : -shift), y: home.y };
+}
 
 export const win = getCurrentWindow();
 
@@ -83,14 +118,19 @@ function tumbliIn(win: { x: number; y: number; w: number; h: number }, side: Sid
  * After a drag: slide Tumbli to the nearest side edge, with a little gap, and keep
  * the whole window on screen so a speech bubble always fits. `onSide` runs as soon
  * as the side is known, so Tumbli can move to the other end of the window first.
+ * Dropped past the screen edge, Tumbli tucks into it and peeks out instead.
  */
-export async function snapAfterDrag(side: Side, onSide: (side: Side) => void): Promise<Side> {
+export async function snapAfterDrag(
+  side: Side,
+  onSide: (side: Side) => void,
+): Promise<{ side: Side; home: Home; peek: boolean }> {
   const sf = await win.scaleFactor();
   const margin = Math.round(EDGE_MARGIN * sf);
   const areas = await workAreas();
   let from = await windowRect();
   const tumbli = tumbliIn(from, side, sf);
   const newSide = snapToEdge(tumbli, areas, margin).side;
+  const peek = pastEdge(tumbli, newSide, areas, Math.round(PEEK_DROP * sf));
 
   if (newSide !== side) {
     // Tumbli is drawn at the other end of the window on this side: shift the
@@ -100,22 +140,20 @@ export async function snapAfterDrag(side: Side, onSide: (side: Side) => void): P
     await win.setPosition(new PhysicalPosition(from.x, from.y));
   }
   const to = dockTo({ ...from, y: tumbli.y + tumbli.h - from.h }, newSide, areas, margin);
-
-  const steps = 9;
-  for (let i = 1; i <= steps; i++) {
-    const t = 1 - Math.pow(1 - i / steps, 3); // ease-out
-    await win.setPosition(
-      new PhysicalPosition(Math.round(from.x + (to.x - from.x) * t), Math.round(from.y + (to.y - from.y) * t)),
-    );
-    await new Promise((r) => setTimeout(r, 16));
-  }
+  const home = { x: to.x, y: to.y };
+  const target = peek ? await peekPos(home, newSide) : home;
+  await slideTo(target.x, target.y, 9);
   localStorage.setItem(POS_KEY, JSON.stringify(anchorOf(to, newSide)));
-  return newSide;
+  savePeek(peek);
+  return { side: newSide, home, peek };
 }
 
 /** Put the widget where it was last docked (or bottom-right the first time). */
-export async function placeInitially(reset = false): Promise<Side> {
-  if (reset) localStorage.removeItem(POS_KEY);
+export async function placeInitially(reset = false): Promise<{ side: Side; home: Home }> {
+  if (reset) {
+    localStorage.removeItem(POS_KEY);
+    savePeek(false);
+  }
   const sf = await win.scaleFactor();
   const w = Math.round(FRAME.w * sf);
   const h = Math.round(FRAME.h * sf);
@@ -129,12 +167,12 @@ export async function placeInitially(reset = false): Promise<Side> {
   const areas = await workAreas();
   if (!areas.length) {
     await setBounds(0, 0, w, h);
-    return "right";
+    return { side: "right", home: { x: 0, y: 0 } };
   }
   const a = areas[0];
   const start = saved ? { ...placeAt(saved, w, h), w, h } : { x: a.x + a.w - w, y: a.y + a.h - h, w, h };
   // docking also pulls back a spot that is no longer on any monitor
   const to = dockTo(start, saved?.side ?? "right", areas, Math.round(EDGE_MARGIN * sf));
   await setBounds(to.x, to.y, w, h);
-  return to.side;
+  return { side: to.side, home: { x: to.x, y: to.y } };
 }

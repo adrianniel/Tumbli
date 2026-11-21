@@ -2,17 +2,29 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Side } from "../lib/dock";
-import { placeInitially, showMode, snapAfterDrag, win, type WindowMode } from "./windowing";
+import { loadPeek, peekPos, placeInitially, showMode, slideTo, snapAfterDrag, win, type Home, type WindowMode } from "./windowing";
 
 /**
  * Keeps the widget window docked to a screen edge: first placement, snapping after a
  * drag, the tray's "Reset widget position", and showing the right part of the
  * window whenever the mode changes.
+ *
+ * Peek: dropped past the screen edge, Tumbli tucks half of itself into the edge while
+ * idle. Anything else (hover buttons, a speech bubble, a cheer) brings it all the way
+ * out, and it tucks back in afterwards. Only dragging it out of the edge ends peeking.
  */
-export function useDocking(mode: WindowMode, onReset: () => void) {
+export function useDocking(mode: WindowMode, onReset: () => void, onPeek: () => void) {
   const [side, setSide] = useState<Side>("right");
   const [placed, setPlaced] = useState(false);
+  const [peek, setPeek] = useState(loadPeek);
+  const home = useRef<Home | null>(null);
+  /** the window is shifted into the edge right now */
+  const tucked = useRef(false);
+  const peekRef = useRef(onPeek);
+  peekRef.current = onPeek;
   const userDragging = useRef(false);
+  const snapping = useRef(false);
+  const [settled, setSettled] = useState(0);
   const resetRef = useRef(onReset);
   resetRef.current = onReset;
   const modeRef = useRef(mode);
@@ -22,9 +34,12 @@ export function useDocking(mode: WindowMode, onReset: () => void) {
 
   /** place, show only Tumbli's part, then make the window visible */
   const place = async (reset: boolean) => {
-    const s = await placeInitially(reset);
-    setSide(s);
-    await showMode(modeRef.current, s);
+    const p = await placeInitially(reset);
+    home.current = p.home;
+    tucked.current = false;
+    if (reset) setPeek(false);
+    setSide(p.side);
+    await showMode(modeRef.current, p.side);
     await win.show();
   };
 
@@ -47,12 +62,19 @@ export function useDocking(mode: WindowMode, onReset: () => void) {
           t = window.setTimeout(settle, 120);
           return;
         }
-        userDragging.current = false;
-        const s = await snapAfterDrag(sideRef.current, (next) => {
+        userDragging.current = false; // from here on the moves are ours
+        snapping.current = true;
+        const r = await snapAfterDrag(sideRef.current, (next) => {
           setSide(next);
           void showMode(modeRef.current, next);
         });
-        setSide(s);
+        home.current = r.home;
+        tucked.current = r.peek;
+        snapping.current = false;
+        if (r.peek) peekRef.current(); // the mouse is still on Tumbli: don't pop right back out
+        setPeek(r.peek);
+        setSide(r.side);
+        setSettled((n) => n + 1); // apply the mode again: it may have changed during the drag
       }, 150);
     });
     return () => {
@@ -81,15 +103,34 @@ export function useDocking(mode: WindowMode, onReset: () => void) {
     };
   }, []);
 
-  // show the part of the window this mode needs (instant, nothing moves)
+  // show the part of the window this mode needs (instant, nothing moves); while peeking,
+  // come out of the edge first for anything bigger than idle, and tuck back in after
   useEffect(() => {
-    if (placed) void showMode(mode, side);
-  }, [mode, placed, side]);
+    if (!placed || userDragging.current || snapping.current) return;
+    const h = home.current;
+    const tuck = peek && mode === "idle" && h !== null;
+    void (async () => {
+      if (tuck) {
+        await showMode(mode, side);
+        if (!tucked.current) {
+          tucked.current = true;
+          const p = await peekPos(h, side);
+          await slideTo(p.x, p.y);
+        }
+      } else {
+        if (tucked.current && h) {
+          tucked.current = false;
+          await slideTo(h.x, h.y, 5);
+        }
+        await showMode(mode, side);
+      }
+    })();
+  }, [mode, placed, side, peek, settled]);
 
   const startDrag = () => {
     userDragging.current = true;
     void win.startDragging();
   };
 
-  return { side, startDrag };
+  return { side, startDrag, peek };
 }

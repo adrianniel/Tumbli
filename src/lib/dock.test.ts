@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anchorOf, dockTo, pickArea, placeAt, snapToEdge } from "./dock";
+import { anchorOf, dockTo, pastEdge, pickArea, placeAt, snapToEdge } from "./dock";
 
 // one 1920x1080 screen with a 48px taskbar at the bottom
 const screen = { x: 0, y: 0, w: 1920, h: 1032 };
@@ -65,5 +65,23 @@ describe("keepOnScreen", () => {
 
   it("leaves a window that already fits alone", () => {
     expect(keepOnScreen({ x: 500, y: 300, w: 350, h: 240 }, [screen])).toEqual({ x: 500, y: 300 });
+  });
+});
+
+describe("pastEdge", () => {
+  const tumbli = (x: number) => ({ x, y: 400, w: 76, h: 140 });
+  it("tucks in when dropped past the right edge", () => {
+    expect(pastEdge(tumbli(1920 - 76 + 30), "right", [screen], 16)).toBe(true);
+    expect(pastEdge(tumbli(1920 - 76 + 10), "right", [screen], 16)).toBe(false);
+  });
+  it("works on the left edge too", () => {
+    expect(pastEdge(tumbli(-20), "left", [screen], 16)).toBe(true);
+    expect(pastEdge(tumbli(4), "left", [screen], 16)).toBe(false);
+  });
+  it("not at an edge shared with a second monitor", () => {
+    const second = { x: 1920, y: 0, w: 1920, h: 1032 };
+    expect(pastEdge(tumbli(1920 - 76 + 30), "right", [screen, second], 16)).toBe(false);
+    // the second screen's own right edge still works
+    expect(pastEdge(tumbli(3840 - 76 + 30), "right", [screen, second], 16)).toBe(true);
   });
 });

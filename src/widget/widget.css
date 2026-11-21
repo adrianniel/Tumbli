@@ -1315,3 +1315,20 @@ body,
 .med-card .bubble-kicker {
   color: var(--med, #9b7bff);
 }
+
+/* ---------- peeking: half tucked into the screen edge, leaning out to look ---------- */
+.buddy .tumbler {
+  transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transform-origin: 50% 85%;
+}
+.peeking.side-right .buddy .tumbler {
+  transform: rotate(-9deg);
+}
+.peeking.side-left .buddy .tumbler {
+  transform: rotate(9deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .buddy .tumbler {
+    transition: none;
+  }
+}

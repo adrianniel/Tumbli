@@ -101,6 +101,7 @@ export function Widget() {
   );
   const [hover, setHover] = useState(false);
   const hovering = useRef(false);
+  const ignoreHover = useRef(false);
   const hoverTimer = useRef<number | undefined>(undefined);
   const factTimer = useRef<number | undefined>(undefined);
 
@@ -138,10 +139,19 @@ export function Widget() {
   talkingRef.current = talking;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
 
-  const { side, startDrag } = useDocking(mode, () => {
-    reminders.dismiss();
-    setFact(null);
-  });
+  const { side, startDrag, peek } = useDocking(
+    mode,
+    () => {
+      reminders.dismiss();
+      setFact(null);
+    },
+    // just tucked into the edge with the mouse still on it: stay tucked until the mouse leaves
+    () => {
+      ignoreHover.current = true;
+      window.clearTimeout(hoverTimer.current);
+      setHover(false);
+    },
+  );
 
   // ---------- quick tour (started from the settings window) ----------
   const remindersRef = useRef(reminders);
@@ -372,16 +382,18 @@ export function Widget() {
         gulping ? "gulping" : "",
         celebrate ? "celebrate" : "",
         sleeping ? "sleeping" : "",
+        peek && mode === "idle" ? "peeking" : "",
         done ? "done" : "",
         empty ? "empty" : "",
       ].join(" ")}
       onMouseEnter={() => {
         hovering.current = true;
         window.clearTimeout(hoverTimer.current);
-        setHover(true);
+        if (!ignoreHover.current) setHover(true);
       }}
       onMouseLeave={() => {
         hovering.current = false;
+        ignoreHover.current = false;
         if (PIN_HOVER) return; // dev preview (?hover): keep the buttons for screenshots
         // a short grace period so moving onto the buttons doesn't flicker
         window.clearTimeout(hoverTimer.current);

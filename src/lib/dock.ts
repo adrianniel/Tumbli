@@ -62,3 +62,19 @@ export function keepOnScreen(win: Rect, areas: Rect[]): { x: number; y: number }
   const y = Math.min(Math.max(win.y, a.y), Math.max(a.y, a.y + a.h - win.h));
   return { x: Math.round(x), y: Math.round(y) };
 }
+
+/**
+ * Was Tumbli dropped partly past the outer edge of its screen (by at least `threshold` px)?
+ * That tucks it into the edge ("peek"). Not at an edge shared with another monitor,
+ * where dragging across is just moving to the other screen.
+ */
+export function pastEdge(tumbli: Rect, side: Side, areas: Rect[], threshold: number): boolean {
+  if (!areas.length) return false;
+  const a = pickArea(tumbli, areas);
+  const cy = tumbli.y + tumbli.h / 2;
+  const edge = side === "right" ? a.x + a.w : a.x;
+  const over = side === "right" ? tumbli.x + tumbli.w - edge : edge - tumbli.x;
+  if (over < threshold) return false;
+  const beyond = side === "right" ? edge + 1 : edge - 2;
+  return !areas.some((o) => o !== a && beyond >= o.x && beyond < o.x + o.w && cy >= o.y && cy < o.y + o.h);
+}
