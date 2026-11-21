@@ -1,6 +1,6 @@
 [package]
 name = "tumbli"
-version = "0.1.3"
+version = "0.1.4"
 description = "Tumbli - a floating water reminder for people who live at their computer"
 authors = ["Niel Adrian"]
 edition = "2024"
