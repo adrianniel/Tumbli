@@ -29,7 +29,7 @@ as **one take**, with the blank lines as short pauses. Save it as
 
 [friendly] And when you're back from a break, Tumbli welcomes you back, so you can log what you had.
 
-[excited, smiling] Get the new Tumbli on November twenty-third. [warm] Stay hydrated!
+[excited, smiling] Get the new Tumbli update on November twenty-third. [warm] Stay hydrated!
 ```
 
 About 27 s at a natural pace. The date is spelled out so it's read as a date.
@@ -44,7 +44,7 @@ About 27 s at a natural pace. The date is spelled out so it's read as a date.
 | 4 | 10.8–16.0 | REAL | Title card **02 Medicine reminders**, then "Time for your Vitamin D": the pointer clicks **Taken**, Tumbli cheers "Nice! 💊"; a glimpse of the Medicines card with today's doses ticked | **Medicine reminders** · right on time |
 | 5 | 16.0–21.8 | REAL | Title card **03 Peek**, then the pointer drags Tumbli into the screen edge: it tucks half in and leans out; a reminder comes and it pops all the way out | **Peek** · out of the way, never gone |
 | 6 | 21.8–26.4 | REAL | Title card **04 Welcome back**, then the check-in: "Away for about 2 hours", the pointer picks **2** glasses, **Taken**, **Done**; Tumbli gulps | **Welcome back** · log what you had |
-| 7 | 26.4–30.0 | End card | Tumbli waving, the wordmark, **Get the new Tumbli**, **November 23**, "on the Microsoft Store" | **Get the new Tumbli · Nov 23** |
+| 7 | 26.4–30.0 | End card | Tumbli waving, the wordmark, **Get the new Tumbli update**, **November 23**, "on the Microsoft Store" | **Get the new Tumbli update · Nov 23** |
 
 ## Posting
 
