@@ -132,7 +132,10 @@ Version 0.1.4 (paste into "What's new in this version"):
 
 (0.1.4: an "Auto" choice in "Remind me every" (the default for new users), and a Medicines card in
 Settings: add a medicine with its times, Tumbli asks at each one, today's doses can be ticked off.
-Peek: drag past the screen edge to tuck Tumbli half in. Welcome back after 30+ min away.
+Peek: drag past the screen edge to tuck Tumbli half in. Welcome back after 30+ min away, as a
+check-in for water and medicine. Unmarked doses count as missed at midnight. A "What's new" bubble
+after updates, and the version + changelog in Settings. Keep src/lib/changelog.ts in step with
+each new version.
 0.1.3: a new "Remind me every" now takes effect right away, and settings show when the next
 reminder comes. 0.1.2: no title bar above the speech bubbles, a Tumbli dialog for Reset today.)
 

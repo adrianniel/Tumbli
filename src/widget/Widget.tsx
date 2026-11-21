@@ -41,8 +41,10 @@ import {
   ReminderBubble,
   SNOOZE_MIN,
   TourBubble,
+  UpdateBubble,
   WelcomeBackBubble,
 } from "./bubbles";
+import { appVersion, CHANGELOG, markVersionSeen, pendingReleases } from "../lib/changelog";
 import { awayLabel } from "../lib/schedule";
 import { closePastDays, doseKey, dosesBetween, fmtTime, joinNames, loadMedLog, loadMeds, setDose } from "../lib/meds";
 import { useMedReminders } from "./useMedReminders";
@@ -98,6 +100,7 @@ export function Widget() {
   const [award, setAward] = useState<Achievement | null>(null);
   const [recap, setRecap] = useState<Recap | null>(null);
   const [askRating, setAskRating] = useState(false);
+  const [update, setUpdate] = useState<{ version: string; titles: string[] } | null>(null);
   // dev preview: widget.html?outfit=crown shows an outfit without touching storage
   const [devOutfit] = useState(() =>
     import.meta.env.DEV ? new URLSearchParams(location.search).get("outfit") : null,
@@ -155,7 +158,8 @@ export function Widget() {
   /** Tumbli is asking for something: water or medicine, or saying welcome back */
   const asking = nudging || medDue || welcome !== null;
 
-  const talking = asking || fact !== null || tour !== null || award !== null || recap !== null || askRating;
+  const talking =
+    asking || fact !== null || tour !== null || award !== null || recap !== null || askRating || update !== null;
   const talkingRef = useRef(talking);
   talkingRef.current = talking;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
@@ -278,6 +282,24 @@ export function Widget() {
     return () => window.clearTimeout(t);
   }, [maybeAskRating]);
 
+  /** just updated: say what's new (once), when Tumbli isn't busy with something else */
+  useEffect(() => {
+    const t = window.setTimeout(async function check() {
+      if (talkingRef.current || touring.current) {
+        window.setTimeout(check, 30_000);
+        return;
+      }
+      const version = await appVersion();
+      const releases = pendingReleases(version);
+      if (releases.length) setUpdate({ version, titles: releases.flatMap((r) => r.changes.map((c) => c.title)) });
+    }, 12_000); // after any achievement or weekly recap
+    return () => window.clearTimeout(t);
+  }, []);
+  const closeUpdate = () => {
+    if (update) markVersionSeen(update.version);
+    setUpdate(null);
+  };
+
   const closeRecap = () => {
     if (recap) markRecapShown(recap);
     setRecap(null);
@@ -355,6 +377,7 @@ export function Widget() {
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
     if (q.has("rating")) setAskRating(true);
+    if (q.has("whatsnew")) setUpdate({ version: CHANGELOG[0].version, titles: CHANGELOG[0].changes.map((c) => c.title) });
     if (q.has("award")) setAward(ACHIEVEMENTS[Number(q.get("award")) || 3]);
     // last week's real numbers, the same ones the dashboard shows
     if (q.has("recap")) setRecap(recapFor(loadHistory(), loadSettings().goalMl));
@@ -545,7 +568,20 @@ export function Widget() {
         />
       )}
 
-      {tour === null && !asking && !award && !recap && !askRating && fact && (
+      {update && !award && !recap && !askRating && !asking && tour === null && (
+        <UpdateBubble
+          version={update.version}
+          titles={update.titles}
+          onSee={() => {
+            closeUpdate();
+            openSettings();
+            void emit("tumbli:whats-new");
+          }}
+          onClose={closeUpdate}
+        />
+      )}
+
+      {tour === null && !asking && !award && !update && !recap && !askRating && fact && (
         <FactBubble
           fact={fact}
           revealed={revealed}

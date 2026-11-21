@@ -20,6 +20,8 @@ import { Welcome } from "./Welcome";
 import { Feedback } from "./Feedback";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MedsCard } from "./MedsCard";
+import { WhatsNew } from "./WhatsNew";
+import { appVersion, CHANGELOG } from "../lib/changelog";
 import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
@@ -95,9 +97,12 @@ export function Settings() {
   const [readying, setReadying] = useState(
     () => import.meta.env.DEV && new URLSearchParams(location.search).has("ready"),
   );
-  const [view, setView] = useState<"dashboard" | "feedback">(() =>
-    import.meta.env.DEV && new URLSearchParams(location.search).has("feedback") ? "feedback" : "dashboard",
-  );
+  const [view, setView] = useState<"dashboard" | "feedback" | "whats-new">(() => {
+    const q = import.meta.env.DEV ? new URLSearchParams(location.search) : null;
+    return q?.has("feedback") ? "feedback" : q?.has("whatsnew") ? "whats-new" : "dashboard";
+  });
+  const [version, setVersion] = useState(CHANGELOG[0].version);
+  useEffect(() => void appVersion().then(setVersion), []);
   // re-render after actions that only touch the tumbler level
   const [, bump] = useState(0);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -135,6 +140,7 @@ export function Settings() {
   useEffect(() => {
     const un = listen(CHANGED_EVENT, refresh);
     const fb = listen("tumbli:feedback", () => setView("feedback"));
+    const wn = listen("tumbli:whats-new", () => setView("whats-new"));
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
     getAutostart()
@@ -143,6 +149,7 @@ export function Settings() {
     return () => {
       void un.then((f) => f());
       void fb.then((f) => f());
+      void wn.then((f) => f());
       window.removeEventListener("focus", onFocus);
     };
   }, [refresh]);
@@ -194,6 +201,7 @@ export function Settings() {
   }
 
   if (view === "feedback") return <Feedback settings={s} onBack={() => setView("dashboard")} />;
+  if (view === "whats-new") return <WhatsNew onBack={() => setView("dashboard")} />;
 
   const tumblerMode = s.mode === "tumbler";
   const doneMl = lastDays(history, 1)[0].ml;
@@ -560,6 +568,12 @@ export function Settings() {
           Send feedback
         </button>
         <span className="muted small">Closing this window keeps Tumbli running. Quit from the tray icon.</span>
+        <span className="version-line">
+          Tumbli {version} ·{" "}
+          <button className="link" onClick={() => setView("whats-new")}>
+            What's new
+          </button>
+        </span>
       </footer>
 
       {confirmReset && (

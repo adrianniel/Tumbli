@@ -1408,3 +1408,24 @@ body,
   font-size: 11px;
   color: var(--muted);
 }
+
+/* ---------- after an update ---------- */
+.update-card .bubble-kicker {
+  color: var(--accent);
+}
+.update-list {
+  margin: 4px 0 9px;
+  padding: 0 0 0 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.update-list li::marker {
+  color: var(--accent);
+}
+.update-list .more {
+  list-style: none;
+  margin-left: -16px;
+  color: var(--muted);
+  font-weight: 600;
+}

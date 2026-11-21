@@ -64,6 +64,7 @@ Dark mode by default, light mode with one switch in Settings.
   how many water breaks went by, and lets you log a drink
 - Pause reminders for an hour or until tomorrow from the tray icon
 - Starts with Windows (optional)
+- After an update Tumbli says what's new; Settings show the version and every release's changes
 - No account, no ads, no tracking: everything stays on your PC
 
 Tumbli stays on screen until you choose **Quit Tumbli** from its tray icon. Its daily goal is a general guide,

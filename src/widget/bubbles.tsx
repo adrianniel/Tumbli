@@ -102,6 +102,47 @@ export function MedBubble({
   );
 }
 
+/** After an update: what's new, with a way to read more in Settings. */
+export function UpdateBubble({
+  version,
+  titles,
+  onSee,
+  onClose,
+}: {
+  version: string;
+  /** short names of the changes */
+  titles: string[];
+  onSee: () => void;
+  onClose: () => void;
+}) {
+  const shown = titles.slice(0, 3);
+  return (
+    <Bubble className="update-card" label="What's new">
+      <div className="bubble-head">
+        <div className="bubble-kicker">✨ Updated to {version}</div>
+        <button className="close" onClick={onClose} aria-label="Close">
+          <IconClose size={14} />
+        </button>
+      </div>
+      <div className="nudge-title">What's new in Tumbli</div>
+      <ul className="update-list">
+        {shown.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+        {titles.length > shown.length && <li className="more">and {titles.length - shown.length} more</li>}
+      </ul>
+      <div className="nudge-actions">
+        <button className="btn primary" onClick={onSee}>
+          See what's new
+        </button>
+        <button className="btn" onClick={onClose}>
+          Got it
+        </button>
+      </div>
+    </Bubble>
+  );
+}
+
 export type AwayDose = { key: string; name: string; time: string };
 
 /**
