@@ -2,7 +2,7 @@
  * Tumbli's own time and date pickers: a button that opens a small themed panel, in place of
  * the browser's built-in ones (which look like a plain system list and ignore the theme).
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { IconChevronLeft } from "./Icons";
 
 /** A panel under `trigger` that closes on Esc or a click anywhere else. */
@@ -58,15 +58,96 @@ export function timeLabel(time: string) {
   return `${h % 12 === 0 ? 12 : h % 12}:${pad(m)} ${h < 12 ? "am" : "pm"}`;
 }
 
-/** Pick a time of day ("HH:MM", 24 h): hour, minute in 5-minute steps, am / pm. */
+const ITEM = 34; // px per row in a wheel
+
+/**
+ * A scrolling column of choices (like a phone's time picker): scroll or click, and the row
+ * that settles in the middle band is picked. Arrow keys work too.
+ */
+function Wheel({
+  items,
+  index,
+  onPick,
+  label,
+}: {
+  items: string[];
+  index: number;
+  onPick: (i: number) => void;
+  label: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const timer = useRef<number | undefined>(undefined);
+  // show the picked row in the middle (on open, or when it changes from outside)
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el && Math.round(el.scrollTop / ITEM) !== index) el.scrollTop = index * ITEM;
+  }, [index]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const settle = () => {
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      const i = Math.max(0, Math.min(items.length - 1, Math.round(el.scrollTop / ITEM)));
+      if (i !== index) onPick(i);
+    }, 80);
+  };
+  const go = (i: number) => ref.current?.scrollTo({ top: i * ITEM, behavior: "smooth" });
+  return (
+    <div
+      className="wheel"
+      ref={ref}
+      role="listbox"
+      aria-label={label}
+      tabIndex={0}
+      onScroll={settle}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const i = Math.max(0, Math.min(items.length - 1, index + (e.key === "ArrowDown" ? 1 : -1)));
+          onPick(i);
+          go(i);
+        }
+      }}
+    >
+      <div className="wheel-pad" aria-hidden />
+      {items.map((x, i) => (
+        <div
+          key={x}
+          role="option"
+          aria-selected={i === index}
+          className={i === index ? "wheel-item on" : "wheel-item"}
+          onClick={() => go(i)}
+        >
+          {x}
+        </div>
+      ))}
+      <div className="wheel-pad" aria-hidden />
+    </div>
+  );
+}
+
+const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const MINUTES = Array.from({ length: 60 }, (_, i) => pad(i));
+const HALVES = ["AM", "PM"];
+
+/** Pick any time of day ("HH:MM", 24 h) on three wheels: hour, minute, am / pm. */
 export function TimePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   const [open, setOpen] = useState(false);
   const [h, m] = value.split(":").map(Number);
   const pm = h >= 12;
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  const set = (hour12: number, minute: number, isPm: boolean) =>
-    onChange(`${pad((hour12 % 12) + (isPm ? 12 : 0))}:${pad(minute)}`);
-  const minute5 = Math.round(m / 5) * 5;
+  // the latest value, so two wheels settling at once both count
+  const latest = useRef(value);
+  latest.current = value;
+  const set = (part: { hour12?: number; minute?: number; pm?: boolean }) => {
+    const [ch, cm] = latest.current.split(":").map(Number);
+    const hour12 = part.hour12 ?? (ch % 12 === 0 ? 12 : ch % 12);
+    const isPm = part.pm ?? ch >= 12;
+    const next = `${pad((hour12 % 12) + (isPm ? 12 : 0))}:${pad(part.minute ?? cm)}`;
+    latest.current = next;
+    onChange(next);
+  };
 
   return (
     <Popover
@@ -85,52 +166,14 @@ export function TimePicker({ value, onChange, label }: { value: string; onChange
         </button>
       }
     >
-      <div className="tp-head">
-        <span className="tp-now">{timeLabel(value)}</span>
-        <span className="seg-switch" role="radiogroup" aria-label="AM or PM">
-          {(["am", "pm"] as const).map((x) => (
-            <button
-              key={x}
-              type="button"
-              role="radio"
-              aria-checked={(x === "pm") === pm}
-              className={(x === "pm") === pm ? "on" : ""}
-              onClick={() => set(h12, m, x === "pm")}
-            >
-              {x.toUpperCase()}
-            </button>
-          ))}
+      <div className="tp-now">{timeLabel(value)}</div>
+      <div className="wheels">
+        <Wheel items={HOURS} index={h12 - 1} label="Hour" onPick={(i) => set({ hour12: i + 1 })} />
+        <span className="wheel-colon" aria-hidden>
+          :
         </span>
-      </div>
-      <div className="tp-label">Hour</div>
-      <div className="tp-grid" role="radiogroup" aria-label="Hour">
-        {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((x) => (
-          <button
-            key={x}
-            type="button"
-            role="radio"
-            aria-checked={x === h12}
-            className={x === h12 ? "on" : ""}
-            onClick={() => set(x, m, pm)}
-          >
-            {x}
-          </button>
-        ))}
-      </div>
-      <div className="tp-label">Minute</div>
-      <div className="tp-grid" role="radiogroup" aria-label="Minute">
-        {Array.from({ length: 12 }, (_, i) => i * 5).map((x) => (
-          <button
-            key={x}
-            type="button"
-            role="radio"
-            aria-checked={x === minute5}
-            className={x === minute5 ? "on" : ""}
-            onClick={() => set(h12, x, pm)}
-          >
-            :{pad(x)}
-          </button>
-        ))}
+        <Wheel items={MINUTES} index={m} label="Minute" onPick={(i) => set({ minute: i })} />
+        <Wheel items={HALVES} index={pm ? 1 : 0} label="AM or PM" onPick={(i) => set({ pm: i === 1 })} />
       </div>
       <button type="button" className="pill primary tp-done" onClick={() => setOpen(false)}>
         Done
