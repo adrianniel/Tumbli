@@ -19,7 +19,7 @@ export const CHANGELOG: Release[] = [
       },
       {
         title: "Medicine reminders",
-        text: "Add your medicines or vitamins with their times. Tumbli reminds you at each one and keeps a 7-day record in Settings.",
+        text: "Add your medicines or vitamins with their times, on the days you take them (or until a date). Tumbli reminds you at each one, and View logs shows your last two weeks.",
       },
       {
         title: "Peek at the screen edge",
@@ -28,6 +28,14 @@ export const CHANGELOG: Release[] = [
       {
         title: "Welcome back",
         text: "After time away (a closed lid, a break, a shutdown), log the water and medicine you had while you were gone.",
+      },
+      {
+        title: "A smarter hydration check",
+        text: "Tumbli now recommends how many glasses a day, or how many liters and tumbler refills, from your answers. Use its plan or set your own. Set up Tumbli before? Retake the check from Settings.",
+      },
+      {
+        title: "A cleaner Settings",
+        text: "Achievements fold into a neat shelf, with new time and date pickers that match Tumbli's look.",
       },
       {
         title: "What's new",

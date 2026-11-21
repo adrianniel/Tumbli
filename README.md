@@ -55,8 +55,8 @@ Dark mode by default, light mode with one switch in Settings.
 
 ### And also
 
-- Medicine reminders: add your medicines or vitamins with their times, and Tumbli asks at each one
-  (Taken, 10 min, or skip) and ticks off today's doses
+- Medicine reminders: add your medicines or vitamins with their times and days (or until a date), and
+  Tumbli asks at each one (Taken, 10 min, or skip); View logs shows the last two weeks as a calendar
 - Docks to the left or right edge of the screen; drag it anywhere and it snaps back
 - Peek: drag Tumbli past the screen edge and it tucks half of itself in, coming out for reminders,
   facts and hover buttons; drag it back out to undock it

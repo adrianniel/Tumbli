@@ -25,7 +25,7 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 >
 > Pick how often to be reminded, or leave it on Auto: Tumbli spaces the reminders so you reach your goal before your day ends.
 >
-> Taking medicine or vitamins? Add them with their times and Tumbli reminds you at each one, then ticks off today's doses.
+> Taking medicine or vitamins? Add them with their times and days, and Tumbli reminds you at each one and keeps a two-week log.
 >
 > Want it out of the way? Drag Tumbli past the screen edge and it peeks out from the side, coming out only when it has something to say. Back from a break or a closed lid, it tells you how long you were away and lets you log a drink.
 >
@@ -60,7 +60,7 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 15. Starts with Windows (optional)
 16. Send feedback right from the app
 17. No account, no ads, no data collection
-18. Medicine and vitamin reminders at the times you set, with today's doses ticked off
+18. Medicine and vitamin reminders on the days and times you set, with a two-week log
 19. Drag Tumbli past the screen edge and it peeks out from the side until it has something to say
 20. Back after time away, Tumbli tells you how long you were gone and how many water breaks you missed
 
@@ -128,7 +128,7 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 Version 0.1.4 (paste into "What's new in this version"):
 
-> New: Auto reminders that pace themselves to your goal, medicine reminders, a peek mode at the screen edge, and a welcome back after time away.
+> New: Auto reminders that pace themselves to your goal, medicine reminders with a 2-week log, a peek mode at the screen edge, a smarter hydration check, and a welcome back after time away.
 
 (0.1.4: an "Auto" choice in "Remind me every" (the default for new users), and a Medicines card in
 Settings: add a medicine with its times, Tumbli asks at each one, today's doses can be ticked off.
