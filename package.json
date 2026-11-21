@@ -12,6 +12,7 @@
     "screenshots": "node scripts/make-screenshots.mjs",
     "ad-clips": "node scripts/make-ad-clips.mjs",
     "ad": "node scripts/make-ad.mjs",
+    "teaser": "node scripts/make-teaser.mjs",
     "brand": "node scripts/make-brand.mjs"
   },
   "dependencies": {

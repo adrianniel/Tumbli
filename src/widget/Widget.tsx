@@ -181,6 +181,16 @@ export function Widget() {
   // ---------- quick tour (started from the settings window) ----------
   const remindersRef = useRef(reminders);
   remindersRef.current = reminders;
+  // dev builds only: let the ad/teaser recorder bring up a reminder mid-clip
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as { tumbliDev: object }).tumbliDev = {
+      nudge: () => {
+        setMessage(nudgeMessage(loadSettings().name));
+        remindersRef.current.forceNudge();
+      },
+    };
+  }, []);
   useEffect(() => {
     const un = listen(TOUR_EVENT, () => {
       remindersRef.current.dismiss();

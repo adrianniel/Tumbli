@@ -8,11 +8,12 @@
  *   ?tumbler use tumbler mode for the sample data
  *   ?today=N ml drunk so far today (with ?demo)
  *   ?name=X  what Tumbli calls the user
- *   ?ad      for recorded ad clips: every achievement already earned, no recap or rating prompt
+ *   ?ad      for recorded ad clips: every achievement already earned, no recap, rating or what's-new prompt
  */
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { ACHIEVEMENTS } from "../lib/achievements";
 import { recapFor } from "../lib/recap";
+import { CHANGELOG } from "../lib/changelog";
 
 export function inBrowser() {
   return !("__TAURI_INTERNALS__" in window);
@@ -90,6 +91,9 @@ export function setupBrowserMocks(label: string) {
     const recap = recapFor(JSON.parse(localStorage.getItem("tumbli.historyMl") ?? "{}"), 2000);
     if (recap) localStorage.setItem("tumbli.recapShown", recap.week);
     localStorage.setItem("tumbli.rating", JSON.stringify({ status: "never" }));
+    // no "what's new" bubble or fresh-plan offer either
+    localStorage.setItem("tumbli.seenVersion", CHANGELOG[0].version);
+    localStorage.setItem("tumbli.recheck", "done");
   }
   if (q.get("name")) {
     // ?name=Niel: what Tumbli calls the user ("Ana" in the sample data)

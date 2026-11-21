@@ -30,3 +30,7 @@ store-assets/screenshots/src
 # ad build output
 store-assets/ad/.build/
 store-assets/ad/source/
+
+# teaser build output and source (voice-over)
+store-assets/teaser/.build/
+store-assets/teaser/source/
