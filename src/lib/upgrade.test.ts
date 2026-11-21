@@ -11,7 +11,17 @@ vi.mock("@tauri-apps/api/app", () => ({ getVersion: vi.fn(() => Promise.resolve(
 import { pendingReleases } from "./changelog";
 import { closePastDays, dosesToday, loadMedLog, loadMeds } from "./meds";
 import { currentInterval, sipFor } from "./schedule";
-import { loadHistory, loadLastActive, loadLevel, loadSettings, streak, todayMl } from "./store";
+import {
+  loadHistory,
+  loadLastActive,
+  loadLevel,
+  loadSettings,
+  markRecheck,
+  saveProfile,
+  saveSettings,
+  streak,
+  todayMl,
+} from "./store";
 
 const day = (n: number) => {
   const d = new Date();
@@ -86,5 +96,20 @@ describe("updating from 0.1.3 to 0.1.4", () => {
     expect(loadMedLog()).toEqual({});
     expect(closePastDays()).toBe(false); // nothing gets marked missed on the first run
     expect(loadLastActive()).toBe(0); // so no "welcome back" right after updating
+  });
+});
+
+describe("retaking the hydration check after updating", () => {
+  it("keeps the history, streak, achievements and everything else", () => {
+    const before = streak(loadHistory(), 2250);
+    // what finishing the check saves: the profile and new plan settings
+    saveProfile({ ageGroup: "19-30", sex: "female", weightKg: 60, activity: "active" });
+    saveSettings({ ...loadSettings(), goalMl: 2750, intervalMin: 45, autoInterval: true });
+    markRecheck("done");
+
+    for (const k of ["tumbli.historyMl", "tumbli.lifetimeMl", "tumbli.level", "tumbli.achievements", "tumbli.widget.anchor.v3"])
+      expect(localStorage.getItem(k), k).toBe(OLD[k]);
+    expect(streak(loadHistory(), 2750)).toBe(before); // the higher goal doesn't take the streak back
+    expect(loadSettings()).toMatchObject({ name: "Ana", outfit: "crown", theme: "light", goalMl: 2750 });
   });
 });

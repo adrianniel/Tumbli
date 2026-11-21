@@ -111,8 +111,43 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(s: Settings) {
+  const before = readJson<Partial<Settings>>(SETTINGS_KEY, {}).goalMl;
+  if (typeof before === "number" && before !== s.goalMl) noteGoalChange(before, s.goalMl);
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
   void emit(CHANGED_EVENT);
+}
+
+const GOAL_LOG_KEY = "tumbli.goalLog";
+/** day (YYYY-MM-DD) -> the daily goal set that day; "0000-01-01" holds the goal before the first change */
+export type GoalLog = Record<string, number>;
+
+export function loadGoalLog(): GoalLog {
+  const log = readJson<GoalLog>(GOAL_LOG_KEY, {});
+  return log && typeof log === "object" ? log : {};
+}
+
+/**
+ * The goal changed (in Settings or by retaking the hydration check): remember it, so earlier
+ * days are still judged by the goal they had. A new, higher goal never takes back a streak.
+ */
+export function noteGoalChange(before: number, after: number, now = new Date()) {
+  const log = loadGoalLog();
+  if (!Object.keys(log).length) log["0000-01-01"] = before;
+  log[dayKey(now)] = after;
+  localStorage.setItem(GOAL_LOG_KEY, JSON.stringify(log));
+}
+
+/** The daily goal that applied on `day`; `current` when the goal never changed. */
+export function goalOn(day: string, current: number, log: GoalLog = loadGoalLog()): number {
+  let goal = current;
+  let best = "";
+  for (const [k, v] of Object.entries(log)) if (k <= day && k > best && typeof v === "number") [best, goal] = [k, v];
+  return goal;
+}
+
+/** Did `day` reach the goal it had? */
+export function metGoal(h: History, day: string, current: number, log: GoalLog = loadGoalLog()) {
+  return (h[day] ?? 0) >= goalOn(day, current, log);
 }
 
 /** ml per glass the old glass-based history used (to convert it once) */
@@ -243,11 +278,12 @@ export function canUndo(): boolean {
 
 /** Consecutive days (ending today or yesterday) where the goal was reached. */
 export function streak(h: History, goalMl: number): number {
+  const log = loadGoalLog();
   const d = new Date();
   let n = 0;
-  if ((h[dayKey(d)] ?? 0) >= goalMl) n++;
+  if (metGoal(h, dayKey(d), goalMl, log)) n++;
   d.setDate(d.getDate() - 1);
-  while ((h[dayKey(d)] ?? 0) >= goalMl) {
+  while (metGoal(h, dayKey(d), goalMl, log)) {
     n++;
     d.setDate(d.getDate() - 1);
   }

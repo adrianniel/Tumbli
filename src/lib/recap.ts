@@ -1,5 +1,5 @@
 /** The weekly recap: how last week went, shown once at the start of each new week. */
-import { dayKey, type History } from "./store";
+import { dayKey, goalOn, type History } from "./store";
 
 export type Recap = {
   /** Monday of the recapped week, YYYY-MM-DD */
@@ -35,6 +35,7 @@ export function recapFor(h: History, goalMl: number, now = new Date()): Recap | 
   const lastMonday = mondayOf(now);
   lastMonday.setDate(lastMonday.getDate() - 7);
   const days = weekDays(lastMonday).map((d) => ({
+    key: dayKey(d),
     label: d.toLocaleDateString(undefined, { weekday: "long" }),
     ml: h[dayKey(d)] ?? 0,
   }));
@@ -49,7 +50,7 @@ export function recapFor(h: History, goalMl: number, now = new Date()): Recap | 
   return {
     week: dayKey(lastMonday),
     totalMl,
-    goalDays: days.filter((d) => d.ml >= goalMl).length,
+    goalDays: days.filter((d) => d.ml >= goalOn(d.key, goalMl)).length,
     activeDays: days.filter((d) => d.ml > 0).length,
     best: best.ml > 0 ? best : null,
     changePct: prevTotal > 0 ? Math.round(((totalMl - prevTotal) / prevTotal) * 100) : null,

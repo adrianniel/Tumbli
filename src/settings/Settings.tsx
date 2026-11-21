@@ -44,6 +44,7 @@ import {
   TUMBLER_SIZES,
   undoLast,
   dayKey,
+  goalOn,
   isOnboarded,
   isTourDone,
   TOUR_EVENT,
@@ -218,7 +219,7 @@ export function Settings() {
   const week = lastDays(history, 7);
   const days = streak(history, s.goalMl);
   const maxBar = Math.max(s.goalMl, ...week.map((d) => d.ml));
-  const metThisWeek = week.filter((d) => d.ml >= s.goalMl).length;
+  const metThisWeek = week.filter((d) => d.ml >= goalOn(d.key, s.goalMl)).length;
   const leftMl = Math.max(0, s.goalMl - doneMl);
   const pct = Math.min(100, Math.round((doneMl / s.goalMl) * 100));
   const glasses = Math.floor(doneMl / s.glassMl);
@@ -355,7 +356,7 @@ export function Settings() {
             <div className="bar-col" key={d.key}>
               <div className="bar-track">
                 <div
-                  className={`bar ${d.ml >= s.goalMl ? "met" : ""} ${i === week.length - 1 ? "today" : ""}`}
+                  className={`bar ${d.ml >= goalOn(d.key, s.goalMl) ? "met" : ""} ${i === week.length - 1 ? "today" : ""}`}
                   style={{ height: `${Math.max(3, (d.ml / maxBar) * 100)}%` }}
                 />
                 <div className="goal-line" style={{ bottom: `${(s.goalMl / maxBar) * 100}%` }} />

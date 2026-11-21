@@ -4,6 +4,8 @@ vi.mock("@tauri-apps/api/event", () => ({ emit: vi.fn(() => Promise.resolve()) }
 
 import {
   addMl,
+  goalOn,
+  loadGoalLog,
   canUndo,
   dayKey,
   defaultSettings,
@@ -227,5 +229,23 @@ describe("midnight reset", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("changing the goal (Settings or a retaken hydration check)", () => {
+  it("keeps earlier days judged by the goal they had", () => {
+    saveSettings({ ...glass, goalMl: 2000 });
+    const h = { [daysAgo(1)]: 2000, [daysAgo(2)]: 2000, [daysAgo(3)]: 2000 };
+    localStorage.setItem("tumbli.historyMl", JSON.stringify(h));
+    saveSettings({ ...glass, goalMl: 2750 }); // a higher goal from the new check
+    expect(streak(loadHistory(), 2750)).toBe(3); // the streak survives
+    expect(goalOn(daysAgo(1), 2750)).toBe(2000);
+    expect(goalOn(daysAgo(0), 2750)).toBe(2750); // today uses the new goal
+    expect(loadHistory()).toEqual(h); // nothing in the history changes
+  });
+  it("logs nothing when the goal stays the same", () => {
+    saveSettings({ ...glass, goalMl: 2000 });
+    saveSettings({ ...glass, goalMl: 2000, sound: false });
+    expect(loadGoalLog()).toEqual({});
   });
 });

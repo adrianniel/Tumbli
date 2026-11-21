@@ -4,7 +4,7 @@
  * lifetime total and best streak that outlive the 90-day history.
  */
 import { emit } from "@tauri-apps/api/event";
-import { CHANGED_EVENT, dayKey, loadHistory, streak, type History } from "./store";
+import { CHANGED_EVENT, dayKey, loadGoalLog, loadHistory, metGoal, streak, type History } from "./store";
 
 export type Outfit = "partyhat" | "bowtie" | "sunglasses" | "headphones" | "crown";
 
@@ -106,8 +106,9 @@ export function loadLifetimeMl(h = loadHistory()): number {
 
 /** The longest run of consecutive goal days anywhere in the history. */
 export function longestRun(h: History, goalMl: number): number {
+  const log = loadGoalLog();
   const days = Object.keys(h)
-    .filter((k) => h[k] >= goalMl)
+    .filter((k) => metGoal(h, k, goalMl, log))
     .sort();
   let best = 0;
   let run = 0;
@@ -125,7 +126,8 @@ export function longestRun(h: History, goalMl: number): number {
 export function computeStats(h: History, goalMl: number, lifetimeMl = loadLifetimeMl(h)): Stats {
   const currentStreak = streak(h, goalMl);
   const bestStreak = Math.max(Number(localStorage.getItem(BEST_KEY)) || 0, currentStreak, longestRun(h, goalMl));
-  const goalDays = Object.values(h).filter((ml) => ml >= goalMl).length;
+  const log = loadGoalLog();
+  const goalDays = Object.keys(h).filter((k) => metGoal(h, k, goalMl, log)).length;
   return { lifetimeMl, currentStreak, bestStreak, goalDays };
 }
 
