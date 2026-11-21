@@ -1,14 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { currentInterval, rescheduled, shouldNudge } from "../lib/schedule";
-import { loadPausedUntil, pauseEnd, saveNextReminder, savePausedUntil, todayMl, type Settings } from "../lib/store";
+import { awaySummary, AWAY_MIN, currentInterval, rescheduled, shouldNudge, withinActiveHours } from "../lib/schedule";
+import {
+  loadLastActive,
+  loadPausedUntil,
+  pauseEnd,
+  saveLastActive,
+  saveNextReminder,
+  savePausedUntil,
+  todayMl,
+  type Settings,
+} from "../lib/store";
 import { win } from "./windowing";
 
 const IDLE_SECS = 5 * 60; // the user counts as "away" after 5 min without input
 const TICK_MS = 5000;
 
 type SystemStatus = { idle_secs: number; busy: boolean };
+/** Back after a while away: how long, and how many reminders went by */
+export type Welcome = { awayMin: number; missed: number };
 
 /**
  * The reminder loop: every few seconds it checks the time, idle and fullscreen state
@@ -19,6 +30,7 @@ export function useReminders({
   onNewDay,
   canNudge,
   onNudge,
+  onWelcome,
 }: {
   settings: Settings;
   /** called once when the date changes (midnight) */
@@ -27,10 +39,18 @@ export function useReminders({
   canNudge: () => boolean;
   /** a reminder is starting */
   onNudge: () => void;
+  /** a welcome-back message is starting */
+  onWelcome: () => void;
 }) {
   const [nudging, setNudging] = useState(false);
   const [pausedUntil, setPausedUntil] = useState(loadPausedUntil);
   const [now, setNow] = useState(() => Date.now());
+  const [welcome, setWelcome] = useState<Welcome | null>(null);
+  const welcomeRef = useRef(welcome);
+  welcomeRef.current = welcome;
+  /** the user's last keyboard / mouse input that Tumbli saw (survives restarts and shutdowns) */
+  const lastInput = useRef(loadLastActive() || Date.now());
+  const lastSaved = useRef(0);
 
   /** minutes until the next reminder: the chosen interval, or Auto's pace for what is left today */
   const settingsRef = useRef(settings);
@@ -46,8 +66,8 @@ export function useReminders({
   const paceRef = useRef(pace);
   const hidden = useRef(false);
   const lastDay = useRef(new Date().toDateString());
-  const cb = useRef({ onNewDay, canNudge, onNudge });
-  cb.current = { onNewDay, canNudge, onNudge };
+  const cb = useRef({ onNewDay, canNudge, onNudge, onWelcome });
+  cb.current = { onNewDay, canNudge, onNudge, onWelcome };
 
   /** move the next reminder; `restart` starts a new countdown from now */
   const setNext = (at: number, restart = true) => {
@@ -106,6 +126,37 @@ export function useReminders({
         else await win.show();
       }
 
+      // back after a while away (lid closed, asleep, idle, or the PC was off): say hi,
+      // tell them how many reminders went by, and offer to log a drink
+      const t = Date.now();
+      if (status.idle_secs < IDLE_SECS) {
+        const inputAt = t - status.idle_secs * 1000;
+        const prev = lastInput.current;
+        lastInput.current = inputAt;
+        if (inputAt - lastSaved.current > 30_000) {
+          lastSaved.current = inputAt;
+          saveLastActive(inputAt);
+        }
+        if (inputAt - prev >= AWAY_MIN * 60_000 && !nudging && !welcomeRef.current) {
+          const every = intervalNow();
+          const away = awaySummary(prev, inputAt, settings, every);
+          const greet =
+            away.sameDay &&
+            away.missed >= 1 &&
+            withinActiveHours(settings, today) &&
+            todayMl() < settings.goalMl &&
+            loadPausedUntil() <= t &&
+            !status.busy &&
+            cb.current.canNudge();
+          if (greet) {
+            setNext(t + every * 60_000);
+            setWelcome({ awayMin: away.awayMin, missed: away.missed });
+            cb.current.onWelcome();
+            return;
+          }
+        }
+      }
+
       // away from the computer: don't nag; remind shortly after they return
       if (status.idle_secs >= IDLE_SECS) {
         if (nextAt.current < Date.now() + 60_000) setNext(Date.now() + 60_000, false);
@@ -120,7 +171,7 @@ export function useReminders({
         busy: status.busy,
         pausedUntil: loadPausedUntil(),
       });
-      if (due && !nudging && cb.current.canNudge()) {
+      if (due && !nudging && !welcomeRef.current && cb.current.canNudge()) {
         cb.current.onNudge();
         setNudging(true);
       }
@@ -130,6 +181,14 @@ export function useReminders({
 
   return {
     nudging,
+    welcome,
+    /** close the welcome-back message; `askAgainMin` brings a reminder that soon */
+    closeWelcome: (askAgainMin?: number) => {
+      setWelcome(null);
+      if (askAgainMin) setNext(Date.now() + askAgainMin * 60_000);
+    },
+    /** dev preview: show a welcome-back message */
+    forceWelcome: (w: Welcome) => setWelcome(w),
     paused: pausedUntil > now,
     /** close the reminder and ask again in `minutes` (default: the next interval) */
     dismiss: (minutes = intervalNow()) => {

@@ -310,6 +310,20 @@ export function savePausedUntil(t: number) {
   void emit(CHANGED_EVENT);
 }
 
+const ACTIVE_KEY = "tumbli.lastActive";
+/** When the user last touched the keyboard or mouse (ms), as of Tumbli's last check. */
+export function loadLastActive(): number {
+  const n = Number(localStorage.getItem(ACTIVE_KEY));
+  return Number.isFinite(n) ? n : 0;
+}
+export function saveLastActive(t: number) {
+  try {
+    localStorage.setItem(ACTIVE_KEY, String(Math.round(t)));
+  } catch {
+    /* not fatal */
+  }
+}
+
 const NEXT_KEY = "tumbli.nextReminderAt";
 
 /** When the widget plans the next reminder (ms since epoch), so settings can show it; 0 = unknown. */

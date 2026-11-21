@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   autoPace,
+  awayLabel,
+  awaySummary,
   currentInterval,
   minutesLeft,
   reminderStatus,
@@ -172,5 +174,33 @@ describe("currentInterval", () => {
   });
   it("uses Auto's pace when it is on", () => {
     expect(currentInterval({ ...s, autoInterval: true }, 0, at(8))).toBe(85);
+  });
+});
+
+describe("awaySummary", () => {
+  const s = { startHour: 8, endHour: 20 };
+  it("counts the reminders missed while away", () => {
+    // lid closed 10:00 - 12:00, reminders every 45 min: 2 missed
+    expect(awaySummary(at(10).getTime(), at(12).getTime(), s, 45)).toEqual({ awayMin: 120, missed: 2, sameDay: true });
+  });
+  it("only counts the active hours", () => {
+    // 6:00 - 9:00 with active hours from 8: one hour, 1 reminder of 60 min
+    expect(awaySummary(at(6).getTime(), at(9).getTime(), s, 60).missed).toBe(1);
+  });
+  it("knows when the time away started yesterday", () => {
+    const night = new Date(2026, 10, 17, 22).getTime();
+    expect(awaySummary(night, at(9).getTime(), s, 60)).toMatchObject({ sameDay: false, missed: 1 });
+  });
+});
+
+describe("awayLabel", () => {
+  it("says it the way a person would", () => {
+    expect(awayLabel(32)).toBe("about 30 minutes");
+    expect(awayLabel(50)).toBe("about 50 minutes");
+    expect(awayLabel(58)).toBe("almost an hour");
+    expect(awayLabel(66)).toBe("about an hour");
+    expect(awayLabel(80)).toBe("over an hour");
+    expect(awayLabel(110)).toBe("almost 2 hours");
+    expect(awayLabel(125)).toBe("about 2 hours");
   });
 });

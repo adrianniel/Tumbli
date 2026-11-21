@@ -124,3 +124,40 @@ export function reminderStatus({
   if (nextAt - t < 60_000) return { kind: "soon" };
   return { kind: "in", minutes: Math.max(1, Math.round((nextAt - t) / 60_000)) };
 }
+
+/** Away at least this long (lid closed, asleep, idle or the PC off) and Tumbli says welcome back. */
+export const AWAY_MIN = 30;
+
+/**
+ * The user was away from `from` to `to` (ms): how long, and how many reminders they missed
+ * (one per interval of today's active hours in that time). Time before midnight doesn't
+ * count, a new day starts fresh.
+ */
+export function awaySummary(
+  from: number,
+  to: number,
+  s: Pick<Settings, "startHour" | "endHour">,
+  intervalMin: number,
+) {
+  const midnight = new Date(to);
+  midnight.setHours(0, 0, 0, 0);
+  const start = Math.max(from, midnight.getTime());
+  let activeMin = 0;
+  for (let t = start; t < to; t += 5 * 60_000) if (withinActiveHours(s, new Date(t))) activeMin += 5;
+  return {
+    awayMin: Math.round((to - from) / 60_000),
+    missed: Math.floor(activeMin / Math.max(1, intervalMin)),
+    sameDay: from >= midnight.getTime(),
+  };
+}
+
+/** 50 -> "about 50 minutes", 105 -> "almost 2 hours", 75 -> "over an hour", 130 -> "about 2 hours" */
+export function awayLabel(min: number) {
+  if (min < 55) return `about ${Math.max(5, Math.round(min / 5) * 5)} minutes`;
+  const h = Math.floor(min / 60);
+  const rest = min - h * 60;
+  const hours = (n: number) => (n === 1 ? "an hour" : `${n} hours`);
+  if (rest >= 45 || h === 0) return `almost ${hours(h + 1)}`;
+  if (rest < 15) return `about ${hours(h)}`;
+  return `over ${hours(h)}`;
+}

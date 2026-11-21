@@ -1,6 +1,6 @@
 /** The speech bubbles Tumbli shows next to itself. */
 import type { ReactNode } from "react";
-import { IconBell, IconBulb, IconClose, IconPill, IconQuestion, IconRefill } from "../components/Icons";
+import { IconBell, IconBulb, IconClose, IconDrop, IconPill, IconQuestion, IconRefill } from "../components/Icons";
 import type { Fact } from "../lib/facts";
 import { TOUR } from "./tour";
 
@@ -95,6 +95,49 @@ export function MedBubble({
           {SNOOZE_MIN} min
         </button>
         <button className="btn ghost" onClick={onSkip} title="Skip this dose" aria-label="Skip this dose">
+          <IconClose size={15} />
+        </button>
+      </div>
+    </Bubble>
+  );
+}
+
+export function WelcomeBackBubble({
+  name,
+  away,
+  missed,
+  drinkLabel,
+  onDrank,
+  onNotYet,
+  onClose,
+}: {
+  name: string;
+  /** "almost 2 hours" */
+  away: string;
+  missed: number;
+  drinkLabel: string;
+  onDrank: () => void;
+  onNotYet: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Bubble className="welcome-card" label="Welcome back">
+      <div className="bubble-kicker">
+        <IconDrop size={13} strokeWidth={2.4} /> Welcome back{name ? `, ${name}` : ""}!
+      </div>
+      <div className="nudge-title">You were away for {away}</div>
+      <div className="nudge-sub">
+        That's {missed === 1 ? "1 water break" : `${missed} water breaks`} with nothing logged. Had a drink?
+        You can log it now.
+      </div>
+      <div className="nudge-actions">
+        <button className="btn primary" onClick={onDrank}>
+          {drinkLabel}
+        </button>
+        <button className="btn" onClick={onNotYet}>
+          Not yet
+        </button>
+        <button className="btn ghost" onClick={onClose} title="Close" aria-label="Close">
           <IconClose size={15} />
         </button>
       </div>

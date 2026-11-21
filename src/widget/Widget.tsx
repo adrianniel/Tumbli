@@ -41,7 +41,9 @@ import {
   ReminderBubble,
   SNOOZE_MIN,
   TourBubble,
+  WelcomeBackBubble,
 } from "./bubbles";
+import { awayLabel } from "../lib/schedule";
 import { fmtTime, joinNames } from "../lib/meds";
 import { useMedReminders } from "./useMedReminders";
 import { askLater, neverAsk, rated, shouldAskForRating } from "../lib/rating";
@@ -119,8 +121,12 @@ export function Widget() {
       setMessage(nudgeMessage(settings.name));
       if (settings.sound) bloop();
     },
+    onWelcome: () => {
+      setFact(null);
+      if (settings.sound) bloop();
+    },
   });
-  const { nudging } = reminders;
+  const { nudging, welcome } = reminders;
 
   const meds = useMedReminders({
     canShow: () => !touring.current,
@@ -131,8 +137,8 @@ export function Widget() {
     snoozeMin: SNOOZE_MIN,
   });
   const medDue = meds.due.length > 0;
-  /** Tumbli is asking for something: water or medicine */
-  const asking = nudging || medDue;
+  /** Tumbli is asking for something: water or medicine, or saying welcome back */
+  const asking = nudging || medDue || welcome !== null;
 
   const talking = asking || fact !== null || tour !== null || award !== null || recap !== null || askRating;
   const talkingRef = useRef(talking);
@@ -326,6 +332,7 @@ export function Widget() {
       const med = { id: "demo", name: q.get("med") || "Vitamin D", times: ["08:00"], note: "After breakfast", on: true };
       meds.force([{ med, time: "08:00", at: Date.now(), status: "due" }]);
     }
+    if (q.has("away")) reminders.forceWelcome({ awayMin: Number(q.get("away")) || 110, missed: 2 });
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
     if (q.has("rating")) setAskRating(true);
@@ -415,7 +422,25 @@ export function Widget() {
         />
       )}
 
-      {nudging && !medDue && (
+      {welcome && !medDue && tour === null && (
+        <WelcomeBackBubble
+          name={settings.name}
+          away={awayLabel(welcome.awayMin)}
+          missed={welcome.missed}
+          drinkLabel={tumblerMode ? "Drank some" : "I drank!"}
+          onDrank={() => {
+            reminders.closeWelcome();
+            drink();
+          }}
+          onNotYet={() => {
+            reminders.closeWelcome(5);
+            cheerUp("Okay! Let's grab some soon 💧");
+          }}
+          onClose={() => reminders.closeWelcome()}
+        />
+      )}
+
+      {nudging && !medDue && !welcome && (
         <ReminderBubble
           message={message}
           sub={reminderSub}

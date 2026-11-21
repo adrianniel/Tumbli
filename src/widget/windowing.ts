@@ -27,7 +27,7 @@ const POS_KEY = "tumbli.widget.anchor.v3"; // docked side + edge + bottom, physi
 const EDGE_MARGIN = 2; // logical px between the window and the screen edge
 const PEEK_KEY = "tumbli.widget.peek";
 /** dropped this far (logical px) past the screen edge, Tumbli tucks into it */
-const PEEK_DROP = 16;
+const PEEK_DROP = 12;
 /** share of Tumbli's width hidden past the edge while it peeks */
 const PEEK_HIDE = 0.45;
 
