@@ -92,15 +92,12 @@ export function Achievements({ history, goalMl }: { history: History; goalMl: nu
 
   return (
     <section className={open ? "card ach-card open" : "card ach-card"}>
-      <button className="ach-head" onClick={toggle} aria-expanded={open} aria-controls="ach-list">
+      <div className="ach-head">
         <h2>Achievements</h2>
         <span className="ach-count">
           {count} of {rows.length}
         </span>
-        <span className="ach-chevron" aria-hidden>
-          <IconChevronLeft size={16} strokeWidth={2.4} />
-        </span>
-      </button>
+      </div>
 
       <div className="ach-shelf" aria-hidden={open}>
         <div className="ach-badges">
@@ -141,7 +138,7 @@ export function Achievements({ history, goalMl }: { history: History; goalMl: nu
         </div>
       </div>
 
-      <button className="ach-toggle" onClick={toggle} aria-hidden tabIndex={-1}>
+      <button className="ach-toggle" onClick={toggle} aria-expanded={open} aria-controls="ach-list">
         {open ? "Show less" : "Show all"}
         <span className="ach-toggle-chev">
           <IconChevronLeft size={14} strokeWidth={2.6} />

@@ -24,8 +24,10 @@ import { CHANGED_EVENT, dayKey } from "../lib/store";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type Draft = { id: string | null; name: string; times: string[]; note: string; days: number[]; until: string | null };
-const EMPTY: Draft = { id: null, name: "", times: ["08:00"], note: "", days: [], until: null };
-const DOW = ["S", "M", "T", "W", "T", "F", "S"];
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+/** `days` is what's picked while editing: all 7 = every day, empty = nothing yet */
+const EMPTY: Draft = { id: null, name: "", times: ["08:00"], note: "", days: ALL_DAYS, until: null };
+const DOW = ["S", "M", "T", "W", "TH", "F", "S"];
 const DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const inDays = (n: number) => dayKey(new Date(Date.now() + n * 86_400_000));
 const draftOf = (m: Med): Draft => ({
@@ -33,7 +35,7 @@ const draftOf = (m: Med): Draft => ({
   name: m.name,
   times: m.times,
   note: m.note,
-  days: m.days ?? [],
+  days: m.days?.length ? m.days : ALL_DAYS,
   until: m.until ?? null,
 });
 
@@ -55,6 +57,7 @@ export function MedsCard({ now }: { now: number }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [removing, setRemoving] = useState<Med | null>(null);
   const [logsOpen, setLogsOpen] = useState(false);
+  const [noDays, setNoDays] = useState(false);
 
   // a new day (or the first look today): yesterday's unmarked doses count as missed
   const today = dayKey(new Date(now));
@@ -87,6 +90,10 @@ export function MedsCard({ now }: { now: number }) {
     const name = draft.name.trim().slice(0, 40);
     const times = cleanTimes(draft.times);
     if (!name || !times.length) return;
+    if (!draft.days.length) {
+      setNoDays(true);
+      return;
+    }
     const note = draft.note.trim().slice(0, 60);
     const days = draft.days.length === 7 ? [] : [...draft.days].sort();
     const plan = { name, times, note, days: days.length ? days : undefined, until: draft.until ?? undefined };
@@ -216,36 +223,46 @@ export function MedsCard({ now }: { now: number }) {
           </div>
           <div className="med-field">
             <span>Days</span>
-            <div className="med-days">
-              <button
-                type="button"
-                className={draft.days.length === 0 ? "day-chip wide on" : "day-chip wide"}
-                aria-pressed={draft.days.length === 0}
-                onClick={() => setDraft({ ...draft, days: [] })}
-              >
-                Every day
-              </button>
-              {DOW.map((d, i) => {
-                const on = draft.days.length === 0 || draft.days.includes(i);
-                return (
-                  <button
-                    type="button"
-                    key={i}
-                    className={on ? "day-chip on" : "day-chip"}
-                    aria-pressed={on}
-                    aria-label={DOW_FULL[i]}
-                    title={DOW_FULL[i]}
-                    onClick={() => {
-                      const cur = draft.days.length ? draft.days : [0, 1, 2, 3, 4, 5, 6];
-                      const next = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i];
-                      if (next.length === 0) return; // at least one day
-                      setDraft({ ...draft, days: next.length === 7 ? [] : next.sort() });
-                    }}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
+            <div className="med-days-wrap">
+              <div className="med-days">
+                <button
+                  type="button"
+                  className={draft.days.length === 7 ? "day-chip wide on" : "day-chip wide"}
+                  aria-pressed={draft.days.length === 7}
+                  onClick={() => {
+                    setNoDays(false);
+                    // on: clear every day, so a few can be picked; off: every day
+                    setDraft({ ...draft, days: draft.days.length === 7 ? [] : ALL_DAYS });
+                  }}
+                >
+                  Every day
+                </button>
+                {DOW.map((d, i) => {
+                  const on = draft.days.includes(i);
+                  return (
+                    <button
+                      type="button"
+                      key={i}
+                      className={on ? "day-chip on" : "day-chip"}
+                      aria-pressed={on}
+                      aria-label={DOW_FULL[i]}
+                      title={DOW_FULL[i]}
+                      onClick={() => {
+                        setNoDays(false);
+                        const next = on ? draft.days.filter((x) => x !== i) : [...draft.days, i];
+                        setDraft({ ...draft, days: next.sort() });
+                      }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+              {noDays && (
+                <small className="field-error" role="alert">
+                  Please select at least one day.
+                </small>
+              )}
             </div>
           </div>
           <div className="med-field">
@@ -302,7 +319,13 @@ export function MedsCard({ now }: { now: number }) {
               </button>
             )}
             <span className="spacer" />
-            <button className="pill" onClick={() => setDraft(null)}>
+            <button
+              className="pill"
+              onClick={() => {
+                setNoDays(false);
+                setDraft(null);
+              }}
+            >
               Cancel
             </button>
             <button className="pill primary" onClick={save} disabled={!canSave}>

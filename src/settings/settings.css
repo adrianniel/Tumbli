@@ -3103,3 +3103,36 @@ footer {
   font-size: 17px;
   color: var(--ink-2);
 }
+
+/* days on one row; the chevron button left the achievements header */
+.ach-head {
+  cursor: default;
+}
+.med-days-wrap {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.med-days {
+  flex-wrap: nowrap;
+  gap: 3px;
+}
+.day-chip {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  font-size: 11.5px;
+  flex: none;
+}
+.day-chip.wide {
+  padding: 0 8px;
+}
+.field-error {
+  color: var(--coral);
+  font-size: 12px;
+  font-weight: 700;
+}
+.row .field-error {
+  color: var(--coral);
+  font-weight: 700;
+}
