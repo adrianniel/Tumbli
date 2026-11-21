@@ -34,3 +34,19 @@ store-assets/ad/source/
 # teaser build output and source (voice-over)
 store-assets/teaser/.build/
 store-assets/teaser/source/
+
+# AI docs / instructions
+KNOWLEDGE.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+AGENTS.md
+GEMINI.md
+.cursor/
+.cursorrules
+.github/copilot-instructions.md
+.windsurfrules
+.codex/
+# AI prompt docs: Google Flow (Veo) prompts for the ad, ElevenLabs voice-over script for the teaser
+store-assets/ad/AD_PLAN.md
+store-assets/teaser/TEASER_PLAN.md
