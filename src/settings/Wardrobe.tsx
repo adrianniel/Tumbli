@@ -1,5 +1,6 @@
 import { Tumbler } from "../components/Tumbler";
-import { IconCheck, IconLock, IconTrophy } from "../components/Icons";
+import { useState } from "react";
+import { IconCheck, IconChevronLeft, IconLock, IconTrophy } from "../components/Icons";
 import {
   ACHIEVEMENTS,
   computeStats,
@@ -59,38 +60,93 @@ export function Wardrobe({
   );
 }
 
-/** Every achievement with its progress. */
+const OPEN_KEY = "tumbli.achievementsOpen";
+
+/**
+ * Every achievement with its progress. Folded by default (the list is long): a shelf of
+ * badges and a "Show all" handle that unfolds it.
+ */
 export function Achievements({ history, goalMl }: { history: History; goalMl: number }) {
   const stats = computeStats(history, goalMl);
   const unlocked = loadUnlocked();
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(OPEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggle = () => {
+    setOpen(!open);
+    try {
+      localStorage.setItem(OPEN_KEY, open ? "0" : "1");
+    } catch {
+      /* not fatal */
+    }
+  };
+  const rows = ACHIEVEMENTS.map((a) => {
+    const p = a.progress(stats);
+    return { a, p, done: !!unlocked[a.id] || p.value >= p.target };
+  });
+  const count = rows.filter((r) => r.done).length;
+
   return (
-    <section className="card">
-      <h2>Achievements</h2>
-      <ul className="achievements">
-        {ACHIEVEMENTS.map((a) => {
-          const p = a.progress(stats);
-          const done = !!unlocked[a.id] || p.value >= p.target;
-          return (
-            <li key={a.id} className={done ? "done" : ""}>
-              <span className="ach-icon" aria-hidden>
-                {done ? <IconCheck size={16} strokeWidth={2.6} /> : <IconTrophy size={16} />}
-              </span>
-              <div className="ach-main">
-                <div className="ach-top">
-                  <b>{a.title}</b>
-                  <small>{done ? "Done" : `${p.value}/${p.target} ${p.unit}`}</small>
-                </div>
-                <small className="muted">{a.desc}</small>
-                {!done && (
-                  <div className="ach-bar" aria-hidden>
-                    <div style={{ width: `${(p.value / p.target) * 100}%` }} />
+    <section className={open ? "card ach-card open" : "card ach-card"}>
+      <button className="ach-head" onClick={toggle} aria-expanded={open} aria-controls="ach-list">
+        <h2>Achievements</h2>
+        <span className="ach-count">
+          {count} of {rows.length}
+        </span>
+        <span className="ach-chevron" aria-hidden>
+          <IconChevronLeft size={16} strokeWidth={2.4} />
+        </span>
+      </button>
+
+      <div className="ach-shelf" aria-hidden={open}>
+        <div className="ach-badges">
+          {rows.map(({ a, done }) => (
+            <span key={a.id} className={done ? "ach-badge done" : "ach-badge"} title={`${a.title}${done ? "" : " (locked)"}`}>
+              {done ? <IconCheck size={13} strokeWidth={2.8} /> : <IconTrophy size={13} />}
+            </span>
+          ))}
+        </div>
+        <div className="ach-progress" aria-hidden>
+          <div style={{ width: `${(count / rows.length) * 100}%` }} />
+        </div>
+      </div>
+
+      <div className="ach-fold" id="ach-list">
+        <div className="ach-fold-inner">
+          <ul className="achievements">
+            {rows.map(({ a, p, done }) => (
+              <li key={a.id} className={done ? "done" : ""}>
+                <span className="ach-icon" aria-hidden>
+                  {done ? <IconCheck size={16} strokeWidth={2.6} /> : <IconTrophy size={16} />}
+                </span>
+                <div className="ach-main">
+                  <div className="ach-top">
+                    <b>{a.title}</b>
+                    <small>{done ? "Done" : `${p.value}/${p.target} ${p.unit}`}</small>
                   </div>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                  <small className="muted">{a.desc}</small>
+                  {!done && (
+                    <div className="ach-bar" aria-hidden>
+                      <div style={{ width: `${(p.value / p.target) * 100}%` }} />
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <button className="ach-toggle" onClick={toggle} aria-hidden tabIndex={-1}>
+        {open ? "Show less" : "Show all"}
+        <span className="ach-toggle-chev">
+          <IconChevronLeft size={14} strokeWidth={2.6} />
+        </span>
+      </button>
     </section>
   );
 }

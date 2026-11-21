@@ -2352,3 +2352,682 @@ footer {
 .changes li span {
   color: var(--ink-2);
 }
+
+/* ================= pickers (time, date) ================= */
+.picker {
+  position: relative;
+  display: inline-block;
+}
+.picker-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.picker-btn:hover,
+.picker-btn.open {
+  border-color: var(--water);
+}
+.picker-pop {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 232px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px -14px rgba(8, 30, 50, 0.45);
+  animation: pop-in 0.16s cubic-bezier(0.2, 1.3, 0.5, 1);
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+.tp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.tp-now {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+}
+.seg-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--water-soft);
+}
+.seg-switch button {
+  border: none;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.seg-switch button.on {
+  background: var(--primary);
+  color: var(--on-ink);
+}
+.tp-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 6px 0 4px;
+}
+.tp-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.tp-grid button,
+.dp-grid button {
+  border: none;
+  border-radius: 9px;
+  padding: 6px 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.tp-grid button:hover,
+.dp-grid button:hover:not(:disabled) {
+  background: var(--water-soft);
+}
+.tp-grid button:active,
+.dp-grid button:active {
+  transform: scale(0.94);
+}
+.tp-grid button.on,
+.dp-grid button.on {
+  background: var(--water);
+  color: #fff;
+}
+.tp-done {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+.dp-nav {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.dp-nav.next svg {
+  transform: scaleX(-1);
+}
+.dp-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.dp-dow {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--muted);
+  padding: 2px 0 4px;
+}
+.dp-grid button {
+  padding: 5px 0;
+  background: transparent;
+}
+.dp-grid button.today {
+  box-shadow: inset 0 0 0 1.5px var(--water);
+}
+.dp-grid button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ---------- Medicines: form extras ---------- */
+.med-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.day-chip {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.day-chip.wide {
+  padding: 0 10px;
+}
+.day-chip.on {
+  background: var(--water-soft);
+  border-color: var(--water);
+  color: var(--water-deep);
+}
+.med-ends {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Medicines: the 2-week log ---------- */
+.dialog.logs {
+  width: min(400px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  text-align: left;
+  padding: 18px 18px 16px;
+}
+.logs-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.logs-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.logs-face {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--water-soft);
+}
+.logs-close {
+  box-shadow: none;
+  background: var(--surface-2);
+}
+.logs-filter {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+.logs-filter button {
+  flex: none;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.logs-filter button.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-ink);
+}
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--surface-2);
+}
+.cal-dow {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.cal-day {
+  aspect-ratio: 1 / 1.05;
+  border: none;
+  border-radius: 12px;
+  padding: 4px 2px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  font: inherit;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.12s;
+}
+.cal-day:hover {
+  transform: translateY(-1px);
+}
+.cal-day.out {
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.4;
+  cursor: default;
+}
+.cal-day.good {
+  background: color-mix(in srgb, var(--mint) 18%, var(--surface));
+}
+.cal-day.mixed {
+  background: color-mix(in srgb, var(--sun) 20%, var(--surface));
+}
+.cal-day.bad {
+  background: color-mix(in srgb, var(--coral) 18%, var(--surface));
+}
+.cal-day.today .cal-num {
+  background: var(--water);
+  color: #fff;
+}
+.cal-day.picked {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.cal-num {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+.cal-dots,
+.cal-legend span {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.cal-dots {
+  min-height: 7px;
+}
+.cal-dots i,
+.cal-legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.cal-dots em {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.cal-dots i.taken,
+.cal-legend i.taken {
+  background: var(--mint);
+}
+.cal-dots i.missed,
+.cal-legend i.missed {
+  background: var(--coral);
+}
+.cal-dots i.skipped,
+.cal-legend i.skipped {
+  background: var(--muted);
+  opacity: 0.6;
+}
+.cal-dots i.later,
+.cal-dots i.due,
+.cal-legend i.later {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--water);
+}
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 2px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.cal-legend span {
+  gap: 5px;
+}
+.logs-day b {
+  font-size: 14px;
+}
+.logs-day ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.logs-day li {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+.ld-time {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.ld-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ld-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--muted);
+}
+.logs-day li.taken .ld-status {
+  background: color-mix(in srgb, var(--mint) 18%, transparent);
+  color: var(--mint);
+}
+.logs-day li.missed .ld-status {
+  background: color-mix(in srgb, var(--coral) 18%, transparent);
+  color: var(--coral);
+}
+.logs-day li.due .ld-status,
+.logs-day li.later .ld-status {
+  background: var(--water-soft);
+  color: var(--water-deep);
+}
+
+/* ---------- achievements: folded into a shelf, unfolds on click ---------- */
+.ach-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ach-head h2 {
+  margin: 0;
+  flex: 1;
+}
+.ach-count {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(32, 164, 127, 0.14);
+  color: var(--mint);
+}
+.ach-chevron {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  transition: transform 0.3s cubic-bezier(0.3, 1.3, 0.5, 1), background 0.15s;
+  transform: rotate(-90deg);
+}
+.ach-head:hover .ach-chevron {
+  background: var(--water-soft);
+}
+.ach-card.open .ach-chevron {
+  transform: rotate(90deg);
+}
+.ach-shelf {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s ease, opacity 0.2s, margin 0.3s;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.ach-card.open .ach-shelf {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-top: 0;
+}
+.ach-shelf > * {
+  min-height: 0;
+}
+.ach-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ach-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  opacity: 0.55;
+}
+.ach-badge.done {
+  background: rgba(32, 164, 127, 0.16);
+  color: var(--mint);
+  opacity: 1;
+}
+.ach-progress {
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.ach-progress div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mint);
+}
+.ach-fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.3, 1, 0.4, 1);
+}
+.ach-card.open .ach-fold {
+  grid-template-rows: 1fr;
+}
+.ach-fold-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.ach-card.open .ach-fold-inner {
+  padding-top: 6px;
+}
+.ach-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 12px auto 0;
+  padding: 6px 14px 6px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--water-soft);
+  color: var(--water-deep);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ach-toggle-chev {
+  display: grid;
+  transform: rotate(-90deg);
+  transition: transform 0.3s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+.ach-card:not(.open) .ach-toggle-chev {
+  animation: nudge-down 1.8s ease-in-out infinite;
+}
+.ach-card.open .ach-toggle-chev {
+  transform: rotate(90deg);
+}
+@keyframes nudge-down {
+  0%,
+  60%,
+  100% {
+    transform: rotate(-90deg) translateX(0);
+  }
+  75% {
+    transform: rotate(-90deg) translateX(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ach-card:not(.open) .ach-toggle-chev {
+    animation: none;
+  }
+}
+
+/* ---------- onboarding: recommendation + medicine step ---------- */
+.plan-kicker {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--water-deep);
+}
+.plan-settings .seg-switch button {
+  padding: 5px 10px;
+}
+.meds-preview {
+  max-width: 280px;
+  margin: 6px auto 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  text-align: left;
+  animation: dialog-pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) 0.15s both;
+}
+.mp-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #9b7bff;
+}
+.mp-title {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.mp-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 2px 0 10px;
+}
+.mp-actions {
+  display: flex;
+  gap: 6px;
+}
+.mp-btn {
+  padding: 7px 12px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  background: var(--water-soft);
+  color: var(--ink);
+}
+.mp-btn.primary {
+  flex: 1;
+  text-align: center;
+  background: var(--primary);
+  color: var(--on-ink);
+}
+.meds-later {
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* ---------- the offer to retake the hydration check (after updating) ---------- */
+.recheck-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border-color: var(--water);
+  background: linear-gradient(135deg, var(--water-soft), var(--surface) 70%);
+}
+.recheck-face {
+  flex: none;
+  width: 58px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+}
+.recheck-main {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.recheck-main b {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+}
+.recheck-main span {
+  color: var(--ink-2);
+}
+.recheck-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.picker-pop.right {
+  left: auto;
+  right: 0;
+}

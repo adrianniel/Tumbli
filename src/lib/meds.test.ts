@@ -4,6 +4,9 @@ vi.mock("@tauri-apps/api/event", () => ({ emit: vi.fn(() => Promise.resolve()) }
 
 import {
   closePastDays,
+  dosesOn,
+  scheduleLabel,
+  takesOn,
   medHistory,
   cleanTimes,
   doseKey,
@@ -149,5 +152,49 @@ describe("medHistory", () => {
       ["2026-11-16", 0, 0],
       ["2026-11-17", 1, 2],
     ]);
+  });
+});
+
+describe("schedules", () => {
+  // 2026-11-18 is a Wednesday
+  it("only on the chosen weekdays", () => {
+    const mwf = med({ days: [1, 3, 5] });
+    expect(takesOn(mwf, at(9))).toBe(true); // Wed
+    expect(takesOn(mwf, at(9, 0, 19))).toBe(false); // Thu
+    expect(dosesToday([mwf], {}, at(9, 0, 19))).toEqual([]);
+  });
+  it("stops after the last day of a course", () => {
+    const course = med({ until: "2026-11-18" });
+    expect(takesOn(course, at(23))).toBe(true);
+    expect(takesOn(course, at(8, 0, 19))).toBe(false);
+  });
+  it("doesn't mark days off the schedule as missed", () => {
+    saveMeds([med({ days: [3], since: "2026-11-01" })]); // Wednesdays
+    closePastDays(at(12, 0, 17));
+    closePastDays(at(12, 0, 20)); // closes Tue 17 (no), Wed 18 (yes), Thu 19 (no)
+    expect(Object.keys(loadMedLog())).toEqual(["2026-11-18"]);
+  });
+  it("labels the schedule", () => {
+    expect(scheduleLabel({})).toBe("Every day");
+    expect(scheduleLabel({ days: [1, 2, 3, 4, 5] })).toBe("Weekdays");
+    expect(scheduleLabel({ days: [1, 3] })).toBe("Mon, Wed");
+    expect(scheduleLabel({ until: "2026-12-05" })).toMatch(/^Every day until /);
+  });
+  it("keeps the days and end date when saved", () => {
+    saveMeds([med({ days: [5, 1, 1, 9], until: "2026-12-01" })]);
+    expect(loadMeds()[0]).toMatchObject({ days: [1, 5], until: "2026-12-01" });
+  });
+});
+
+describe("dosesOn", () => {
+  it("reads an earlier day from the log, unmarked doses as missed", () => {
+    const log = { "2026-11-17": { "m1@08:00": "taken" as const } };
+    expect(dosesOn([med()], log, at(12, 0, 17), at(9)).map((d) => `${d.time} ${d.status}`)).toEqual([
+      "08:00 taken",
+      "20:00 missed",
+    ]);
+  });
+  it("has nothing for days to come", () => {
+    expect(dosesOn([med()], {}, at(12, 0, 19), at(9))).toEqual([]);
   });
 });

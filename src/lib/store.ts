@@ -354,6 +354,19 @@ export function pauseEnd(kind: "hour" | "day", now = new Date()): number {
 }
 
 /** Start the hydration check again next time the settings window renders. */
+const RECHECK_KEY = "tumbli.recheck";
+/**
+ * People who set Tumbli up before 0.1.4 get offered the new hydration check once (it now
+ * recommends glasses / tumbler refills and tells about medicine reminders). Never forced.
+ */
+export function shouldOfferRecheck(): boolean {
+  return isOnboarded() && localStorage.getItem(RECHECK_KEY) === null;
+}
+/** "done" after a hydration check (new users too), "later" when the offer is dismissed */
+export function markRecheck(v: "done" | "later") {
+  localStorage.setItem(RECHECK_KEY, v);
+}
+
 export function resetOnboarding() {
   localStorage.removeItem(ONBOARDED_KEY);
 }

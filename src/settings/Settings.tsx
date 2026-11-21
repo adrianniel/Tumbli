@@ -52,8 +52,10 @@ import {
   loadNextReminder,
   loadPausedUntil,
   loadSettings,
+  markRecheck,
   resetOnboarding,
   resetToday,
+  shouldOfferRecheck,
   saveSettings,
   streak,
   type History,
@@ -106,6 +108,13 @@ export function Settings() {
   // re-render after actions that only touch the tumbler level
   const [, bump] = useState(0);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [offerRecheck, setOfferRecheck] = useState(shouldOfferRecheck);
+  const retake = () => {
+    resetOnboarding();
+    setOfferRecheck(false);
+    setView("dashboard");
+    setOnboarded(false);
+  };
   // the widget re-times the reminder when settings change: re-read it every few seconds
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -201,7 +210,8 @@ export function Settings() {
   }
 
   if (view === "feedback") return <Feedback settings={s} onBack={() => setView("dashboard")} />;
-  if (view === "whats-new") return <WhatsNew onBack={() => setView("dashboard")} />;
+  if (view === "whats-new")
+    return <WhatsNew onBack={() => setView("dashboard")} onRetake={offerRecheck ? retake : undefined} />;
 
   const tumblerMode = s.mode === "tumbler";
   const doneMl = lastDays(history, 1)[0].ml;
@@ -280,6 +290,35 @@ export function Settings() {
           </div>
         </div>
       </header>
+
+      {offerRecheck && (
+        <section className="card recheck-card">
+          <div className="recheck-face" aria-hidden>
+            <Tumbler fill={0.6} size={50} arms happy />
+          </div>
+          <div className="recheck-main">
+            <b>Want a fresh plan?</b>
+            <span>
+              My hydration check now recommends how many glasses (or tumbler refills) to drink a day. It takes 30
+              seconds, and your history and streak stay as they are.
+            </span>
+            <div className="recheck-actions">
+              <button className="pill primary" onClick={retake}>
+                Retake the check
+              </button>
+              <button
+                className="pill"
+                onClick={() => {
+                  markRecheck("later");
+                  setOfferRecheck(false);
+                }}
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="stats">
         <div className="stat">

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { IconCheck, IconClose, IconPill, IconPlus, IconTrash } from "../components/Icons";
+import { DatePicker, TimePicker } from "../components/Pickers";
+import { MedLogs } from "./MedLogs";
 import {
   cleanTimes,
   closePastDays,
@@ -13,6 +15,7 @@ import {
   medHistory,
   newMedId,
   saveMeds,
+  scheduleLabel,
   setDose,
   type Dose,
   type Med,
@@ -20,8 +23,19 @@ import {
 import { CHANGED_EVENT, dayKey } from "../lib/store";
 import { ConfirmDialog } from "./ConfirmDialog";
 
-type Draft = { id: string | null; name: string; times: string[]; note: string };
-const EMPTY: Draft = { id: null, name: "", times: ["08:00"], note: "" };
+type Draft = { id: string | null; name: string; times: string[]; note: string; days: number[]; until: string | null };
+const EMPTY: Draft = { id: null, name: "", times: ["08:00"], note: "", days: [], until: null };
+const DOW = ["S", "M", "T", "W", "T", "F", "S"];
+const DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const inDays = (n: number) => dayKey(new Date(Date.now() + n * 86_400_000));
+const draftOf = (m: Med): Draft => ({
+  id: m.id,
+  name: m.name,
+  times: m.times,
+  note: m.note,
+  days: m.days ?? [],
+  until: m.until ?? null,
+});
 
 const STATUS_LABEL: Record<Dose["status"], string> = {
   taken: "Taken",
@@ -40,6 +54,7 @@ export function MedsCard({ now }: { now: number }) {
   const [log, setLog] = useState(loadMedLog);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [removing, setRemoving] = useState<Med | null>(null);
+  const [logsOpen, setLogsOpen] = useState(false);
 
   // a new day (or the first look today): yesterday's unmarked doses count as missed
   const today = dayKey(new Date(now));
@@ -73,10 +88,12 @@ export function MedsCard({ now }: { now: number }) {
     const times = cleanTimes(draft.times);
     if (!name || !times.length) return;
     const note = draft.note.trim().slice(0, 60);
+    const days = draft.days.length === 7 ? [] : [...draft.days].sort();
+    const plan = { name, times, note, days: days.length ? days : undefined, until: draft.until ?? undefined };
     store(
       draft.id
-        ? meds.map((m) => (m.id === draft.id ? { ...m, name, times, note } : m))
-        : [...meds, { id: newMedId(), name, times, note, on: true, since: dayKey() }],
+        ? meds.map((m) => (m.id === draft.id ? { ...m, ...plan } : m))
+        : [...meds, { id: newMedId(), on: true, since: dayKey(), ...plan }],
     );
     setDraft(null);
   };
@@ -88,9 +105,9 @@ export function MedsCard({ now }: { now: number }) {
     <section className="card meds">
       <div className="card-head">
         <h2>Medicines</h2>
-        {!draft && meds.length > 0 && meds.length < MAX_MEDS && (
-          <button className="link" onClick={() => setDraft(EMPTY)}>
-            Add another
+        {meds.length > 0 && (
+          <button className="link" onClick={() => setLogsOpen(true)}>
+            View logs
           </button>
         )}
       </div>
@@ -131,13 +148,13 @@ export function MedsCard({ now }: { now: number }) {
                 <IconPill size={15} /> {m.name}
               </span>
               <small>
-                {m.times.map(fmtTime).join(" · ")}
+                {m.times.map(fmtTime).join(" · ")} · {scheduleLabel(m)}
                 {m.note && ` · ${m.note}`}
               </small>
               <MedDots med={m} log={log} now={now} />
             </span>
             <span className="med-actions">
-              <button className="link" onClick={() => setDraft({ id: m.id, name: m.name, times: m.times, note: m.note })}>
+              <button className="link" onClick={() => setDraft(draftOf(m))}>
                 Edit
               </button>
               <input
@@ -171,14 +188,10 @@ export function MedsCard({ now }: { now: number }) {
             <div className="med-times">
               {draft.times.map((t, i) => (
                 <span className="med-time" key={i}>
-                  <input
-                    type="time"
-                    className="text-input"
+                  <TimePicker
                     value={t}
-                    aria-label={`Time ${i + 1}`}
-                    onChange={(e) =>
-                      setDraft({ ...draft, times: draft.times.map((x, j) => (j === i ? e.target.value : x)) })
-                    }
+                    label={`Time ${i + 1}`}
+                    onChange={(v) => setDraft({ ...draft, times: draft.times.map((x, j) => (j === i ? v : x)) })}
                   />
                   {draft.times.length > 1 && (
                     <button
@@ -198,6 +211,73 @@ export function MedsCard({ now }: { now: number }) {
                 >
                   <IconPlus size={13} strokeWidth={2.6} /> Time
                 </button>
+              )}
+            </div>
+          </div>
+          <div className="med-field">
+            <span>Days</span>
+            <div className="med-days">
+              <button
+                type="button"
+                className={draft.days.length === 0 ? "day-chip wide on" : "day-chip wide"}
+                aria-pressed={draft.days.length === 0}
+                onClick={() => setDraft({ ...draft, days: [] })}
+              >
+                Every day
+              </button>
+              {DOW.map((d, i) => {
+                const on = draft.days.length === 0 || draft.days.includes(i);
+                return (
+                  <button
+                    type="button"
+                    key={i}
+                    className={on ? "day-chip on" : "day-chip"}
+                    aria-pressed={on}
+                    aria-label={DOW_FULL[i]}
+                    title={DOW_FULL[i]}
+                    onClick={() => {
+                      const cur = draft.days.length ? draft.days : [0, 1, 2, 3, 4, 5, 6];
+                      const next = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i];
+                      if (next.length === 0) return; // at least one day
+                      setDraft({ ...draft, days: next.length === 7 ? [] : next.sort() });
+                    }}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="med-field">
+            <span>Ends</span>
+            <div className="med-ends">
+              <span className="seg-switch" role="radiogroup" aria-label="Ends">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.until === null}
+                  className={draft.until === null ? "on" : ""}
+                  onClick={() => setDraft({ ...draft, until: null })}
+                >
+                  Never
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.until !== null}
+                  className={draft.until !== null ? "on" : ""}
+                  onClick={() => setDraft({ ...draft, until: draft.until ?? inDays(7) })}
+                >
+                  On a date
+                </button>
+              </span>
+              {draft.until !== null && (
+                <DatePicker
+                  value={draft.until}
+                  min={dayKey()}
+                  label="Last day"
+                  onChange={(v) => setDraft({ ...draft, until: v })}
+                />
               )}
             </div>
           </div>
@@ -231,10 +311,10 @@ export function MedsCard({ now }: { now: number }) {
           </div>
         </div>
       ) : (
-        meds.length === 0 && (
+        meds.length < MAX_MEDS && (
           <div className="row">
-            <button className="pill primary" onClick={() => setDraft(EMPTY)}>
-              <IconPlus size={15} strokeWidth={2.6} /> Add a medicine
+            <button className={meds.length ? "pill" : "pill primary"} onClick={() => setDraft(EMPTY)}>
+              <IconPlus size={15} strokeWidth={2.6} /> {meds.length ? "Add another" : "Add a medicine"}
             </button>
           </div>
         )
@@ -246,6 +326,8 @@ export function MedsCard({ now }: { now: number }) {
           doctor's or the label's instructions.
         </p>
       )}
+
+      {logsOpen && <MedLogs meds={meds} log={log} now={now} onClose={() => setLogsOpen(false)} />}
 
       {removing && (
         <ConfirmDialog

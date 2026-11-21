@@ -4,7 +4,7 @@ import { IconChevronLeft } from "../components/Icons";
 import { appVersion, CHANGELOG, compareVersions, markVersionSeen } from "../lib/changelog";
 
 /** What changed in each version, the one running now first. */
-export function WhatsNew({ onBack }: { onBack: () => void }) {
+export function WhatsNew({ onBack, onRetake }: { onBack: () => void; onRetake?: () => void }) {
   const [version, setVersion] = useState(CHANGELOG[0].version);
   useEffect(() => {
     void appVersion().then((v) => {
@@ -29,6 +29,20 @@ export function WhatsNew({ onBack }: { onBack: () => void }) {
         </div>
         <div className="says">I keep getting better! Here's what changed.</div>
       </div>
+
+      {onRetake && (
+        <section className="card recheck-card">
+          <div className="recheck-main">
+            <b>Try the new hydration check</b>
+            <span>Get a recommended daily goal in 30 seconds. Your history and streak stay as they are.</span>
+            <div className="recheck-actions">
+              <button className="pill primary" onClick={onRetake}>
+                Retake the check
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {releases.map((r, i) => (
         <section className={i === 0 ? "card release current" : "card release"} key={r.version}>

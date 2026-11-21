@@ -18,6 +18,10 @@ export type Med = {
   on: boolean;
   /** day it was added (YYYY-MM-DD): earlier days don't count as missed */
   since?: string;
+  /** days of the week it's taken (0 = Sunday ... 6 = Saturday); missing or empty = every day */
+  days?: number[];
+  /** last day to take it (YYYY-MM-DD), for a course of medicine; missing = no end */
+  until?: string;
 };
 
 /** "missed": the user said they didn't take it (e.g. while away); "skipped": closed the reminder */
@@ -47,6 +51,7 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+const isDay = (d: unknown): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
 const isTime = (t: unknown): t is string => typeof t === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
 /** distinct, valid times in order */
@@ -63,7 +68,11 @@ export function loadMeds(): Med[] {
       times: cleanTimes(Array.isArray(m.times) ? m.times : []),
       note: typeof m.note === "string" ? m.note : "",
       on: m.on !== false,
-      ...(typeof m.since === "string" ? { since: m.since } : {}),
+      ...(isDay(m.since) ? { since: m.since } : {}),
+      ...(Array.isArray(m.days) && m.days.length
+        ? { days: [...new Set(m.days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort() }
+        : {}),
+      ...(isDay(m.until) ? { until: m.until } : {}),
     }));
 }
 
@@ -93,6 +102,34 @@ export function setDose(medId: string, time: string, state: DoseState | null, no
   void emit(CHANGED_EVENT);
 }
 
+/** Is this medicine taken on `date`: switched on, already added, a chosen weekday, not past its end? */
+export function takesOn(med: Med, date: Date) {
+  const day = dayKey(date);
+  return (
+    med.on &&
+    (!med.since || med.since <= day) &&
+    (!med.until || day <= med.until) &&
+    (!med.days?.length || med.days.includes(date.getDay()))
+  );
+}
+
+/** "Every day", "Weekdays", "Mon, Wed, Fri" ... plus "until Dec 5" for a course */
+export function scheduleLabel(med: Pick<Med, "days" | "until">) {
+  const d = med.days ?? [];
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const days =
+    !d.length || d.length === 7
+      ? "Every day"
+      : d.join() === "1,2,3,4,5"
+        ? "Weekdays"
+        : d.join() === "0,6"
+          ? "Weekends"
+          : d.map((n) => names[n]).join(", ");
+  if (!med.until) return days;
+  const [y, m, dd] = med.until.split("-").map(Number);
+  return `${days} until ${new Date(y, m - 1, dd).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}
+
 const addDays = (d: Date, n: number) => {
   const x = new Date(d);
   x.setDate(x.getDate() + n);
@@ -111,14 +148,15 @@ export function closePastDays(now = new Date()) {
     if (last === null) localStorage.setItem(CLOSED_KEY, yesterday); // first run: nothing before it
     return false;
   }
-  const meds = loadMeds().filter((m) => m.on);
+  const meds = loadMeds();
   const log = loadMedLog();
   let changed = false;
   for (let i = KEEP_DAYS; i >= 1; i--) {
-    const day = dayKey(addDays(now, -i));
+    const date = addDays(now, -i);
+    const day = dayKey(date);
     if (day <= last) continue;
     for (const m of meds) {
-      if (m.since && m.since > day) continue;
+      if (!takesOn(m, date)) continue;
       for (const time of m.times) {
         const k = doseKey(m.id, time);
         if (!log[day]?.[k]) {
@@ -175,7 +213,7 @@ export function dosesToday(meds: Med[], log: MedLog, now = new Date()): Dose[] {
   const t = now.getTime();
   const out: Dose[] = [];
   for (const med of meds) {
-    if (!med.on) continue;
+    if (!takesOn(med, now)) continue;
     for (const time of med.times) {
       const at = timeAt(time, now);
       const logged = today[doseKey(med.id, time)];
@@ -190,6 +228,27 @@ export function dosesToday(meds: Med[], log: MedLog, now = new Date()): Dose[] {
     }
   }
   return out.sort((a, b) => a.at - b.at || a.med.name.localeCompare(b.med.name));
+}
+
+export type LoggedDose = { med: Med; time: string; status: DoseStatus };
+
+/**
+ * Every dose of one day, for the logs: today as it stands now; an earlier day from the log
+ * (a scheduled dose nobody marked counts as missed).
+ */
+export function dosesOn(meds: Med[], log: MedLog, date: Date, now = new Date()): LoggedDose[] {
+  if (dayKey(date) === dayKey(now)) return dosesToday(meds, log, now);
+  if (dayKey(date) > dayKey(now)) return [];
+  const entries = log[dayKey(date)] ?? {};
+  const out: LoggedDose[] = [];
+  for (const med of meds) {
+    for (const time of med.times) {
+      const logged = entries[doseKey(med.id, time)];
+      if (logged) out.push({ med, time, status: logged });
+      else if (takesOn(med, date)) out.push({ med, time, status: "missed" });
+    }
+  }
+  return out.sort((a, b) => a.time.localeCompare(b.time) || a.med.name.localeCompare(b.med.name));
 }
 
 /** The doses Tumbli should remind about right now (snoozed ones wait until their snooze ends). */

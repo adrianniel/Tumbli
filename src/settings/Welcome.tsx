@@ -10,6 +10,7 @@ import {
   IconCloudSun,
   IconDumbbell,
   IconGlass,
+  IconPill,
   IconRun,
   IconSnow,
   IconSun,
@@ -27,7 +28,7 @@ import {
   type Profile,
   type Sex,
 } from "../lib/hydration";
-import { loadProfile, markOnboarded, saveProfile, saveSettings, type Settings } from "../lib/store";
+import { markRecheck, loadProfile, markOnboarded, saveProfile, saveSettings, type Settings } from "../lib/store";
 
 type Props = { initial: Settings; onDone: (s: Settings) => void };
 
@@ -85,7 +86,7 @@ const HEALTH: Option<string>[] = [
   { value: "yes", label: "Yes" },
 ];
 
-const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "mode", "size", "health", "result"] as const;
+const STEPS = ["intro", "name", "age", "sex", "weight", "activity", "climate", "hours", "mode", "size", "health", "meds", "result"] as const;
 type StepName = (typeof STEPS)[number];
 
 function hourLabel(h: number) {
@@ -137,6 +138,17 @@ function Choices<T extends string | number>({
 }
 
 /** First run (and "retake"): a short hydration check that sets up Tumbli for this person. */
+/** "Finish your 750 ml tumbler about 3 times a day" / "Refill it about 5 times" / "Most of one tumbler" */
+function refillText(refills: number, tumblerMl: number) {
+  const size = tumblerMl >= 1000 ? `${(tumblerMl / 1000).toLocaleString()} L` : `${tumblerMl} ml`;
+  if (refills <= 1.05) return `About one ${size} tumbler, a little at a time`;
+  const times = Math.round(refills * 2) / 2; // to the nearest half
+  const label = times % 1 ? `${Math.floor(times)}½` : `${times}`;
+  return tumblerMl <= 500
+    ? `Your ${size} tumbler is small: refill it about ${label} times a day`
+    : `Finish your ${size} tumbler about ${label} times a day`;
+}
+
 export function Welcome({ initial, onDone }: Props) {
   // dev preview: settings.html?fresh&step=hours jumps straight to a step
   const [step, setStep] = useState(() => {
@@ -155,14 +167,18 @@ export function Welcome({ initial, onDone }: Props) {
 
   const plan = useMemo(() => planFor(p), [p]);
   // the result screen can fine-tune what the check suggested
-  const [tweak, setTweak] = useState<{ goalMl?: number; intervalMin?: number; auto?: boolean }>({});
+  const [tweak, setTweak] = useState<{ goalMl?: number; intervalMin?: number; auto?: boolean; own?: boolean }>({});
   const tumblerMode = p.mode === "tumbler";
   // glass mode: whole glasses; tumbler mode: liters in 100 ml steps
   const suggestedMl = tumblerMode
     ? Math.round(plan.totalMl / 100) * 100
     : Math.max(1, Math.round(plan.totalMl / p.glassMl)) * p.glassMl;
-  const goalMl = tweak.goalMl ?? suggestedMl;
+  // Tumbli's recommendation is used unless the user picks "Set my own" (or has to: fluid limit)
+  const ownGoal = tweak.own ?? plan.restricted;
+  const goalMl = ownGoal ? (tweak.goalMl ?? suggestedMl) : suggestedMl;
   const glasses = Math.round(goalMl / p.glassMl);
+  const suggestedGlasses = Math.round(suggestedMl / p.glassMl);
+  const refills = suggestedMl / p.tumblerMl;
   // new users start on Auto: Tumbli paces the reminders so the goal is reached in time
   const intervalMin = tweak.intervalMin ?? plan.intervalMin;
   const auto = tweak.auto ?? true;
@@ -193,6 +209,7 @@ export function Welcome({ initial, onDone }: Props) {
   const finish = async () => {
     setBusy(true);
     saveProfile(p);
+    markRecheck("done");
     const s: Settings = {
       ...initial,
       name: first.slice(0, 30),
@@ -230,7 +247,8 @@ export function Welcome({ initial, onDone }: Props) {
     hours: "I'll stay quiet outside these hours.",
     mode: "How do you usually drink?",
     size: tumblerMode ? "Show me your tumbler!" : "What do you drink from?",
-    health: "Last one, I promise!",
+    health: "Last question, I promise!",
+    meds: "Oh, and one more thing!",
     result: "Here's your plan!",
   };
 
@@ -415,6 +433,28 @@ export function Welcome({ initial, onDone }: Props) {
         />,
       );
       break;
+    case "meds":
+      content = question(
+        "I can remind you about medicine too",
+        "Taking medicine or vitamins? Add them with their times and I'll pop up at each one, just like for water.",
+        <>
+          <div className="meds-preview" aria-hidden>
+            <div className="mp-kicker">
+              <IconPill size={13} strokeWidth={2.4} /> Medicine · 8:00 am
+            </div>
+            <div className="mp-title">Time for your Vitamin D</div>
+            <div className="mp-sub">Take it with a glass of water</div>
+            <div className="mp-actions">
+              <span className="mp-btn primary">Taken</span>
+              <span className="mp-btn">10 min</span>
+            </div>
+          </div>
+          <p className="fine meds-later">
+            Set it up anytime in <b>Settings › Medicines</b>.
+          </p>
+        </>,
+      );
+      break;
     case "result":
       content = (
         <>
@@ -423,15 +463,27 @@ export function Welcome({ initial, onDone }: Props) {
             <p className="warn">Please follow your doctor's daily limit. Set the number of servings below to match it.</p>
           ) : (
             <div className="plan-hero">
-              <div className="plan-total">
-                <b>{(goalMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })}</b>
-                <span>liters a day</span>
-              </div>
-              <div className="plan-equals">
-                {tumblerMode
-                  ? `≈ ${(goalMl / p.tumblerMl).toLocaleString(undefined, { maximumFractionDigits: 1 })} of your ${p.tumblerMl >= 1000 ? `${p.tumblerMl / 1000} L` : `${p.tumblerMl} ml`} tumbler`
-                  : `${glasses} glasses of ${p.glassMl} ml`}
-              </div>
+              <span className="plan-kicker">Tumbli recommends</span>
+              {tumblerMode ? (
+                <>
+                  <div className="plan-total">
+                    <b>{(suggestedMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}</b>
+                    <span>liters a day</span>
+                  </div>
+                  <div className="plan-equals">{refillText(refills, p.tumblerMl)}</div>
+                </>
+              ) : (
+                <>
+                  <div className="plan-total">
+                    <b>{suggestedGlasses}</b>
+                    <span>glasses a day</span>
+                  </div>
+                  <div className="plan-equals">
+                    {p.glassMl} ml each, {(suggestedMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} L in
+                    total
+                  </div>
+                </>
+              )}
               <div className="plan-chips">
                 {plan.reasons.map((r, i) => (
                   <span className="chip" key={r.label}>
@@ -442,8 +494,22 @@ export function Welcome({ initial, onDone }: Props) {
             </div>
           )}
           <section className="card plan-settings">
+            {!plan.restricted && (
+              <div className="row">
+                <span>Daily goal</span>
+                <span className="seg-switch" role="radiogroup" aria-label="Daily goal">
+                  <button role="radio" aria-checked={!ownGoal} className={!ownGoal ? "on" : ""} onClick={() => setTweak({ ...tweak, own: false })}>
+                    Use Tumbli's plan
+                  </button>
+                  <button role="radio" aria-checked={ownGoal} className={ownGoal ? "on" : ""} onClick={() => setTweak({ ...tweak, own: true })}>
+                    Set my own
+                  </button>
+                </span>
+              </div>
+            )}
+            {ownGoal && (
             <div className="row">
-              <span>Daily goal</span>
+              <span>{plan.restricted ? "Daily goal" : "My goal"}</span>
               <span className="stepper">
                 <button
                   onClick={() =>
@@ -474,6 +540,7 @@ export function Welcome({ initial, onDone }: Props) {
                 </button>
               </span>
             </div>
+            )}
             <div className="row stack">
               <span className="row-label">Remind me every</span>
               <Chips
@@ -508,7 +575,7 @@ export function Welcome({ initial, onDone }: Props) {
   }
 
   const last = stepName === "result";
-  const needsNext = ["name", "weight", "hours", "result"].includes(stepName) || (stepName === "sex" && canBePregnant(p));
+  const needsNext = ["name", "weight", "hours", "meds", "result"].includes(stepName) || (stepName === "sex" && canBePregnant(p));
 
   return (
     <main className="onb">
@@ -544,7 +611,7 @@ export function Welcome({ initial, onDone }: Props) {
           </button>
         ) : needsNext ? (
           <button className="primary-btn" onClick={next}>
-            {stepName === "name" && !first ? "Skip" : "Continue"}
+            {stepName === "name" && !first ? "Skip" : stepName === "meds" ? "Got it" : "Continue"}
           </button>
         ) : (
           <p className="fine">Tap an answer to continue</p>
