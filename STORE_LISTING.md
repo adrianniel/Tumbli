@@ -23,6 +23,10 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 >
 > Tumbli fills up as you drink. Every so often it hops, waves and pops up a friendly reminder. Log a drink, snooze or skip in one click, or press Ctrl+Alt+W from any app without touching the mouse.
 >
+> Pick how often to be reminded, or leave it on Auto: Tumbli spaces the reminders so you reach your goal before your day ends.
+>
+> Taking medicine or vitamins? Add them with their times and Tumbli reminds you at each one, then ticks off today's doses.
+>
 > Tumbli is made to stay out of your way:
 > • It only reminds you during your active hours
 > • It stays quiet while you're away from the keyboard
@@ -41,7 +45,7 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 2. A personal daily goal from a 30-second check-in (age, weight, activity and weather)
 3. Track by the glass, or by your own tumbler or bottle that Tumbli mirrors
 4. Fills up as you drink toward your daily goal
-5. Gentle reminders every 15 minutes to 2 hours, spread over your active hours
+5. Gentle reminders every 15 minutes to 2 hours, or on Auto: paced so you reach your goal before your day ends
 6. Log a drink, snooze or skip with one click
 7. Log a drink from any app with a keyboard shortcut (Ctrl+Alt+W)
 8. Stays quiet while you're away and hides during fullscreen games, videos and slides
@@ -54,6 +58,7 @@ Copy-paste material for the Partner Center submission. Fields marked [YOU] need 
 15. Starts with Windows (optional)
 16. Send feedback right from the app
 17. No account, no ads, no data collection
+18. Medicine and vitamin reminders at the times you set, with today's doses ticked off
 
 ## Search terms (max 7)
 
@@ -117,11 +122,13 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 ## What's new (for updates)
 
-Version 0.1.3 (paste into "What's new in this version"):
+Version 0.1.4 (paste into "What's new in this version"):
 
-> Bug fixes and improvements.
+> New: Auto reminders that pace themselves so you reach your goal before your day ends, and medicine reminders at the times you set.
 
-(0.1.3: a new "Remind me every" now takes effect right away, and settings show when the next
+(0.1.4: an "Auto" choice in "Remind me every" (the default for new users), and a Medicines card in
+Settings: add a medicine with its times, Tumbli asks at each one, today's doses can be ticked off.
+0.1.3: a new "Remind me every" now takes effect right away, and settings show when the next
 reminder comes. 0.1.2: no title bar above the speech bubbles, a Tumbli dialog for Reset today.)
 
 Version 0.1.1: first release on the Store (0.1.0 was withdrawn before it was published).

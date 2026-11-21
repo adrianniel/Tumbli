@@ -2,6 +2,7 @@
  * The floating widget. This file wires things together; the pieces live next to it:
  *  - windowing.ts / useDocking.ts  the window: size per mode, docking to a screen edge
  *  - useReminders.ts               the reminder loop (idle, fullscreen, pause)
+ *  - useMedReminders.ts            medicine reminders at the times the user set
  *  - useGestures.ts                click vs drag vs double-click on Tumbli
  *  - Buddy.tsx, bubbles.tsx        what's drawn: Tumbli, its badge, buttons and bubbles
  */
@@ -31,7 +32,18 @@ import {
   type Settings,
 } from "../lib/store";
 import { Buddy, HoverActions } from "./Buddy";
-import { AwardBubble, FactBubble, RatingBubble, RecapBubble, ReminderBubble, SNOOZE_MIN, TourBubble } from "./bubbles";
+import {
+  AwardBubble,
+  FactBubble,
+  MedBubble,
+  RatingBubble,
+  RecapBubble,
+  ReminderBubble,
+  SNOOZE_MIN,
+  TourBubble,
+} from "./bubbles";
+import { fmtTime, joinNames } from "../lib/meds";
+import { useMedReminders } from "./useMedReminders";
 import { askLater, neverAsk, rated, shouldAskForRating } from "../lib/rating";
 import { storeReviewUrl } from "../config";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -109,7 +121,19 @@ export function Widget() {
   });
   const { nudging } = reminders;
 
-  const talking = nudging || fact !== null || tour !== null || award !== null || recap !== null || askRating;
+  const meds = useMedReminders({
+    canShow: () => !touring.current,
+    onShow: () => {
+      setFact(null);
+      if (loadSettings().sound) bloop();
+    },
+    snoozeMin: SNOOZE_MIN,
+  });
+  const medDue = meds.due.length > 0;
+  /** Tumbli is asking for something: water or medicine */
+  const asking = nudging || medDue;
+
+  const talking = asking || fact !== null || tour !== null || award !== null || recap !== null || askRating;
   const talkingRef = useRef(talking);
   talkingRef.current = talking;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
@@ -162,7 +186,7 @@ export function Widget() {
   }, []);
   const tellFact = () => {
     setBoing((n) => n + 1);
-    if (nudging || touring.current) return; // during a reminder or the tour a click just makes Tumbli jump
+    if (asking || touring.current) return; // during a reminder or the tour a click just makes Tumbli jump
     setFact(randomFact());
     setRevealed(false);
     armFactTimer();
@@ -288,6 +312,10 @@ export function Widget() {
       setMessage(nudgeMessage(loadSettings().name));
       reminders.forceNudge();
     }
+    if (q.has("med")) {
+      const med = { id: "demo", name: q.get("med") || "Vitamin D", times: ["08:00"], note: "After breakfast", on: true };
+      meds.force([{ med, time: "08:00", at: Date.now(), status: "due" }]);
+    }
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
     if (q.has("rating")) setAskRating(true);
@@ -337,7 +365,7 @@ export function Widget() {
         "widget",
         side === "left" ? "side-left" : "side-right",
         talking ? "expanded" : "compact",
-        nudging ? "nudging" : "",
+        asking ? "nudging" : "",
         tour !== null ? `touring tour-${TOUR[tour].demo ?? "none"}` : "",
         cheer && !talking ? "cheering" : "",
         mode === "hover" ? "hovering" : "",
@@ -360,7 +388,22 @@ export function Widget() {
         hoverTimer.current = window.setTimeout(() => setHover(false), HOVER_GRACE_MS);
       }}
     >
-      {nudging && (
+      {medDue && tour === null && (
+        <MedBubble
+          names={joinNames(meds.due.map((d) => d.med.name))}
+          time={meds.due.every((d) => d.time === meds.due[0].time) ? fmtTime(meds.due[0].time) : ""}
+          note={meds.due.length === 1 ? meds.due[0].med.note : ""}
+          onTaken={() => {
+            meds.taken();
+            setBoing((n) => n + 1);
+            cheerUp("Nice! 💊 Now some water");
+          }}
+          onSnooze={meds.snooze}
+          onSkip={meds.skip}
+        />
+      )}
+
+      {nudging && !medDue && (
         <ReminderBubble
           message={message}
           sub={reminderSub}
@@ -375,7 +418,7 @@ export function Widget() {
 
       {tour !== null && <TourBubble step={tour} onNext={nextTour} onSkip={endTour} />}
 
-      {award && !nudging && tour === null && (
+      {award && !asking && tour === null && (
         <AwardBubble
           title={award.title}
           desc={award.desc}
@@ -389,7 +432,7 @@ export function Widget() {
         />
       )}
 
-      {recap && !award && !nudging && tour === null && (
+      {recap && !award && !asking && tour === null && (
         <RecapBubble
           liters={(recap.totalMl / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}
           goalDays={recap.goalDays}
@@ -403,7 +446,7 @@ export function Widget() {
         />
       )}
 
-      {askRating && !award && !recap && !nudging && tour === null && (
+      {askRating && !award && !recap && !asking && tour === null && (
         <RatingBubble
           onRate={() => {
             rated();
@@ -427,7 +470,7 @@ export function Widget() {
         />
       )}
 
-      {tour === null && !nudging && !award && !recap && !askRating && fact && (
+      {tour === null && !asking && !award && !recap && !askRating && fact && (
         <FactBubble
           fact={fact}
           revealed={revealed}
@@ -458,7 +501,7 @@ export function Widget() {
         empty={empty}
         onRefill={doRefill}
         plusOne={plusOne}
-        nudging={nudging}
+        nudging={asking}
         celebrate={celebrate}
       />
 

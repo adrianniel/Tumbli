@@ -95,6 +95,20 @@ export const IconRefill = (p: P) => (
     <path d="M20 20.5V16h-4.5" />
   </Svg>
 );
+export const IconPill = (p: P) => (
+  <Svg {...p}>
+    <g transform="rotate(-45 12 12)">
+      <path d="M12 8.6H6.6a3.4 3.4 0 0 0 0 6.8H12z" fill="currentColor" stroke="none" />
+      <rect x="3.2" y="8.6" width="17.6" height="6.8" rx="3.4" />
+      <path d="M12 8.6v6.8" />
+    </g>
+  </Svg>
+);
+export const IconTrash = (p: P) => (
+  <Svg {...p}>
+    <path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l.8 12.5h9.4L17.5 7" />
+  </Svg>
+);
 export const IconCheck = (p: P) => (
   <Svg {...p}>
     <path d="M5 12.5l4.5 4.5L19 7.5" />

@@ -1310,3 +1310,8 @@ body,
 .rating .bubble-kicker {
   color: #c98400;
 }
+
+/* medicine reminder: same bubble, its own color */
+.med-card .bubble-kicker {
+  color: var(--med, #9b7bff);
+}

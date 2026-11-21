@@ -1,6 +1,6 @@
 /** The speech bubbles Tumbli shows next to itself. */
 import type { ReactNode } from "react";
-import { IconBell, IconBulb, IconClose, IconQuestion, IconRefill } from "../components/Icons";
+import { IconBell, IconBulb, IconClose, IconPill, IconQuestion, IconRefill } from "../components/Icons";
 import type { Fact } from "../lib/facts";
 import { TOUR } from "./tour";
 
@@ -54,6 +54,47 @@ export function ReminderBubble({
           {SNOOZE_MIN} min
         </button>
         <button className="btn ghost" onClick={onSkip} title="Skip this reminder" aria-label="Skip">
+          <IconClose size={15} />
+        </button>
+      </div>
+    </Bubble>
+  );
+}
+
+export function MedBubble({
+  names,
+  time,
+  note,
+  onTaken,
+  onSnooze,
+  onSkip,
+}: {
+  /** "Metformin and Vitamin D" */
+  names: string;
+  /** "8:00 am"; empty when the doses are from different times */
+  time: string;
+  note: string;
+  onTaken: () => void;
+  onSnooze: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <Bubble className="med-card" label="Medicine reminder">
+      <div className="bubble-kicker">
+        <IconPill size={13} strokeWidth={2.4} /> Medicine{time && ` · ${time}`}
+      </div>
+      <div className="nudge-title">Time for your {names}</div>
+      <div className="nudge-sub">
+        {note ? `${note} · ` : ""}Take it with a glass of water
+      </div>
+      <div className="nudge-actions">
+        <button className="btn primary" onClick={onTaken}>
+          Taken
+        </button>
+        <button className="btn" onClick={onSnooze}>
+          {SNOOZE_MIN} min
+        </button>
+        <button className="btn ghost" onClick={onSkip} title="Skip this dose" aria-label="Skip this dose">
           <IconClose size={15} />
         </button>
       </div>

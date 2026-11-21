@@ -19,6 +19,7 @@ import {
 import { Welcome } from "./Welcome";
 import { Feedback } from "./Feedback";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { MedsCard } from "./MedsCard";
 import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
@@ -465,6 +466,8 @@ export function Settings() {
           <HourRange start={s.startHour} end={s.endHour} onChange={(a, b) => update({ startHour: a, endHour: b })} />
         </div>
       </section>
+
+      <MedsCard now={now} />
 
       <section className="card">
         <h2>Behavior</h2>

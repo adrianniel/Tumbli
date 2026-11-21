@@ -2127,3 +2127,159 @@ footer {
   color: var(--water-deep);
   font-weight: 600;
 }
+
+/* ---------- Medicines ---------- */
+.meds .card-sub {
+  margin: 0 0 4px;
+}
+.doses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.dose {
+  display: grid;
+  grid-template-columns: auto 64px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+.dose-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1.8px solid var(--muted);
+  background: transparent;
+  color: var(--on-ink);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+.dose.taken .dose-check {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: #fff;
+}
+.dose-time {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.dose-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dose-status {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.dose.taken .dose-status {
+  color: var(--mint);
+}
+.dose.due .dose-status {
+  color: var(--water-deep);
+}
+.dose.missed .dose-status {
+  color: var(--coral);
+}
+.dose.taken .dose-name,
+.dose.skipped .dose-name {
+  color: var(--muted);
+}
+.med-row .med-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.med-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.med-name svg {
+  color: var(--med, #9b7bff);
+  flex: none;
+}
+.med-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.med-field {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.med-field > span {
+  font-weight: 700;
+  font-size: 13px;
+}
+.med-field .text-input {
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+  font-weight: 600;
+}
+.med-times {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.med-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.med-times input[type="time"] {
+  width: 136px;
+  color-scheme: light dark;
+}
+.time-remove {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.time-remove:hover {
+  background: var(--water-soft);
+  color: var(--ink);
+}
+.pill.small-pill {
+  background: var(--surface-2);
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.med-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.med-form-actions .spacer {
+  flex: 1;
+}
+.danger-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--coral);
+}
+.meds-note {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}

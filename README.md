@@ -21,7 +21,8 @@
 ### Gentle reminders, at the right time
 
 Every so often Tumbli hops, waves and pops up a friendly reminder. Log a drink, snooze or skip in one click,
-or press **Ctrl+Alt+W** from any app. It only reminds you during your active hours, stays quiet while you're
+or press **Ctrl+Alt+W** from any app. Pick how often, or leave it on **Auto**: Tumbli spaces the reminders so you
+reach your goal before your day ends, and brings them a bit closer if you skip one. It only reminds you during your active hours, stays quiet while you're
 away from the keyboard, and hides during fullscreen games, videos and presentations.
 
 ![A water break reminder next to a work calendar](store-assets/screenshots/2-reminder.png)
@@ -54,6 +55,8 @@ Dark mode by default, light mode with one switch in Settings.
 
 ### And also
 
+- Medicine reminders: add your medicines or vitamins with their times, and Tumbli asks at each one
+  (Taken, 10 min, or skip) and ticks off today's doses
 - Docks to the left or right edge of the screen; drag it anywhere and it snaps back
 - Pause reminders for an hour or until tomorrow from the tray icon
 - Starts with Windows (optional)
