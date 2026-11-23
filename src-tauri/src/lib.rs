@@ -45,6 +45,17 @@ async fn startup_status() -> StartupStatus {
     }
 }
 
+/// The newest version the Microsoft Store has for Tumbli when it's newer than this one
+/// ("" if the Store doesn't say which), or None: up to date, not from the Store, or offline.
+#[tauri::command]
+async fn store_update() -> Option<String> {
+    #[cfg(windows)]
+    if startup::is_packaged() {
+        return store_updates::available().ok().flatten();
+    }
+    None
+}
+
 #[tauri::command]
 async fn startup_set(enable: bool) -> String {
     #[cfg(windows)]
@@ -214,6 +225,25 @@ mod platform {
 }
 
 #[cfg(windows)]
+mod store_updates {
+    use windows::Services::Store::StoreContext;
+
+    pub fn available() -> windows::core::Result<Option<String>> {
+        let updates = StoreContext::GetDefault()?.GetAppAndOptionalStorePackageUpdatesAsync()?.get()?;
+        if updates.Size()? == 0 {
+            return Ok(None);
+        }
+        let mut version = String::new();
+        for update in updates {
+            if let Ok(v) = update.Package().and_then(|p| p.Id()).and_then(|id| id.Version()) {
+                version = format!("{}.{}.{}", v.Major, v.Minor, v.Build);
+            }
+        }
+        Ok(Some(version))
+    }
+}
+
+#[cfg(windows)]
 mod startup {
     use windows::core::HSTRING;
     use windows::ApplicationModel::{StartupTask, StartupTaskState};
@@ -289,7 +319,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, primary_button_down, set_widget_bounds, set_widget_region])
+        .invoke_handler(tauri::generate_handler![system_status, open_settings, startup_status, startup_set, store_update, primary_button_down, set_widget_bounds, set_widget_region])
         .setup(|app| {
             #[cfg(windows)]
             if let Some(widget) = app.get_webview_window("widget") {

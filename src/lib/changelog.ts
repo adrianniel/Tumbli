@@ -18,6 +18,10 @@ export const CHANGELOG: Release[] = [
         text: "Tumbli now rests its animations while it waits, so it uses far less CPU and battery through the day.",
       },
       {
+        title: "Update alerts",
+        text: "When a new Tumbli is out, Tumbli tells you itself and Settings shows Update available: one click opens the Microsoft Store.",
+      },
+      {
         title: "Quieter in the background",
         text: "The Settings window stops animating while it's closed or behind other windows, and a speech bubble you haven't answered keeps still after a few seconds.",
       },

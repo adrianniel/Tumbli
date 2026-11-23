@@ -22,6 +22,8 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { MedsCard } from "./MedsCard";
 import { WhatsNew } from "./WhatsNew";
 import { appVersion, CHANGELOG } from "../lib/changelog";
+import { STORE_PAGE, storeUpdate } from "../lib/updates";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Ready } from "./Ready";
 import { Achievements, Wardrobe } from "./Wardrobe";
 import { recapFor } from "../lib/recap";
@@ -106,6 +108,15 @@ export function Settings() {
   });
   const [version, setVersion] = useState(CHANGELOG[0].version);
   useEffect(() => void appVersion().then(setVersion), []);
+  // a newer Tumbli in the Microsoft Store ("" if the Store doesn't say which); asked again on focus
+  const [storeVersion, setStoreVersion] = useState<string | null>(null);
+  useEffect(() => {
+    const ask = () => void storeUpdate().then(setStoreVersion);
+    ask();
+    window.addEventListener("focus", ask);
+    return () => window.removeEventListener("focus", ask);
+  }, []);
+  const openStore = () => void openUrl(STORE_PAGE).catch(() => {});
   // re-render after actions that only touch the tumbler level
   const [, bump] = useState(0);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -291,6 +302,18 @@ export function Settings() {
           </div>
         </div>
       </header>
+
+      {storeVersion !== null && (
+        <section className="card update-banner">
+          <div className="update-banner-main">
+            <b>A new Tumbli is ready{storeVersion ? `: version ${storeVersion}` : ""}</b>
+            <span>Update in the Microsoft Store. It takes a click, and your history and settings stay.</span>
+          </div>
+          <button className="pill primary" onClick={openStore}>
+            Update
+          </button>
+        </section>
+      )}
 
       {offerRecheck && (
         <section className="card recheck-card">
@@ -613,6 +636,15 @@ export function Settings() {
           <button className="link" onClick={() => setView("whats-new")}>
             What's new
           </button>
+          {storeVersion !== null && (
+            <>
+              {" "}
+              ·{" "}
+              <button className="link update-link" onClick={openStore}>
+                Update available{storeVersion ? ` (${storeVersion})` : ""}
+              </button>
+            </>
+          )}
         </span>
       </footer>
 

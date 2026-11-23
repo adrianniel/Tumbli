@@ -102,6 +102,42 @@ export function MedBubble({
   );
 }
 
+/** A newer Tumbli is waiting in the Microsoft Store. */
+export function UpdateReadyBubble({
+  version,
+  onUpdate,
+  onLater,
+}: {
+  /** "0.1.6", or "" when the Store doesn't say */
+  version: string;
+  onUpdate: () => void;
+  onLater: () => void;
+}) {
+  return (
+    <Bubble className="update-card" label="Update available">
+      <div className="bubble-head">
+        <div className="bubble-kicker">⬆️ Update available</div>
+        <button className="close" onClick={onLater} aria-label="Later">
+          <IconClose size={14} />
+        </button>
+      </div>
+      <div className="nudge-title">A new Tumbli is ready!</div>
+      <div className="nudge-sub">
+        {version ? `Version ${version} is in the Microsoft Store.` : "It's waiting in the Microsoft Store."} It only
+        takes a click, and your progress stays.
+      </div>
+      <div className="nudge-actions">
+        <button className="btn primary" onClick={onUpdate}>
+          Update now
+        </button>
+        <button className="btn" onClick={onLater}>
+          Later
+        </button>
+      </div>
+    </Bubble>
+  );
+}
+
 /** After an update: what's new, with a way to read more in Settings. */
 export function UpdateBubble({
   version,

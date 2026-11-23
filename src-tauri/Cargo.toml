@@ -36,7 +36,7 @@ windows-sys = { version = "0.59", features = [
   "Win32_Storage_Packaging_Appx",
   "Win32_UI_WindowsAndMessaging",
 ] }
-windows = { version = "0.61", features = ["ApplicationModel", "Foundation"] }
+windows = { version = "0.61", features = ["ApplicationModel", "Foundation", "Foundation_Collections", "Services_Store"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

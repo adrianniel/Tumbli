@@ -42,8 +42,10 @@ import {
   SNOOZE_MIN,
   TourBubble,
   UpdateBubble,
+  UpdateReadyBubble,
   WelcomeBackBubble,
 } from "./bubbles";
+import { snoozeUpdate, STORE_PAGE, storeUpdate, updateSnoozed } from "../lib/updates";
 import { appVersion, CHANGELOG, markVersionSeen, pendingReleases } from "../lib/changelog";
 import { awayLabel } from "../lib/schedule";
 import { closePastDays, doseKey, dosesBetween, fmtTime, joinNames, loadMedLog, loadMeds, setDose } from "../lib/meds";
@@ -106,6 +108,8 @@ export function Widget() {
   const [recap, setRecap] = useState<Recap | null>(null);
   const [askRating, setAskRating] = useState(false);
   const [update, setUpdate] = useState<{ version: string; titles: string[] } | null>(null);
+  /** a newer Tumbli is in the Store: its version ("" if unknown) */
+  const [updateReady, setUpdateReady] = useState<string | null>(null);
   // dev preview: widget.html?outfit=crown shows an outfit without touching storage
   const [devOutfit] = useState(() =>
     import.meta.env.DEV ? new URLSearchParams(location.search).get("outfit") : null,
@@ -164,7 +168,14 @@ export function Widget() {
   const asking = nudging || medDue || welcome !== null;
 
   const talking =
-    asking || fact !== null || tour !== null || award !== null || recap !== null || askRating || update !== null;
+    asking ||
+    fact !== null ||
+    tour !== null ||
+    award !== null ||
+    recap !== null ||
+    askRating ||
+    update !== null ||
+    updateReady !== null;
   const talkingRef = useRef(talking);
   talkingRef.current = talking;
   const mode: WindowMode = talking ? "talk" : cheer ? "cheer" : hover ? "hover" : "idle";
@@ -191,7 +202,7 @@ export function Widget() {
     if (!talking) return;
     const t = window.setTimeout(() => setCalm(true), CALM_MS);
     return () => window.clearTimeout(t);
-  }, [talking, nudging, medDue, welcome, fact, tour, award, recap, askRating, update]);
+  }, [talking, nudging, medDue, welcome, fact, tour, award, recap, askRating, update, updateReady]);
 
   const { side, startDrag, peek } = useDocking(
     mode,
@@ -334,6 +345,24 @@ export function Widget() {
     }, 12_000); // after any achievement or weekly recap
     return () => window.clearTimeout(t);
   }, []);
+  /** a new version in the Store: say so (at most once a day after Later), when Tumbli is free */
+  useEffect(() => {
+    let t: number | undefined;
+    const check = async () => {
+      const v = await storeUpdate();
+      if (v !== null && !updateSnoozed()) {
+        if (talkingRef.current || touring.current) {
+          t = window.setTimeout(check, 60_000);
+          return;
+        }
+        setUpdateReady(v);
+      }
+      t = window.setTimeout(check, 6 * 3600_000); // and again every few hours
+    };
+    t = window.setTimeout(check, 45_000); // after the start-up bubbles
+    return () => window.clearTimeout(t);
+  }, []);
+
   const closeUpdate = () => {
     if (update) markVersionSeen(update.version);
     setUpdate(null);
@@ -416,6 +445,7 @@ export function Widget() {
     if (q.has("fact")) setFact(FACTS[Number(q.get("fact")) || 0]);
     if (q.has("hover")) setHover(true);
     if (q.has("rating")) setAskRating(true);
+    if (q.has("updateready")) setUpdateReady("0.1.6");
     if (q.has("whatsnew")) setUpdate({ version: CHANGELOG[0].version, titles: CHANGELOG[0].changes.map((c) => c.title) });
     if (q.has("award")) setAward(ACHIEVEMENTS[Number(q.get("award")) || 3]);
     // last week's real numbers, the same ones the dashboard shows
@@ -609,6 +639,21 @@ export function Widget() {
         />
       )}
 
+      {updateReady !== null && !award && !recap && !askRating && !asking && !update && tour === null && (
+        <UpdateReadyBubble
+          version={updateReady}
+          onUpdate={() => {
+            snoozeUpdate(); // don't ask again while the Store installs it
+            setUpdateReady(null);
+            void openUrl(STORE_PAGE).catch(() => {});
+          }}
+          onLater={() => {
+            snoozeUpdate();
+            setUpdateReady(null);
+          }}
+        />
+      )}
+
       {update && !award && !recap && !askRating && !asking && tour === null && (
         <UpdateBubble
           version={update.version}
@@ -622,7 +667,7 @@ export function Widget() {
         />
       )}
 
-      {tour === null && !asking && !award && !update && !recap && !askRating && fact && (
+      {tour === null && !asking && !award && !update && updateReady === null && !recap && !askRating && fact && (
         <FactBubble
           fact={fact}
           revealed={revealed}

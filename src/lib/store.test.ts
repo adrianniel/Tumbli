@@ -249,3 +249,15 @@ describe("changing the goal (Settings or a retaken hydration check)", () => {
     expect(loadGoalLog()).toEqual({});
   });
 });
+
+describe("Reset today", () => {
+  it("only touches today, never the days before", () => {
+    const h = { [daysAgo(4)]: 1500, [daysAgo(3)]: 1000, [daysAgo(0)]: 750 };
+    localStorage.setItem("tumbli.historyMl", JSON.stringify(h));
+    resetToday();
+    const after = loadHistory();
+    expect(after[daysAgo(4)]).toBe(1500);
+    expect(after[daysAgo(3)]).toBe(1000);
+    expect(after[daysAgo(0)] ?? 0).toBe(0);
+  });
+});

@@ -125,7 +125,7 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 Version 0.1.5 (paste into "What's new in this version"; submit after 0.1.4 is live):
 
-> Tumbli is now much lighter on your PC: it rests its animations while it waits, so it uses far less CPU and battery through the day.
+> Tumbli is now much lighter on your PC: it rests its animations while it waits, so it uses far less CPU and battery through the day. And when a new version is out, Tumbli tells you itself.
 
 (0.1.5: idle loops pause between short moments of life, an unanswered bubble keeps still after
 12 s, the Settings window and a hidden widget stop drawing. Real app: idle 25% -> 5% of a core.)

@@ -3143,3 +3143,30 @@ footer {
 .window-idle *::after {
   animation-play-state: paused !important;
 }
+
+/* ---------- a newer Tumbli in the Microsoft Store ---------- */
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-color: var(--mint);
+  background: linear-gradient(135deg, rgba(32, 164, 127, 0.16), var(--surface) 70%);
+}
+.update-banner-main {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.update-banner-main b {
+  font-family: var(--display);
+  font-size: 15.5px;
+  font-weight: 600;
+}
+.update-banner-main span {
+  color: var(--ink-2);
+}
+.version-line .update-link {
+  color: var(--mint);
+}

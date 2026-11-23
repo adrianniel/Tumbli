@@ -28,6 +28,8 @@ export function setupBrowserMocks(label: string) {
           return { idle_secs: 0, busy: false };
         case "primary_button_down":
           return false;
+        case "store_update":
+          return new URLSearchParams(location.search).has("updateready") ? "0.1.6" : null;
         case "startup_status":
           return { packaged: false, state: "" };
         case "plugin:autostart|is_enabled":
