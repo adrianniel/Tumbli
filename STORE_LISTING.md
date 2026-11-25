@@ -123,7 +123,11 @@ no location sharing, no purchases. Expected rating: **3+ / Everyone**.
 
 ## What's new (for updates)
 
-Version 0.1.5 (paste into "What's new in this version"; submit after 0.1.4 is live):
+Version 0.1.6 (paste into "What's new in this version"):
+
+> Tumbli keeps moving all the time again, and reminders keep waving until you answer. It only rests its animations while tucked into the screen edge, to save power.
+
+Version 0.1.5 (published Nov 2026):
 
 > Tumbli is now much lighter on your PC: it rests its animations while it waits, so it uses far less CPU and battery through the day. And when a new version is out, Tumbli tells you itself.
 

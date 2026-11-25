@@ -5,6 +5,7 @@ import "@fontsource-variable/fredoka";
 import "@fontsource-variable/nunito";
 import "./settings.css";
 import { followTheme } from "../lib/theme";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 async function boot() {
   // `npm run dev` + a normal browser: mock the Tauri backend (see src/dev/mocks.ts)
@@ -16,12 +17,19 @@ async function boot() {
   }
   followTheme();
   // This window is only hidden when closed, and a hidden WebView still draws every frame
-  // of every animation (GPU time all day): keep them still unless the window is in use.
+  // of every animation (GPU time all day): keep them still while it's hidden. Shown, even
+  // behind other apps, everything moves as usual.
   if (!preview) {
-    const still = () => document.documentElement.classList.toggle("window-idle", !document.hasFocus());
-    window.addEventListener("focus", still);
-    window.addEventListener("blur", still);
-    still();
+    const win = getCurrentWindow();
+    const check = () =>
+      void win
+        .isVisible()
+        .then((shown) => document.documentElement.classList.toggle("window-idle", !shown))
+        .catch(() => {});
+    window.addEventListener("focus", check);
+    window.addEventListener("blur", () => window.setTimeout(check, 300)); // closing hides it
+    window.setInterval(check, 3000); // shown without focus (rare): catch up soon
+    check();
   }
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>

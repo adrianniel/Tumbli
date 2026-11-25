@@ -1430,8 +1430,8 @@ body,
   font-weight: 600;
 }
 
-/* ---------- resting: Tumbli's loops cost GPU time every frame, so while it's idle they
-   pause between short moments of life; a speech bubble left open calms down too ---------- */
+/* ---------- resting: Tumbli's loops cost GPU time every frame, so while it's tucked
+   into the screen edge (Peek) and idle they pause between short moments of life ---------- */
 .widget.resting .bob,
 .widget.resting .ground,
 .widget.resting .squish,
@@ -1439,10 +1439,7 @@ body,
 .widget.resting .tumbler .wave,
 .widget.resting .tumbler .bubble,
 .widget.resting .tumbler .arm,
-.widget.resting .zzz span,
-.widget.calm *,
-.widget.calm *::before,
-.widget.calm *::after {
+.widget.resting .zzz span {
   animation-play-state: paused !important;
 }
 /* hidden during a fullscreen app: nothing draws */

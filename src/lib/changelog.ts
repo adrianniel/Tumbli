@@ -10,6 +10,16 @@ export type Release = { version: string; date: string; changes: Change[] };
 
 export const CHANGELOG: Release[] = [
   {
+    version: "0.1.6",
+    date: "November 2026",
+    changes: [
+      {
+        title: "Always lively",
+        text: "Tumbli keeps moving all the time again, and reminders keep waving until you answer. It only rests while tucked into the screen edge, to save power.",
+      },
+    ],
+  },
+  {
     version: "0.1.5",
     date: "November 2026",
     changes: [
